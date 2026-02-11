@@ -655,48 +655,105 @@ export function runClassSimulations(config = {}) {
   console.log('-'.repeat(90));
   console.log('\n');
 
-  // Also test tank and healer classes
-  console.log('TANK CLASS COMPARISON (Solo tank vs Level 5 Dungeon)');
-  console.log('-'.repeat(70));
+  // Tank comparison - test with full party (Tank + Cleric + Mage + Rogue)
+  console.log('TANK CLASS COMPARISON (Party: Tank + Cleric + Mage + Rogue)');
+  console.log('-'.repeat(90));
+  console.log(
+    'Class'.padEnd(12) +
+    'Win%'.padStart(8) +
+    'TankDeath'.padStart(11) +
+    'PartyDeath'.padStart(12) +
+    'AvgDmg'.padStart(10) +
+    'Dodges'.padStart(8)
+  );
+  console.log('-'.repeat(90));
 
   const tankClasses = ['warrior', 'paladin', 'knight'];
   const tankResults = {};
 
   for (const tankClass of tankClasses) {
-    const classResults = { wins: 0, losses: 0, totalDamage: 0, totalDeaths: 0 };
+    const classResults = {
+      wins: 0,
+      losses: 0,
+      totalDamage: 0,
+      totalDeaths: 0,
+      totalPartyDeaths: 0,
+      totalDodges: 0,
+    };
 
     for (let run = 0; run < cfg.runsPerClass; run++) {
-      const party = [createHero(tankClass, cfg.heroLevel, cfg.skillTier)];
-      const result = simulateDungeonRun(party, 5); // Lower level for solo
+      const party = [
+        createHero(tankClass, cfg.heroLevel, cfg.skillTier),
+        createHero('cleric', cfg.heroLevel, cfg.skillTier),
+        createHero('mage', cfg.heroLevel, cfg.skillTier),
+        createHero('rogue', cfg.heroLevel, cfg.skillTier),
+      ];
+      const result = simulateDungeonRun(party, cfg.dungeonLevel);
 
       if (result.success) classResults.wins++;
       else classResults.losses++;
 
-      const stats = result.heroStats[tankClass];
-      if (stats) {
-        classResults.totalDamage += stats.damageDealt;
-        classResults.totalDeaths += stats.deaths;
+      // Track tank stats
+      const tankStats = result.heroStats[tankClass];
+      if (tankStats) {
+        classResults.totalDamage += tankStats.damageDealt;
+        classResults.totalDeaths += tankStats.deaths;
+        classResults.totalDodges += tankStats.dodges;
+      }
+
+      // Track party deaths (non-tank)
+      for (const [classId, stats] of Object.entries(result.heroStats)) {
+        if (classId !== tankClass) {
+          classResults.totalPartyDeaths += stats.deaths;
+        }
       }
     }
 
     classResults.winRate = (classResults.wins / cfg.runsPerClass * 100).toFixed(1);
     classResults.avgDamage = Math.floor(classResults.totalDamage / cfg.runsPerClass);
+    classResults.tankDeathRate = (classResults.totalDeaths / cfg.runsPerClass).toFixed(2);
+    classResults.partyDeathRate = (classResults.totalPartyDeaths / cfg.runsPerClass).toFixed(2);
+    classResults.avgDodges = (classResults.totalDodges / cfg.runsPerClass).toFixed(1);
     tankResults[tankClass] = classResults;
 
-    console.log(`${tankClass.padEnd(12)} Win: ${classResults.winRate}%  AvgDmg: ${classResults.avgDamage}`);
+    console.log(
+      tankClass.padEnd(12) +
+      `${classResults.winRate}%`.padStart(8) +
+      classResults.tankDeathRate.padStart(11) +
+      classResults.partyDeathRate.padStart(12) +
+      classResults.avgDamage.toString().padStart(10) +
+      classResults.avgDodges.padStart(8)
+    );
   }
 
+  console.log('-'.repeat(90));
   console.log('\n');
 
-  // Healer comparison
+  // Healer comparison - test with full party (Warrior + Healer + Mage + Rogue)
   console.log('HEALER CLASS COMPARISON (Party: Warrior + Healer + Mage + Rogue)');
-  console.log('-'.repeat(70));
+  console.log('-'.repeat(90));
+  console.log(
+    'Class'.padEnd(12) +
+    'Win%'.padStart(8) +
+    'AvgHeal'.padStart(10) +
+    'HealerDeath'.padStart(13) +
+    'PartyDeath'.padStart(12) +
+    'AvgDmg'.padStart(10)
+  );
+  console.log('-'.repeat(90));
 
   const healerClasses = ['cleric', 'druid', 'shaman'];
   const healerResults = {};
 
   for (const healerClass of healerClasses) {
-    const classResults = { wins: 0, losses: 0, totalHealing: 0, totalDamage: 0 };
+    const classResults = {
+      wins: 0,
+      losses: 0,
+      totalHealing: 0,
+      totalDamage: 0,
+      totalDeaths: 0,
+      totalPartyDeaths: 0,
+    };
 
     for (let run = 0; run < cfg.runsPerClass; run++) {
       const party = [
@@ -714,15 +771,32 @@ export function runClassSimulations(config = {}) {
       if (stats) {
         classResults.totalHealing += stats.healingDone;
         classResults.totalDamage += stats.damageDealt;
+        classResults.totalDeaths += stats.deaths;
+      }
+
+      // Track party deaths (non-healer)
+      for (const [classId, stats] of Object.entries(result.heroStats)) {
+        if (classId !== healerClass) {
+          classResults.totalPartyDeaths += stats.deaths;
+        }
       }
     }
 
     classResults.winRate = (classResults.wins / cfg.runsPerClass * 100).toFixed(1);
     classResults.avgHealing = Math.floor(classResults.totalHealing / cfg.runsPerClass);
     classResults.avgDamage = Math.floor(classResults.totalDamage / cfg.runsPerClass);
+    classResults.healerDeathRate = (classResults.totalDeaths / cfg.runsPerClass).toFixed(2);
+    classResults.partyDeathRate = (classResults.totalPartyDeaths / cfg.runsPerClass).toFixed(2);
     healerResults[healerClass] = classResults;
 
-    console.log(`${healerClass.padEnd(12)} Win: ${classResults.winRate}%  AvgHeal: ${classResults.avgHealing}  AvgDmg: ${classResults.avgDamage}`);
+    console.log(
+      healerClass.padEnd(12) +
+      `${classResults.winRate}%`.padStart(8) +
+      classResults.avgHealing.toString().padStart(10) +
+      classResults.healerDeathRate.padStart(13) +
+      classResults.partyDeathRate.padStart(12) +
+      classResults.avgDamage.toString().padStart(10)
+    );
   }
 
   console.log(`\n${'='.repeat(70)}\n`);
