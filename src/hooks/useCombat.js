@@ -1288,9 +1288,13 @@ export const useCombat = ({ addEffect }) => {
         let dmg = Math.floor(baseDmg * passiveBonuses.damageMultiplier * executeMultiplier * berserkerMultiplier * vengeanceMultiplier * tauntPartyMultiplier * buffDamageMultiplier * weaknessMultiplier);
         let isCrit = false;
 
-        // Total crit chance includes skill passives, permanent bonuses, and affix bonuses
-        const totalCritChance = (passiveBonuses.critChance || 0) + actorCritBonus + affixBonuses.critChanceBonus;
-        if (totalCritChance > 0 && Math.random() < totalCritChance) {
+        // Base crit chance: 5% for tanks/healers, 10% for DPS classes
+        const dpsClasses = ['mage', 'ranger', 'rogue', 'necromancer', 'bard'];
+        const baseCritChance = actor.isHero && dpsClasses.includes(actor.classId) ? 0.10 : 0.05;
+
+        // Total crit chance includes base, skill passives, permanent bonuses, and affix bonuses
+        const totalCritChance = baseCritChance + (passiveBonuses.critChance || 0) + actorCritBonus + affixBonuses.critChanceBonus;
+        if (Math.random() < totalCritChance) {
           // Process ON_CRIT affixes for bonus crit damage
           let critMultiplier = 1.5 + (passiveBonuses.critDamageBonus || 0);
           if (heroData) {
