@@ -525,15 +525,18 @@ function getMonsterCount(roomType, roomSize, dungeonLevel) {
   const baseCount = Math.max(1, Math.floor(roomSize / 25)); // 1 per 25 tiles
   const levelBonus = Math.floor(dungeonLevel / 3);
 
+  // Level 1 has fewer monsters to help new players
+  const earlyGameReduction = dungeonLevel === 1 ? -1 : 0;
+
   switch (roomType) {
     case MAZE_ROOM_TYPES.ENTRANCE:
       return 0;
     case MAZE_ROOM_TYPES.TREASURE:
-      return baseCount + 1;
+      return Math.max(1, baseCount + 1 + earlyGameReduction);
     case MAZE_ROOM_TYPES.BOSS:
       return 1; // Just the boss
     default:
-      return Math.min(6, baseCount + levelBonus + 1);
+      return Math.max(1, Math.min(6, baseCount + levelBonus + 1 + earlyGameReduction));
   }
 }
 
@@ -544,8 +547,11 @@ export function placeMonsters(dungeon, level, options = {}) {
   const tier = Math.min(4, Math.ceil(level / 5));
   const scaleFactor = Math.pow(1.08, level - 1);
 
+  // Level 1 is easier to help new players with solo tank
+  const earlyGameMultiplier = level === 1 ? 0.7 : 1.0;
+
   // Apply dungeon type multiplier (elite = 1.5x, raid = 2.0x)
-  const typeMultiplier = options.statMultiplier || 1.0;
+  const typeMultiplier = (options.statMultiplier || 1.0) * earlyGameMultiplier;
   const affixes = options.affixes || [];
 
   // Helper to apply affixes to a monster

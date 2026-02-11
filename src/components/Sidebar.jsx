@@ -407,7 +407,7 @@ const Sidebar = memo(({
             onClick={onAbandon}
             className="w-full pixel-btn pixel-btn-danger text-sm"
           >
-            Abandon Run
+            Exit Dungeon
           </button>
         )}
       </div>

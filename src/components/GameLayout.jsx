@@ -258,6 +258,17 @@ const GameLayout = () => {
     return false;
   }, [heroes, highestDungeonCleared]);
 
+  // Find next locked hero slot to show unlock progress
+  const nextHeroSlotUnlock = useMemo(() => {
+    for (let i = 0; i < PARTY_SLOTS.length; i++) {
+      const slot = PARTY_SLOTS[i];
+      if (highestDungeonCleared < slot.dungeonRequired) {
+        return { dungeonRequired: slot.dungeonRequired, slotNumber: i + 1 };
+      }
+    }
+    return null; // All slots unlocked
+  }, [highestDungeonCleared]);
+
   const closeModal = () => setActiveModal(null);
 
   // Handle opening modals with side effects
@@ -337,16 +348,37 @@ const GameLayout = () => {
 
         {/* Right: Game Controls */}
         <div className="flex items-center gap-2">
-          {/* Auto-advance toggle - only show when unlocked */}
-          {featureUnlocks?.autoAdvance && (
+          {/* Auto-advance toggle - always visible, disabled when locked */}
+          <div className="relative">
             <button
-              onClick={() => setDungeonSettings({ autoAdvance: !dungeonSettings?.autoAdvance })}
-              className={`pixel-btn text-xs ${dungeonSettings?.autoAdvance ? 'pixel-btn-success' : ''}`}
-              title="Auto-advance to next dungeon after completion"
+              onClick={() => {
+                if (featureUnlocks?.autoAdvance) {
+                  setDungeonSettings({ autoAdvance: !dungeonSettings?.autoAdvance });
+                  if (!featureUnlocks?.autoAdvanceSeen) {
+                    markFeatureSeen('autoAdvanceSeen');
+                  }
+                }
+              }}
+              className={`pixel-btn text-xs ${
+                !featureUnlocks?.autoAdvance
+                  ? 'opacity-50 cursor-not-allowed'
+                  : dungeonSettings?.autoAdvance
+                    ? 'pixel-btn-success'
+                    : ''
+              }`}
+              title={featureUnlocks?.autoAdvance
+                ? "Auto-advance to next dungeon after completion"
+                : "Unlock with full party (4 heroes)"}
+              disabled={!featureUnlocks?.autoAdvance}
             >
               AUTO {dungeonSettings?.autoAdvance ? 'ON' : 'OFF'}
             </button>
-          )}
+            {featureUnlocks?.autoAdvance && !featureUnlocks?.autoAdvanceSeen && (
+              <span className="absolute -top-1 -right-1 px-1 text-[10px] bg-yellow-500 text-black rounded font-bold animate-pulse">
+                NEW
+              </span>
+            )}
+          </div>
 
           {/* Speed control */}
           <div className="flex">
@@ -439,6 +471,11 @@ const GameLayout = () => {
                   >
                     New Hero Slot Available!
                   </button>
+                )}
+                {!hasNewHeroSlotAvailable && nextHeroSlotUnlock && heroes.length > 0 && (
+                  <div className="mb-4 px-4 py-2 bg-blue-600/20 border border-blue-500/30 rounded text-blue-300 text-sm">
+                    Clear Dungeon {nextHeroSlotUnlock.dungeonRequired} to unlock Hero Slot {nextHeroSlotUnlock.slotNumber}
+                  </div>
                 )}
                 {heroes.length === 0 ? (
                   <button
