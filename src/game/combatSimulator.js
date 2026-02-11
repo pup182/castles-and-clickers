@@ -168,7 +168,7 @@ function calculateDamage(attacker, defender, multiplier = 1.0, passiveBonuses = 
 }
 
 // Simulate a single attack with passive bonuses
-function simulateAttack(attacker, defender, stats, context = {}) {
+function simulateAttack(attacker, defender, attackerStats, context = {}, defenderStats = null) {
   // Get passive bonuses
   const passiveBonuses = attacker.isHero && attacker.skills
     ? applyPassiveEffects(attacker, 'on_attack', context)
@@ -187,7 +187,10 @@ function simulateAttack(attacker, defender, stats, context = {}) {
   const totalDodgeChance = baseDodgeChance + (defenderPassives.dodgeChance || 0);
 
   if (Math.random() < totalDodgeChance) {
-    stats.dodges++;
+    // Track dodge on the DEFENDER (the one who dodged)
+    if (defenderStats) {
+      defenderStats.dodges++;
+    }
     return { dodged: true, damage: 0 };
   }
 
@@ -198,14 +201,14 @@ function simulateAttack(attacker, defender, stats, context = {}) {
   const damage = calculateDamage(attacker, defender, critMultiplier, passiveBonuses);
   defender.stats.hp -= damage;
 
-  if (didCrit) stats.crits++;
-  stats.damageDealt += damage;
+  if (didCrit) attackerStats.crits++;
+  attackerStats.damageDealt += damage;
 
   // Lifesteal from passives
   if (attacker.isHero && passiveBonuses.lifestealPercent > 0) {
     const healAmount = Math.floor(damage * passiveBonuses.lifestealPercent / 100);
     attacker.stats.hp = Math.min(attacker.stats.maxHp, attacker.stats.hp + healAmount);
-    stats.healingDone += healAmount;
+    attackerStats.healingDone += healAmount;
   }
 
   // On-hit effects
@@ -213,7 +216,7 @@ function simulateAttack(attacker, defender, stats, context = {}) {
     const onHitEffects = getOnHitEffects(attacker, damage);
     if (onHitEffects.healAmount > 0) {
       attacker.stats.hp = Math.min(attacker.stats.maxHp, attacker.stats.hp + onHitEffects.healAmount);
-      stats.healingDone += onHitEffects.healAmount;
+      attackerStats.healingDone += onHitEffects.healAmount;
     }
   }
 
@@ -222,10 +225,10 @@ function simulateAttack(attacker, defender, stats, context = {}) {
   const totalDoubleChance = baseDoubleChance + (passiveBonuses.doubleAttackChance || 0);
 
   if (Math.random() < totalDoubleChance) {
-    stats.doubleAttacks++;
+    attackerStats.doubleAttacks++;
     const bonusDamage = calculateDamage(attacker, defender, 1.0, passiveBonuses);
     defender.stats.hp -= bonusDamage;
-    stats.damageDealt += bonusDamage;
+    attackerStats.damageDealt += bonusDamage;
   }
 
   // Check if killed
@@ -234,7 +237,7 @@ function simulateAttack(attacker, defender, stats, context = {}) {
     if (onKillEffects.healAmount > 0 || onKillEffects.healPercent > 0) {
       const healAmount = onKillEffects.healAmount + Math.floor(attacker.stats.maxHp * onKillEffects.healPercent);
       attacker.stats.hp = Math.min(attacker.stats.maxHp, attacker.stats.hp + healAmount);
-      stats.healingDone += healAmount;
+      attackerStats.healingDone += healAmount;
     }
   }
 
@@ -478,7 +481,9 @@ function simulateCombat(heroes, monsters, heroStats) {
       // Basic attack if no skill used
       if (!usedSkill && enemyList.length > 0) {
         const target = enemyList[Math.floor(Math.random() * enemyList.length)];
-        simulateAttack(unit, target, stats, { isFirstAttack: turn === 1 });
+        // Pass defender stats so we can track hero dodges when monsters attack
+        const defenderStats = target.isHero ? heroStats[target.classId] : null;
+        simulateAttack(unit, target, stats, { isFirstAttack: turn === 1 }, defenderStats);
       }
     }
   }
