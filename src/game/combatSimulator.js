@@ -290,17 +290,26 @@ function executeSkillAbility(actor, skill, enemies, allies, stats) {
         ? aliveEnemies
         : [aliveEnemies[0]];
 
+      let totalDamageDealt = 0;
       for (const target of targets) {
         if (!target) continue;
         const damage = calculateDamage(actor, target, effect.multiplier, passiveBonuses);
         target.stats.hp -= damage;
         stats.damageDealt += damage;
         stats.skillDamage += damage;
+        totalDamageDealt += damage;
 
         // Check crit for skills
         if (effect.alwaysCrit || Math.random() < 0.1) {
           stats.crits++;
         }
+      }
+
+      // Handle lifesteal on damage skills (e.g., Drain Life)
+      if (effect.lifesteal && totalDamageDealt > 0) {
+        const healAmount = Math.floor(totalDamageDealt * effect.lifesteal);
+        actor.stats.hp = Math.min(actor.stats.maxHp, actor.stats.hp + healAmount);
+        stats.healingDone += healAmount;
       }
       break;
     }
