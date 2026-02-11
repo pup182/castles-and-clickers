@@ -561,6 +561,8 @@ export const useCombat = ({ addEffect }) => {
           const heroIdx = findHeroIndex(actor.id);
           if (heroIdx !== -1) {
             newHeroes[heroIdx].stats.hp = Math.max(0, newHeroes[heroIdx].stats.hp - dotDamage);
+            // Track DOT damage taken
+            damageTakenByHero[actor.id] = (damageTakenByHero[actor.id] || 0) + dotDamage;
           }
 
           // Check for death from DOT (use updated HP from newHeroes, not stale heroHp)
@@ -787,6 +789,9 @@ export const useCombat = ({ addEffect }) => {
                 const oldHp = m.stats.hp;
                 const newHp = Math.max(0, oldHp - result.damage);
                 m.stats.hp = newHp;
+
+                // Track skill damage dealt
+                totalDamageDealtThisTurn += result.damage;
 
                 if (newHp <= 0 && oldHp > 0) {
                   addCombatLog({ type: 'death', target: { name: m.name }, isHero: false });
@@ -1082,6 +1087,8 @@ export const useCombat = ({ addEffect }) => {
                       const wasAlive = targetHero.stats.hp > 0;
                       // HP synced at end of tick via syncHeroHp
                       targetHero.stats.hp = Math.max(0, targetHero.stats.hp - actionResult.damage);
+                      // Track monster skill damage taken
+                      damageTakenByHero[actionResult.targetId] = (damageTakenByHero[actionResult.targetId] || 0) + actionResult.damage;
 
                       // Only trigger death if hero was alive before this hit
                       if (wasAlive && targetHero.stats.hp <= 0) {
@@ -1427,6 +1434,8 @@ export const useCombat = ({ addEffect }) => {
                 const redirectIdx = findHeroIndex(damageRedirect.redirectHero.id);
                 if (redirectIdx !== -1) {
                   newHeroes[redirectIdx].stats.hp = Math.max(0, newHeroes[redirectIdx].stats.hp - damageRedirect.redirectedDamage);
+                  // Track redirected damage taken
+                  damageTakenByHero[damageRedirect.redirectHero.id] = (damageTakenByHero[damageRedirect.redirectHero.id] || 0) + damageRedirect.redirectedDamage;
                   addCombatLog({ type: 'system', message: `${damageRedirect.skillName}! ${damageRedirect.redirectHero.name} intercepts ${damageRedirect.redirectedDamage} damage for ${target.name}!` });
                   addEffect({ type: 'beam', from: damageRedirect.redirectHero.position, to: target.position, attackerClass: 'knight' });
                   addEffect({ type: 'damage', position: damageRedirect.redirectHero.position, damage: damageRedirect.redirectedDamage });
@@ -1443,6 +1452,8 @@ export const useCombat = ({ addEffect }) => {
                     const heroIdx = findHeroIndex(heroId);
                     if (heroIdx !== -1) {
                       newHeroes[heroIdx].stats.hp = Math.max(0, newHeroes[heroIdx].stats.hp - sharing.damagePerHero);
+                      // Track shared damage taken
+                      damageTakenByHero[heroId] = (damageTakenByHero[heroId] || 0) + sharing.damagePerHero;
                       if (heroId !== target.id) {
                         addEffect({ type: 'damage', position: newHeroes[heroIdx].position, damage: sharing.damagePerHero });
                       }
@@ -1464,6 +1475,8 @@ export const useCombat = ({ addEffect }) => {
                   const martyrIdx = findHeroIndex(martyrIntercept.martyrHero.id);
                   if (martyrIdx !== -1 && interceptedDmg > 0) {
                     newHeroes[martyrIdx].stats.hp = Math.max(0, newHeroes[martyrIdx].stats.hp - interceptedDmg);
+                    // Track martyr intercepted damage taken
+                    damageTakenByHero[martyrIntercept.martyrHero.id] = (damageTakenByHero[martyrIntercept.martyrHero.id] || 0) + interceptedDmg;
                     addCombatLog({ type: 'system', message: `${martyrIntercept.skillName}! ${martyrIntercept.martyrHero.name} absorbs ${interceptedDmg} damage for ${target.name}!` });
                     addEffect({ type: 'beam', from: martyrIntercept.martyrHero.position, to: target.position, attackerClass: 'cleric' });
                     addEffect({ type: 'damage', position: martyrIntercept.martyrHero.position, damage: interceptedDmg });
@@ -1676,6 +1689,8 @@ export const useCombat = ({ addEffect }) => {
                     const chainIdx = findMonsterIndex(chainTarget.id);
                     if (chainIdx !== -1) {
                       newMonsters[chainIdx].stats.hp = Math.max(0, newMonsters[chainIdx].stats.hp - chainDmg);
+                      // Track chain damage
+                      totalDamageDealtThisTurn += chainDmg;
                     }
                     addCombatLog({ type: 'system', message: `Lightning chains to ${chainTarget.name} for ${chainDmg}!` });
                     addEffect({ type: 'beam', from: target.position, to: chainTarget.position, attackerClass: 'mage' });
@@ -1831,6 +1846,8 @@ export const useCombat = ({ addEffect }) => {
                   const hpBeforeBonus = currentMonsterHp;
                   if (targetMonsterIdx !== -1) {
                     newMonsters[targetMonsterIdx].stats.hp = Math.max(0, hpBeforeBonus - bonusDmg);
+                    // Track bonus attack damage
+                    totalDamageDealtThisTurn += bonusDmg;
                   }
                   const hpAfterBonus = targetMonsterIdx !== -1 ? newMonsters[targetMonsterIdx].stats.hp : 0;
 
@@ -1862,6 +1879,8 @@ export const useCombat = ({ addEffect }) => {
                     const oldHp = newMonsters[otherIdx].stats.hp;
                     newMonsters[otherIdx].stats.hp = Math.max(0, oldHp - aoeDmg);
                     const newHp = newMonsters[otherIdx].stats.hp;
+                    // Track AOE cleave damage
+                    totalDamageDealtThisTurn += aoeDmg;
 
                     addEffect({ type: 'beam', from: actor.position, to: otherTarget.position, attackerClass: actor.classId });
                     addEffect({ type: 'damage', position: otherTarget.position, damage: aoeDmg });

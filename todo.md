@@ -6,7 +6,7 @@
 - [ ] Investigate: what is the little question mark that sometimes pops up?
 - [x] Homestead shouldn't be unlocked at game start (gate behind progression) - unlocks at D3, shows NEW badge until visited
 - [x] Welcome back screen/offline progress system is inaccurate - needs full rework
-- [ ] Verify stats are being tracked consistently across all sources
+- [x] Verify stats are being tracked consistently across all sources (fixed: skill dmg out, chain dmg, bonus attacks, AOE cleave, dmg taken from DOTs/redirects/sharing/martyr/monster skills)
 - [x] "INVENTORY FULL" message appearing in combat log even when inventory isn't full
 - [ ] Followers can get stuck when going around corners
 - [ ] Rogues with bows should either have ranged attacks or bows removed from rogue item pool
