@@ -11,15 +11,16 @@ A comprehensive reference for AI agents and developers working on this idle dung
 5. [Dungeon Generation](#dungeon-generation)
 6. [Canvas Rendering](#canvas-rendering)
 7. [Hero System](#hero-system)
-8. [Skills & Abilities](#skills--abilities)
-9. [Status Effects](#status-effects)
-10. [Equipment & Affixes](#equipment--affixes)
-11. [Monster System](#monster-system)
-12. [Homestead System](#homestead-system)
-13. [Performance Patterns](#performance-patterns)
-14. [Data Flow Examples](#data-flow-examples)
-15. [File Reference](#file-reference)
-16. [Conventions](#conventions)
+8. [Class Balance & Simulator](#class-balance--simulator)
+9. [Skills & Abilities](#skills--abilities)
+10. [Status Effects](#status-effects)
+11. [Equipment & Affixes](#equipment--affixes)
+12. [Monster System](#monster-system)
+13. [Homestead System](#homestead-system)
+14. [Performance Patterns](#performance-patterns)
+15. [Data Flow Examples](#data-flow-examples)
+16. [File Reference](#file-reference)
+17. [Conventions](#conventions)
 
 ---
 
@@ -399,6 +400,130 @@ Cache key: `${id}:${level}:${equipHash}:${skillHash}:${partyVersion}:${homestead
 
 ---
 
+## Class Balance & Simulator
+
+### Combat Simulator
+
+Located in `src/game/combatSimulator.js`. A headless dungeon simulation tool for balance testing.
+
+**Usage (browser console):**
+
+```javascript
+// Basic simulation
+window.runSimulation()
+
+// Custom configuration
+window.runSimulation({
+  heroLevel: 10,      // Hero level
+  dungeonLevel: 16,   // Dungeon difficulty
+  runsPerClass: 100,  // Runs per class for statistical accuracy
+  skillTier: 2        // 0-3, how many skill tiers unlocked
+})
+```
+
+**What it tests:**
+- **DPS Classes**: Party of Warrior + Cleric + 2x DPS class
+- **Tanks**: Party of Tank + Cleric + Mage + Rogue
+- **Healers**: Party of Warrior + Healer + Mage + Rogue
+
+**Metrics tracked:**
+- Win rate, damage dealt, healing done
+- Crits, dodges, double attacks
+- Death rates (tank/healer and party)
+
+### Simulator Features
+
+The simulator includes:
+- **Taunt mechanics**: Tanks use taunt skills, monsters prioritize taunting heroes
+- **Smart healing AI**: Healers heal at 80% HP (maintenance), 50% (standard), 30% (emergency)
+- **Skill tree passives**: All passive bonuses are applied (dodge, crit, lifesteal, etc.)
+- **Full dungeon runs**: Multiple encounters + boss fight
+
+### Class Balance Overview
+
+Balance target: Classes within each role should have similar win rates with distinct playstyles.
+
+**DPS Classes (5-8% win rate at D16):**
+
+| Class | Win% | Identity | Key Passives |
+|-------|------|----------|--------------|
+| Mage | ~8% | AOE burst damage | Fireball (200% AOE) |
+| Ranger | ~6% | Crit + dodge | Eagle Eye (+10 atk), Steady Aim (+15% crit), Swift Quiver (+15% dodge) |
+| Necromancer | ~6% | Lifesteal sustain | Drain Life (lifesteal healing) |
+| Rogue | ~5% | Crit + double attack | Quick Feet (+15% dodge), high crit rate |
+
+**Tank Classes (21-30% win rate at D16):**
+
+| Class | Win% | Identity | Key Features |
+|-------|------|----------|--------------|
+| Paladin | ~27% | Defensive support | Divine Shield (taunt + 50% DR) |
+| Knight | ~24% | Armored mitigator | Shield Bash (200% + stun), Stalwart (+15% dodge), Constitution (+4 speed) |
+| Warrior | ~21% | Offensive tank | Power Strike (150%), highest damage |
+
+**Healer Classes (14-30% win rate at D16):**
+
+| Class | Win% | Identity | Key Features |
+|-------|------|----------|--------------|
+| Druid | ~30% | Hybrid damage/heal | High healing + damage output |
+| Cleric | ~22% | Pure healer | Highest raw healing |
+| Shaman | ~14% | Offensive healer | Spirit Link (35% group heal + attack buff), Lightning damage |
+
+### Class Design Philosophy
+
+**Tanks** need:
+1. A taunt ability (holds aggro from party)
+2. Survivability (HP, defense, dodge)
+3. Some damage output (contribute to kills)
+
+**Healers** need:
+1. Strong healing (keep party above 50% HP)
+2. Healing triggers at reasonable thresholds
+3. Optional: damage or utility as secondary role
+
+**DPS** need:
+1. High damage output
+2. Survivability mechanic (dodge, lifesteal, or burst)
+3. Distinct playstyle from other DPS
+
+### Key Balance Levers
+
+**For DPS:**
+- Skill damage multipliers (e.g., Fireball 200%)
+- Crit chance passives
+- Dodge chance passives
+- Attack stat bonuses
+
+**For Tanks:**
+- Taunt on skills (effect.taunt property)
+- Dodge from passives (type: 'dodge_chance')
+- Speed bonuses (affects dodge calculation)
+- Damage on starter skills
+
+**For Healers:**
+- Heal percentages (percentOfMax property)
+- Heal skill cooldowns
+- Secondary damage abilities
+- Group vs single-target healing
+
+### Balance History
+
+Key changes from balance testing:
+
+| Class | Change | Reason |
+|-------|--------|--------|
+| Mage | Fireball 150% → 200% | Under-performing after initial nerf |
+| Ranger | Eagle Eye +4 → +10 attack | Lowest DPS damage |
+| Ranger | Steady Aim: Added +15% crit | Needed burst potential |
+| Rogue | Quick Feet: Added +15% dodge | Survivability |
+| Knight | Shield Bash 100% → 200% | Extremely low damage |
+| Knight | Heavy Armor: Added +6 attack | No offensive passives |
+| Knight | Stalwart: Added +15% dodge | 0 dodges, died every run |
+| Knight | Constitution: Added +4 speed | Base speed too low for dodge |
+| Paladin | Divine Shield: Added taunt | No taunt skill, couldn't tank |
+| Shaman | Spirit Link 15% → 35% | Healing far below other healers |
+
+---
+
 ## Skills & Abilities
 
 ### Skill Structure
@@ -644,10 +769,11 @@ handleCombatTick():
 | `store/gameStore.js` | 1355 lines | All state and actions |
 | `hooks/useCombat.js` | 53KB | Combat tick execution |
 | `game/mazeGenerator.js` | 29KB | Dungeon generation |
+| `game/combatSimulator.js` | 750+ lines | Headless balance testing |
 | `canvas/CanvasRenderer.js` | 186 lines | Main render loop |
 | `data/classes.js` | 400+ lines | Hero class definitions |
-| `data/skillTrees.js` | 1000+ lines | All skill trees |
-| `game/skillEngine.js` | 400 lines | Skill execution |
+| `data/skillTrees.js` | 1600+ lines | All skill trees |
+| `game/skillEngine.js` | 1000+ lines | Skill execution & passives |
 | `game/statusEngine.js` | 300+ lines | Status processing |
 | `game/affixEngine.js` | 400+ lines | Affix triggers |
 | `game/monsterAI.js` | 300+ lines | AI behaviors |
