@@ -87,6 +87,7 @@ function createHero(classId, level = 10, skillTier = 2) {
     cooldowns: {},
     isHero: true,
     attackRange: classData.attackRange || 1,
+    tauntDuration: 0,
   };
 }
 
@@ -359,10 +360,18 @@ function executeSkillAbility(actor, skill, enemies, allies, stats) {
       break;
     }
 
-    case EFFECT_TYPE.BUFF:
+    case EFFECT_TYPE.BUFF: {
+      // Handle taunt effect
+      if (effect.taunt) {
+        actor.tauntDuration = effect.taunt;
+      }
+      // Other buffs tracked but not fully simulated
+      break;
+    }
+
     case EFFECT_TYPE.DEBUFF:
     case EFFECT_TYPE.SHIELD:
-      // Simplified: buffs/debuffs/shields are tracked but not fully simulated
+      // Simplified: debuffs/shields are tracked but not fully simulated
       break;
 
     default:
@@ -381,18 +390,51 @@ function chooseBestSkill(hero, enemies, allies) {
   const aliveEnemies = enemies.filter(e => e.stats.hp > 0);
   const aliveAllies = allies.filter(a => a.stats.hp > 0);
 
-  // Priority: emergency heal > AOE damage > single target damage > buff
-  const lowHpAllies = aliveAllies.filter(a => a.stats.hp / a.stats.maxHp < 0.5);
+  // Check if this hero is a healer class
+  const healerClasses = ['cleric', 'druid', 'shaman'];
+  const isHealer = healerClasses.includes(hero.classId);
 
-  // 1. Emergency heal if ally below 50%
-  if (lowHpAllies.length > 0) {
-    const healSkill = available.find(s =>
-      s.effect?.type === EFFECT_TYPE.HEAL || s.effect?.type === EFFECT_TYPE.HOT
-    );
-    if (healSkill) return healSkill;
+  // Check if this hero is a tank class
+  const tankClasses = ['warrior', 'paladin', 'knight'];
+  const isTank = tankClasses.includes(hero.classId);
+
+  // Find allies at different HP thresholds
+  const criticalHpAllies = aliveAllies.filter(a => a.stats.hp / a.stats.maxHp < 0.3);
+  const lowHpAllies = aliveAllies.filter(a => a.stats.hp / a.stats.maxHp < 0.5);
+  const hurtAllies = aliveAllies.filter(a => a.stats.hp / a.stats.maxHp < 0.8);
+
+  // Find heal skills
+  const healSkill = available.find(s =>
+    s.effect?.type === EFFECT_TYPE.HEAL || s.effect?.type === EFFECT_TYPE.HOT
+  );
+
+  // Find taunt skill
+  const tauntSkill = available.find(s => s.effect?.taunt);
+
+  // 1. CRITICAL: Emergency heal if ally below 30%
+  if (criticalHpAllies.length > 0 && healSkill) {
+    return healSkill;
   }
 
-  // 2. AOE damage if 2+ enemies
+  // 2. Tank priority: Use taunt if no one is taunting
+  if (isTank && tauntSkill) {
+    const anyoneTaunting = aliveAllies.some(a => a.tauntDuration > 0);
+    if (!anyoneTaunting) {
+      return tauntSkill;
+    }
+  }
+
+  // 3. Heal if ally below 50%
+  if (lowHpAllies.length > 0 && healSkill) {
+    return healSkill;
+  }
+
+  // 4. Healer maintenance: Heal if any ally below 80%
+  if (isHealer && hurtAllies.length > 0 && healSkill) {
+    return healSkill;
+  }
+
+  // 5. AOE damage if 2+ enemies
   if (aliveEnemies.length >= 2) {
     const aoeSkill = available.find(s =>
       s.targetType === TARGET_TYPE.ALL_ENEMIES && s.effect?.type === EFFECT_TYPE.DAMAGE
@@ -400,15 +442,15 @@ function chooseBestSkill(hero, enemies, allies) {
     if (aoeSkill) return aoeSkill;
   }
 
-  // 3. Any damage skill
+  // 6. Any damage skill
   const damageSkill = available.find(s => s.effect?.type === EFFECT_TYPE.DAMAGE);
   if (damageSkill) return damageSkill;
 
-  // 4. DOT skill
+  // 7. DOT skill
   const dotSkill = available.find(s => s.effect?.type === EFFECT_TYPE.DOT);
   if (dotSkill) return dotSkill;
 
-  // 5. Any available skill
+  // 8. Any available skill
   return available[0];
 }
 
@@ -448,6 +490,13 @@ function simulateCombat(heroes, monsters, heroStats) {
       return a.isHero ? -1 : 1;
     });
 
+    // Reduce taunt durations at start of round
+    for (const hero of aliveHeroes) {
+      if (hero.tauntDuration > 0) {
+        hero.tauntDuration--;
+      }
+    }
+
     // Process each unit's turn
     for (const unit of allUnits) {
       if (unit.stats.hp <= 0) continue;
@@ -480,7 +529,19 @@ function simulateCombat(heroes, monsters, heroStats) {
 
       // Basic attack if no skill used
       if (!usedSkill && enemyList.length > 0) {
-        const target = enemyList[Math.floor(Math.random() * enemyList.length)];
+        let target;
+
+        // Monsters prioritize taunting heroes
+        if (!isHero) {
+          const tauntingHeroes = enemyList.filter(h => h.tauntDuration > 0);
+          if (tauntingHeroes.length > 0) {
+            target = tauntingHeroes[Math.floor(Math.random() * tauntingHeroes.length)];
+          } else {
+            target = enemyList[Math.floor(Math.random() * enemyList.length)];
+          }
+        } else {
+          target = enemyList[Math.floor(Math.random() * enemyList.length)];
+        }
         // Pass defender stats so we can track hero dodges when monsters attack
         const defenderStats = target.isHero ? heroStats[target.classId] : null;
         simulateAttack(unit, target, stats, { isFirstAttack: turn === 1 }, defenderStats);
