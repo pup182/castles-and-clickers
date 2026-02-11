@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npx eslint:*)",
+      "Bash(dir:*)",
+      "Bash(echo:*)",
+      "Bash(curl:*)",
+      "Bash(find:*)",
+      "Bash(npx vite:*)",
+      "Bash(timeout:*)",
+      "Bash(node -e \"require\\(''./src/hooks/useCombat.js''\\)\")",
+      "Bash(npm run lint:*)",
+      "Bash(grep:*)",
+      "Bash(xargs:*)",
+      "Bash(cd:*)",
+      "Bash(while read f)",
+      "Bash(then wc -l \"$f\")",
+      "Bash(ls:*)",
+      "Bash(git init)",
+      "Bash(gh auth:*)",
+      "Bash(git add .claude .gitignore ARCHITECTURE_REDESIGN.md BACKLOG.md CLAUDE.md DEVELOPER_GUIDE.md README.md docs eslint.config.js index.html package-lock.json package.json postcss.config.js src tailwind.config.js todo.md vite.config.js)"
+    ]
+  }
+}
