@@ -1141,13 +1141,13 @@ export const SKILL_TREES = {
         id: 'mage_fireball',
         name: 'Fireball',
         emoji: '🔥',
-        description: 'Deal 175% damage to all enemies.',
+        description: 'Deal 200% damage to all enemies.',
         type: SKILL_TYPE.ACTIVE,
         tier: 0,
         starterSkill: true,
         cooldown: 5,
         targetType: TARGET_TYPE.ALL_ENEMIES,
-        effect: { type: EFFECT_TYPE.DAMAGE, multiplier: 1.75 },
+        effect: { type: EFFECT_TYPE.DAMAGE, multiplier: 2.0 },
       },
       {
         id: 'mage_arcane_mind',
@@ -1543,10 +1543,10 @@ export const SKILL_TREES = {
         id: 'ranger_steady_aim',
         name: 'Steady Aim',
         emoji: '🎯',
-        description: '+15% damage to full HP targets, +10% damage at range.',
+        description: '+15% crit chance, +15% damage to full HP targets.',
         type: SKILL_TYPE.PASSIVE,
         tier: 0,
-        passive: { type: 'opener_bonus', damageBonus: 15, rangeDamageBonus: 10 },
+        passive: { type: 'crit_bonus', percent: 15, openerDamageBonus: 15 },
       },
 
       // Tier 1
