@@ -12,7 +12,7 @@ const JOURNEY_MILESTONES = [
   { id: 'slot3', name: 'DPS Unlocked', description: 'Recruit a DPS (Slot 3)', dungeonRequired: 3, type: 'hero' },
   { id: 'shop', name: 'Item Shop', description: 'Buy equipment', dungeonRequired: 5, type: 'feature' },
   { id: 'slot4', name: 'Full Party', description: 'Recruit 4th hero (Slot 4)', dungeonRequired: 5, type: 'hero' },
-  { id: 'autorun', name: 'Auto-Run', description: 'Unlock automatic dungeon runs', dungeonRequired: 5, type: 'feature', requiresFullParty: true },
+  { id: 'autorun', name: 'Auto-Run', description: 'Unlock automatic dungeon runs', dungeonRequired: 5, type: 'feature' },
   { id: 'd10', name: 'Dungeon 10', description: 'Reach the deep dungeons', dungeonRequired: 10, type: 'progress' },
   { id: 'd20', name: 'Dungeon 20', description: 'Master the depths', dungeonRequired: 20, type: 'progress' },
   { id: 'd30', name: 'Dungeon 30', description: 'Conquer the final dungeon', dungeonRequired: 30, type: 'progress' },
@@ -44,23 +44,15 @@ const StatsScreen = () => {
   const stats = useGameStore(state => state.stats);
   const heroes = useGameStore(state => state.heroes);
   const highestDungeonCleared = useGameStore(state => state.highestDungeonCleared);
-  const featureUnlocks = useGameStore(state => state.featureUnlocks);
-
   const [activeTab, setActiveTab] = useState('overview');
 
   // Calculate journey milestone progress
   const journeyProgress = useMemo(() => {
-    const activeHeroCount = heroes.filter(Boolean).length;
-
     return JOURNEY_MILESTONES.map(milestone => {
       let isComplete = false;
       let progress = 0;
 
-      if (milestone.requiresFullParty) {
-        // Auto-run requires full party
-        isComplete = featureUnlocks?.autoAdvance || activeHeroCount >= 4;
-        progress = Math.min(100, (activeHeroCount / 4) * 100);
-      } else if (milestone.type === 'hero') {
+      if (milestone.type === 'hero') {
         // Hero slots unlock based on dungeon and recruitment
         const slotIndex = parseInt(milestone.id.replace('slot', '')) - 1;
         isComplete = highestDungeonCleared >= milestone.dungeonRequired && heroes[slotIndex];
@@ -76,7 +68,7 @@ const StatsScreen = () => {
 
       return { ...milestone, isComplete, progress };
     });
-  }, [heroes, highestDungeonCleared, featureUnlocks]);
+  }, [heroes, highestDungeonCleared]);
 
   // Get monster names for kill breakdown
   const monsterKillsWithNames = useMemo(() => {

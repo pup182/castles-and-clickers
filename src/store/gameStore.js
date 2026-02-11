@@ -546,7 +546,7 @@ export const useGameStore = create(
 
       // Feature unlock tracking
       featureUnlocks: {
-        autoAdvance: false, // Unlocks when player first has a full party (4 heroes)
+        autoAdvance: false, // Unlocks when player clears Dungeon 5
         homesteadSeen: false, // Tracks if player has visited homestead after unlock
       },
 
@@ -629,9 +629,6 @@ export const useGameStore = create(
           heroes: newHeroes,
           usedSlotDiscounts: newUsedDiscounts,
         });
-
-        // Check if this unlocks auto-advance (first full party)
-        get().checkAutoAdvanceUnlock();
 
         return true;
       },
@@ -793,9 +790,6 @@ export const useGameStore = create(
           heroes: newHeroes,
           bench: newBench,
         });
-
-        // Check if this unlocks auto-advance (first full party)
-        get().checkAutoAdvanceUnlock();
 
         return true;
       },
@@ -985,9 +979,6 @@ export const useGameStore = create(
             },
           }));
         }
-
-        // Check if this unlocks auto-advance (first full party)
-        get().checkAutoAdvanceUnlock();
 
         return true;
       },
@@ -1639,6 +1630,9 @@ export const useGameStore = create(
 
         // Reset hero HP after all party changes are applied
         get().resetHeroHp();
+
+        // Check if dungeon clear unlocks auto-advance (D5)
+        get().checkAutoAdvanceUnlock();
       },
 
       // Process pending recruits (called after dungeon ends)
@@ -1797,13 +1791,12 @@ export const useGameStore = create(
         }));
       },
 
-      // Check and unlock auto-advance if player has full party
+      // Check and unlock auto-advance if player has cleared dungeon 5
       checkAutoAdvanceUnlock: () => {
-        const { heroes, featureUnlocks } = get();
+        const { highestDungeonCleared, featureUnlocks } = get();
         if (featureUnlocks?.autoAdvance) return; // Already unlocked
 
-        const activeHeroes = heroes.filter(Boolean).length;
-        if (activeHeroes >= 4) {
+        if (highestDungeonCleared >= 5) {
           set(state => ({
             featureUnlocks: {
               ...state.featureUnlocks,

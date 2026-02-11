@@ -271,7 +271,7 @@ const GameLayout = () => {
       // Features
       { type: 'feature', name: 'Homestead', dungeonRequired: 3 },
       { type: 'feature', name: 'Item Shop', dungeonRequired: 5 },
-      { type: 'feature', name: 'Auto-Run', dungeonRequired: 5 }, // Unlocks with full party at D5
+      { type: 'feature', name: 'Auto-Run', dungeonRequired: 5 },
     ];
 
     // Filter to only unlocks the player hasn't reached yet
@@ -390,7 +390,7 @@ const GameLayout = () => {
               }`}
               title={featureUnlocks?.autoAdvance
                 ? "Auto-advance to next dungeon after completion"
-                : "Unlock with full party (4 heroes)"}
+                : "Clear Dungeon 5 to unlock"}
               disabled={!featureUnlocks?.autoAdvance}
             >
               AUTO {dungeonSettings?.autoAdvance ? 'ON' : 'OFF'}
