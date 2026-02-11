@@ -20,7 +20,7 @@ import EquipmentScreen from './EquipmentScreen';
 import SkillTreeScreen from './SkillTreeScreen';
 import HomesteadScreen from './HomesteadScreen';
 import ShopScreen from './ShopScreen';
-import DungeonSelectorModal from './DungeonSelectorModal';
+import DungeonMap from './DungeonMap';
 import WelcomeBackModal from './WelcomeBackModal';
 import LootNotifications from './LootNotifications';
 import { PartyIcon, TreeIcon, BagIcon, HomeIcon, CastleIcon, GoldIcon, TrophyIcon, SkullIcon, ChestIcon, ChartIcon } from './icons/ui';
@@ -571,8 +571,8 @@ const GameLayout = () => {
         <StatsScreen />
       </ModalOverlay>
 
-      <ModalOverlay isOpen={activeModal === 'dungeonSelect'} onClose={closeModal} title="Select Dungeon" size="lg">
-        <DungeonSelectorModal onStart={handleStartDungeon} onClose={closeModal} />
+      <ModalOverlay isOpen={activeModal === 'dungeonSelect'} onClose={closeModal} title="Dungeon Map" size="lg">
+        <DungeonMap onStart={handleStartDungeon} onClose={closeModal} />
       </ModalOverlay>
 
       {/* Dungeon Transition Screen */}
