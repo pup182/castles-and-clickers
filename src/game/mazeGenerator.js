@@ -382,23 +382,78 @@ export function generateMazeDungeon(level) {
     }
   }
 
-  // Finally, connect boss room to nearest non-boss room (makes it a dead-end)
+  // Finally, connect boss room to the DEEPEST room (furthest path from entrance)
+  // This ensures boss room is always at the end of the dungeon, not in the middle
   if (rooms.length > 1) {
-    let bestDist = Infinity;
-    let bestRoom = 0;
+    // Calculate path distance from entrance (room 0) to each room using BFS on room graph
+    const roomDistances = new Array(bossRoomIndex).fill(Infinity);
+    roomDistances[0] = 0;
 
+    // Build adjacency list from the corridors we've created
+    // Check which rooms are connected by seeing if there's a walkable path between their centers
+    const roomConnections = new Map();
     for (let i = 0; i < bossRoomIndex; i++) {
-      const center1 = getRoomCenter(rooms[i]);
-      const center2 = getRoomCenter(rooms[bossRoomIndex]);
-      const dist = Math.abs(center1.x - center2.x) + Math.abs(center1.y - center2.y);
+      roomConnections.set(i, []);
+    }
 
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestRoom = i;
+    // Check each pair of non-boss rooms for connectivity
+    for (let i = 0; i < bossRoomIndex; i++) {
+      for (let j = i + 1; j < bossRoomIndex; j++) {
+        const center1 = getRoomCenter(rooms[i]);
+        const center2 = getRoomCenter(rooms[j]);
+        // Rooms are connected if their centers are reasonably close (connected by corridor)
+        const dist = Math.abs(center1.x - center2.x) + Math.abs(center1.y - center2.y);
+        // If rooms were connected by MST, they should have a corridor between them
+        // Use a heuristic: if Manhattan distance is reasonable, check if path exists
+        if (dist < width / 2) {
+          // Simple check: see if there's a floor/corridor path
+          const path = findPath(grid, center1, center2, []);
+          if (path && path.length < dist * 2) {
+            roomConnections.get(i).push(j);
+            roomConnections.get(j).push(i);
+          }
+        }
       }
     }
 
-    connectRooms(grid, rooms[bestRoom], rooms[bossRoomIndex]);
+    // BFS from entrance to find path distances
+    const queue = [0];
+    while (queue.length > 0) {
+      const current = queue.shift();
+      const neighbors = roomConnections.get(current) || [];
+      for (const neighbor of neighbors) {
+        if (roomDistances[neighbor] === Infinity) {
+          roomDistances[neighbor] = roomDistances[current] + 1;
+          queue.push(neighbor);
+        }
+      }
+    }
+
+    // Find the room with maximum path distance from entrance
+    let deepestRoom = 0;
+    let maxPathDist = 0;
+    for (let i = 0; i < bossRoomIndex; i++) {
+      if (roomDistances[i] !== Infinity && roomDistances[i] > maxPathDist) {
+        maxPathDist = roomDistances[i];
+        deepestRoom = i;
+      }
+    }
+
+    // If no path found (disconnected graph), fall back to furthest Manhattan distance
+    if (maxPathDist === 0) {
+      const entranceCenter = getRoomCenter(rooms[0]);
+      let maxDist = 0;
+      for (let i = 1; i < bossRoomIndex; i++) {
+        const center = getRoomCenter(rooms[i]);
+        const dist = Math.abs(center.x - entranceCenter.x) + Math.abs(center.y - entranceCenter.y);
+        if (dist > maxDist) {
+          maxDist = dist;
+          deepestRoom = i;
+        }
+      }
+    }
+
+    connectRooms(grid, rooms[deepestRoom], rooms[bossRoomIndex]);
   }
 
   // Add some extra connections for variety (loops)
