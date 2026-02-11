@@ -8,6 +8,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Castles & Clickers is an idle dungeon crawler browser game built with React 19, Zustand, and Vite. Heroes explore procedurally generated dungeons, fight monsters with initiative-based combat, collect loot with affixes, and progress through skill trees and homestead upgrades.
 
+## Version Number
+
+**IMPORTANT: Bump the version number on every git push.**
+
+The version is displayed in the header and located in:
+- `src/components/GameLayout.jsx` (line ~348, in the header h1 element)
+
+Use semantic versioning: `v0.0.X` for patches, `v0.X.0` for features, `vX.0.0` for major changes.
+
 ## Development Commands
 
 ```bash

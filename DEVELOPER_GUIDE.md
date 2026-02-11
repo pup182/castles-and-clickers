@@ -887,6 +887,20 @@ Tier/zone colors used throughout the UI:
 
 ---
 
+## Version Number
+
+**IMPORTANT: Bump the version number on every git push.**
+
+The version is displayed in the UI header and located in:
+- `src/components/GameLayout.jsx` (in the header h1 element)
+
+Use semantic versioning:
+- `v0.0.X` - Patch: bug fixes, small tweaks
+- `v0.X.0` - Minor: new features, significant changes
+- `vX.0.0` - Major: breaking changes, major milestones
+
+---
+
 ## Conventions
 
 ### Naming
