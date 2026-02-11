@@ -271,6 +271,7 @@ const GameLayout = () => {
       // Features
       { type: 'feature', name: 'Homestead', dungeonRequired: 3 },
       { type: 'feature', name: 'Item Shop', dungeonRequired: 5 },
+      { type: 'feature', name: 'Auto-Run', dungeonRequired: 5 }, // Unlocks with full party at D5
     ];
 
     // Filter to only unlocks the player hasn't reached yet
