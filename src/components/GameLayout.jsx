@@ -258,15 +258,36 @@ const GameLayout = () => {
     return false;
   }, [heroes, highestDungeonCleared]);
 
-  // Find next locked hero slot to show unlock progress
-  const nextHeroSlotUnlock = useMemo(() => {
-    for (let i = 0; i < PARTY_SLOTS.length; i++) {
-      const slot = PARTY_SLOTS[i];
-      if (highestDungeonCleared < slot.dungeonRequired) {
-        return { dungeonRequired: slot.dungeonRequired, slotNumber: i + 1 };
-      }
-    }
-    return null; // All slots unlocked
+  // Find all upcoming unlocks at the next milestone dungeon level
+  const upcomingUnlocks = useMemo(() => {
+    // Define all unlockable features
+    const allUnlocks = [
+      // Hero slots
+      ...PARTY_SLOTS.slice(1).map((slot, i) => ({
+        type: 'hero',
+        name: `Hero Slot ${i + 2}`,
+        dungeonRequired: slot.dungeonRequired,
+      })),
+      // Features
+      { type: 'feature', name: 'Homestead', dungeonRequired: 3 },
+      { type: 'feature', name: 'Item Shop', dungeonRequired: 5 },
+    ];
+
+    // Filter to only unlocks the player hasn't reached yet
+    const lockedUnlocks = allUnlocks.filter(u => highestDungeonCleared < u.dungeonRequired);
+
+    if (lockedUnlocks.length === 0) return null;
+
+    // Find the lowest dungeon requirement among locked unlocks
+    const nextMilestone = Math.min(...lockedUnlocks.map(u => u.dungeonRequired));
+
+    // Return all unlocks at that milestone level
+    const unlocksAtMilestone = lockedUnlocks.filter(u => u.dungeonRequired === nextMilestone);
+
+    return {
+      dungeonRequired: nextMilestone,
+      unlocks: unlocksAtMilestone,
+    };
   }, [highestDungeonCleared]);
 
   const closeModal = () => setActiveModal(null);
@@ -472,9 +493,14 @@ const GameLayout = () => {
                     New Hero Slot Available!
                   </button>
                 )}
-                {!hasNewHeroSlotAvailable && nextHeroSlotUnlock && heroes.length > 0 && (
+                {!hasNewHeroSlotAvailable && upcomingUnlocks && heroes.length > 0 && (
                   <div className="mb-4 px-4 py-2 bg-blue-600/20 border border-blue-500/30 rounded text-blue-300 text-sm">
-                    Clear Dungeon {nextHeroSlotUnlock.dungeonRequired} to unlock Hero Slot {nextHeroSlotUnlock.slotNumber}
+                    <div className="font-bold mb-1">Clear Dungeon {upcomingUnlocks.dungeonRequired} to unlock:</div>
+                    <ul className="list-disc list-inside">
+                      {upcomingUnlocks.unlocks.map((unlock, idx) => (
+                        <li key={idx}>{unlock.name}</li>
+                      ))}
+                    </ul>
                   </div>
                 )}
                 {heroes.length === 0 ? (

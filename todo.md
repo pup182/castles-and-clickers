@@ -46,8 +46,9 @@
 
 ## Progression Gating
 - [x] Auto dungeon run unlocks after first full party (permanently unlocked, toggle in header)
-- [ ] Auto-run button needs a notification/badge when it first becomes available
-- [ ] Auto-run button should be visible but disabled before unlocking
+- [x] Auto-run button needs a notification/badge when it first becomes available
+- [x] Auto-run button should be visible but disabled before unlocking
+- [x] Journey tab in Stats showing progression roadmap and upcoming unlocks
 
 ## Hero Management
 - [ ] Consider why players would switch classes or retire a hero

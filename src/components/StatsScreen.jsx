@@ -4,6 +4,20 @@ import { CLASSES } from '../data/classes';
 import { MONSTERS } from '../data/monsters';
 import { TrophyIcon, SkullIcon, GoldIcon, HeartIcon, SwordIcon, ShieldIcon, CrownIcon, ChestIcon, StarIcon, SpeedIcon } from './icons/ui';
 
+// Journey milestone definitions
+const JOURNEY_MILESTONES = [
+  { id: 'slot1', name: 'First Hero', description: 'Recruit your first Tank', dungeonRequired: 0, type: 'hero' },
+  { id: 'slot2', name: 'Healer Unlocked', description: 'Recruit a Healer (Slot 2)', dungeonRequired: 1, type: 'hero' },
+  { id: 'homestead', name: 'Homestead', description: 'Unlock base upgrades', dungeonRequired: 3, type: 'feature' },
+  { id: 'slot3', name: 'DPS Unlocked', description: 'Recruit a DPS (Slot 3)', dungeonRequired: 3, type: 'hero' },
+  { id: 'shop', name: 'Item Shop', description: 'Buy equipment', dungeonRequired: 5, type: 'feature' },
+  { id: 'slot4', name: 'Full Party', description: 'Recruit 4th hero (Slot 4)', dungeonRequired: 5, type: 'hero' },
+  { id: 'autorun', name: 'Auto-Run', description: 'Unlock automatic dungeon runs', dungeonRequired: 5, type: 'feature', requiresFullParty: true },
+  { id: 'd10', name: 'Dungeon 10', description: 'Reach the deep dungeons', dungeonRequired: 10, type: 'progress' },
+  { id: 'd20', name: 'Dungeon 20', description: 'Master the depths', dungeonRequired: 20, type: 'progress' },
+  { id: 'd30', name: 'Dungeon 30', description: 'Conquer the final dungeon', dungeonRequired: 30, type: 'progress' },
+];
+
 // Format large numbers with K/M suffixes
 const formatNumber = (num) => {
   if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -30,8 +44,39 @@ const StatsScreen = () => {
   const stats = useGameStore(state => state.stats);
   const heroes = useGameStore(state => state.heroes);
   const highestDungeonCleared = useGameStore(state => state.highestDungeonCleared);
+  const featureUnlocks = useGameStore(state => state.featureUnlocks);
 
   const [activeTab, setActiveTab] = useState('overview');
+
+  // Calculate journey milestone progress
+  const journeyProgress = useMemo(() => {
+    const activeHeroCount = heroes.filter(Boolean).length;
+
+    return JOURNEY_MILESTONES.map(milestone => {
+      let isComplete = false;
+      let progress = 0;
+
+      if (milestone.requiresFullParty) {
+        // Auto-run requires full party
+        isComplete = featureUnlocks?.autoAdvance || activeHeroCount >= 4;
+        progress = Math.min(100, (activeHeroCount / 4) * 100);
+      } else if (milestone.type === 'hero') {
+        // Hero slots unlock based on dungeon and recruitment
+        const slotIndex = parseInt(milestone.id.replace('slot', '')) - 1;
+        isComplete = highestDungeonCleared >= milestone.dungeonRequired && heroes[slotIndex];
+        progress = highestDungeonCleared >= milestone.dungeonRequired ? (heroes[slotIndex] ? 100 : 50) :
+          Math.min(50, (highestDungeonCleared / milestone.dungeonRequired) * 50);
+      } else {
+        // Features and progress milestones based on dungeon level
+        isComplete = highestDungeonCleared >= milestone.dungeonRequired;
+        progress = milestone.dungeonRequired > 0
+          ? Math.min(100, (highestDungeonCleared / milestone.dungeonRequired) * 100)
+          : 100;
+      }
+
+      return { ...milestone, isComplete, progress };
+    });
+  }, [heroes, highestDungeonCleared, featureUnlocks]);
 
   // Get monster names for kill breakdown
   const monsterKillsWithNames = useMemo(() => {
@@ -79,6 +124,7 @@ const StatsScreen = () => {
     { id: 'overview', label: 'Overview' },
     { id: 'combat', label: 'Combat' },
     { id: 'heroes', label: 'Heroes' },
+    { id: 'journey', label: 'Journey' },
   ];
 
   return (
@@ -228,6 +274,121 @@ const StatsScreen = () => {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Journey Tab */}
+      {activeTab === 'journey' && (
+        <div className="space-y-4">
+          {/* Progress Overview */}
+          <div className="pixel-panel p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm text-[var(--color-text-dim)]">Journey Progress</h3>
+              <span className="text-[var(--color-gold)] font-bold">
+                {journeyProgress.filter(m => m.isComplete).length} / {journeyProgress.length}
+              </span>
+            </div>
+            <div className="w-full h-2 bg-[var(--color-surface)] rounded overflow-hidden">
+              <div
+                className="h-full bg-[var(--color-gold)] transition-all duration-500"
+                style={{ width: `${(journeyProgress.filter(m => m.isComplete).length / journeyProgress.length) * 100}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Milestone List */}
+          <div className="space-y-2">
+            {journeyProgress.map((milestone, index) => {
+              const isNext = !milestone.isComplete && (index === 0 || journeyProgress[index - 1].isComplete);
+              return (
+                <div
+                  key={milestone.id}
+                  className={`pixel-panel p-3 flex items-center gap-3 transition-all ${
+                    milestone.isComplete
+                      ? 'border-[var(--color-green)]/50'
+                      : isNext
+                      ? 'border-[var(--color-gold)]/50 bg-[var(--color-gold)]/5'
+                      : 'opacity-60'
+                  }`}
+                >
+                  {/* Completion indicator */}
+                  <div className={`w-8 h-8 flex items-center justify-center rounded ${
+                    milestone.isComplete
+                      ? 'bg-[var(--color-green)]/20 text-[var(--color-green)]'
+                      : isNext
+                      ? 'bg-[var(--color-gold)]/20 text-[var(--color-gold)]'
+                      : 'bg-[var(--color-surface)] text-[var(--color-text-dim)]'
+                  }`}>
+                    {milestone.isComplete ? (
+                      <span className="text-lg">✓</span>
+                    ) : (
+                      <span className="text-xs font-bold">D{milestone.dungeonRequired}</span>
+                    )}
+                  </div>
+
+                  {/* Milestone info */}
+                  <div className="flex-1">
+                    <div className={`font-bold ${
+                      milestone.isComplete
+                        ? 'text-[var(--color-green)]'
+                        : isNext
+                        ? 'text-[var(--color-gold)]'
+                        : 'text-[var(--color-text-dim)]'
+                    }`}>
+                      {milestone.name}
+                    </div>
+                    <div className="text-xs text-[var(--color-text-dim)]">
+                      {milestone.description}
+                    </div>
+                  </div>
+
+                  {/* Progress bar for incomplete milestones */}
+                  {!milestone.isComplete && (
+                    <div className="w-20">
+                      <div className="w-full h-1 bg-[var(--color-surface)] rounded overflow-hidden">
+                        <div
+                          className={`h-full ${isNext ? 'bg-[var(--color-gold)]' : 'bg-[var(--color-text-dim)]'}`}
+                          style={{ width: `${milestone.progress}%` }}
+                        />
+                      </div>
+                      <div className="text-xs text-center text-[var(--color-text-dim)] mt-0.5">
+                        {Math.floor(milestone.progress)}%
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Type badge */}
+                  <div className={`text-xs px-2 py-0.5 rounded ${
+                    milestone.type === 'hero'
+                      ? 'bg-[var(--color-blue)]/20 text-[var(--color-blue)]'
+                      : milestone.type === 'feature'
+                      ? 'bg-[var(--color-purple)]/20 text-[var(--color-purple)]'
+                      : 'bg-[var(--color-gold)]/20 text-[var(--color-gold)]'
+                  }`}>
+                    {milestone.type === 'hero' ? 'Hero' : milestone.type === 'feature' ? 'Feature' : 'Goal'}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Hint for next milestone */}
+          {journeyProgress.some(m => !m.isComplete) && (
+            <div className="pixel-panel p-3 bg-[var(--color-gold)]/5 border-[var(--color-gold)]/30">
+              <div className="text-xs text-[var(--color-text-dim)]">Next Goal</div>
+              {(() => {
+                const nextMilestone = journeyProgress.find(m => !m.isComplete);
+                if (!nextMilestone) return null;
+                return (
+                  <div className="text-sm text-[var(--color-gold)]">
+                    {nextMilestone.requiresFullParty
+                      ? `Recruit ${4 - heroes.filter(Boolean).length} more hero${4 - heroes.filter(Boolean).length !== 1 ? 'es' : ''} to unlock ${nextMilestone.name}`
+                      : `Clear Dungeon ${nextMilestone.dungeonRequired} to unlock ${nextMilestone.name}`}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
         </div>
       )}
     </div>
