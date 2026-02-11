@@ -1525,10 +1525,10 @@ export const SKILL_TREES = {
         id: 'ranger_eagle_eye',
         name: 'Eagle Eye',
         emoji: '👁️',
-        description: '+4 attack.',
+        description: '+10 attack.',
         type: SKILL_TYPE.PASSIVE,
         tier: 0,
-        passive: { type: 'stat_bonus', stats: { attack: 4 } },
+        passive: { type: 'stat_bonus', stats: { attack: 10 } },
       },
       {
         id: 'ranger_swift_quiver',
