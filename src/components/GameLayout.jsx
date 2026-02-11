@@ -396,7 +396,7 @@ const GameLayout = () => {
               AUTO {dungeonSettings?.autoAdvance ? 'ON' : 'OFF'}
             </button>
             {featureUnlocks?.autoAdvance && !featureUnlocks?.autoAdvanceSeen && (
-              <span className="absolute -top-1 -right-1 px-1 text-[10px] bg-yellow-500 text-black rounded font-bold animate-pulse">
+              <span className="pixel-badge absolute -top-2 -right-2 animate-pixel-blink">
                 NEW
               </span>
             )}
