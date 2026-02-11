@@ -435,10 +435,10 @@ export const SKILL_TREES = {
         id: 'knight_stalwart',
         name: 'Stalwart',
         emoji: '🏛️',
-        description: 'Reduce all damage taken by 10%.',
+        description: '+15% dodge chance, reduce damage taken by 10%.',
         type: SKILL_TYPE.PASSIVE,
         tier: 0,
-        passive: { type: 'damage_reduction', percent: 10 },
+        passive: { type: 'dodge_chance', percent: 15, damageReduction: 10 },
       },
 
       // Tier 1
