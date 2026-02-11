@@ -16,16 +16,24 @@
 - [ ] Skill animations (icon + name display) should linger for less time
 - [ ] Consider uncapping animations on screen (currently stuff gets cut off before animation finishes)
 - [ ] Unique animations for each skill (not just icon display)
-- [ ] Dungeon select and dungeon overview screens need redesign (look more like a map, better visual overview, clearer progression outlook)
+- [x] Dungeon select and dungeon overview screens need redesign (look more like a map, better visual overview, clearer progression outlook)
 - [x] "No active dungeon" screen should have a one-click button to start next dungeon
+- [ ] More unique tilesets for each dungeon type
 
 ## AI/Combat Improvements
 - [x] Smarter ability decision making (e.g., don't use AoE spells on single enemies)
+- [ ] Monster balance pass
 
 ## Boss Enhancements
 - [x] Unique names for bosses (generated or from name pool)
 - [x] Unique boss sprites (distinct from regular monsters)
 - [x] Boss-specific visual flair (auras, size, colors, etc.)
+- [ ] Unique boss for each dungeon zone's pinnacle level
+- [ ] Show pinnacle boss on dungeon progression screen
+
+## Elite Mobs
+- [ ] Elite enemies with distinct health bars and more attacks
+- [ ] Spawn among regular enemies in higher level dungeons
 
 ## Bestiary
 - [x] Monster collection/log showing all encountered creatures (uses in-game sprites)
@@ -35,6 +43,7 @@
 - [ ] Monster descriptions/flavor text for each creature
 - [ ] Make kill count display bigger/more prominent
 - [ ] Need more monsters for later levels (no unique monsters for Void and Volcanic Caverns)
+- [ ] Track unique/pinnacle bosses in the bestiary
 
 ## Milestones Rework
 - [ ] Rethink milestones system completely
@@ -99,6 +108,8 @@
 - [ ] Prestige rewards and bonuses
 - [ ] What resets vs what persists
 - [ ] Multiple prestige tiers?
+- [ ] Gear score progression: after max character level, gear drops with gear score as next progression path
+- [ ] Endgame skill tree with more nodes and passives (Diablo paragon-style)
 
 ## 7. Unlockable Classes
 - [ ] Lock some classes behind achievements/progression

@@ -1,6 +1,5 @@
 import { memo, useEffect, useRef, useMemo, useState } from 'react';
 import { useGameStore, xpForLevel } from '../store/gameStore';
-import { PHASES } from '../game/constants';
 import { getSkillById, SKILL_TYPE } from '../data/skillTrees';
 import { STATUS_EFFECTS, STATUS_TYPE } from '../data/statusEffects';
 import { CLASSES, ROLE_INFO } from '../data/classes';
@@ -266,35 +265,12 @@ const Sidebar = memo(({
     statusEffects,
     skillBuffs,
     usedPhoenixRevives,
-    monsters: displayMonsters,
-    bossUnlocked,
-    round,
-    phase,
   } = useSidebarState();
 
   // OPTIMIZATION: Use individual selectors to avoid re-renders on unrelated state changes
   const highestDungeonCleared = useGameStore(state => state.highestDungeonCleared);
   const dungeonUnlocked = useGameStore(state => state.dungeonUnlocked);
   const maxDungeonLevel = useGameStore(state => state.maxDungeonLevel);
-
-  // Monster counts for dungeon status display (displayMonsters comes from useSidebarState)
-  const aliveMonsters = displayMonsters.filter(m => m.stats.hp > 0 && !m.isBoss);
-  const totalMonsters = displayMonsters.filter(m => !m.isBoss).length;
-  const killedMonsters = totalMonsters - aliveMonsters.length;
-  const boss = displayMonsters.find(m => m.isBoss);
-  const bossAlive = boss && boss.stats.hp > 0;
-
-  const getPhaseDisplay = () => {
-    switch (phase) {
-      case PHASES.EXPLORING: return { text: 'Exploring', color: 'text-blue-400' };
-      case PHASES.COMBAT: return { text: 'In Combat', color: 'text-red-400' };
-      case PHASES.COMPLETE: return { text: 'Complete!', color: 'text-green-400' };
-      case PHASES.DEFEAT: return { text: 'Defeated', color: 'text-red-500' };
-      default: return { text: 'Idle', color: 'text-gray-400' };
-    }
-  };
-
-  const phaseInfo = getPhaseDisplay();
 
   return (
     <aside className="w-64 pixel-panel-dark flex flex-col h-full" style={{ borderRadius: 0 }}>
@@ -326,56 +302,13 @@ const Sidebar = memo(({
         )}
       </div>
 
-      {/* Dungeon Status */}
-      <div className="p-3 border-b-3 border-[var(--color-border)]">
-        <h3 className="pixel-subtitle mb-2">Dungeon</h3>
-        {dungeon ? (
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-white font-medium">Level {dungeon.level}</span>
-              <span className={`text-xs ${phaseInfo.color}`}>{phaseInfo.text}</span>
-            </div>
-
-            {/* Progress bar */}
-            <div>
-              <div className="flex justify-between text-xs text-[var(--color-text-dim)] mb-1">
-                <span className="pixel-label">Enemies</span>
-                <span>{killedMonsters}/{totalMonsters}</span>
-              </div>
-              <div className="pixel-bar h-[10px]">
-                <div
-                  className="pixel-bar-fill pixel-bar-blue"
-                  style={{ width: `${totalMonsters > 0 ? (killedMonsters / totalMonsters) * 100 : 0}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Boss status */}
-            {boss && (
-              <div className={`text-xs ${bossUnlocked ? 'text-red-400' : 'text-gray-500'}`}>
-                {bossAlive ? (
-                  <div>
-                    <div className="font-medium">{boss.name}</div>
-                    {boss.title && <div className="text-[10px] text-gray-400">{boss.title}</div>}
-                    {!bossUnlocked && <div className="text-[10px] text-gray-500">(Locked)</div>}
-                  </div>
-                ) : (
-                  'Boss Defeated!'
-                )}
-              </div>
-            )}
-
-            {/* Round info */}
-            <div className="text-xs text-gray-500">
-              Round {round}
-            </div>
-          </div>
-        ) : (
-          <div className="text-gray-500 text-xs">
-            No active dungeon
-          </div>
-        )}
-      </div>
+      {/* Dungeon Status - Simplified (main info shown in Zone Header above gameplay) */}
+      {!dungeon && (
+        <div className="p-3 border-b-3 border-[var(--color-border)]">
+          <h3 className="pixel-subtitle mb-2">Dungeon</h3>
+          <div className="text-gray-500 text-xs">No active dungeon</div>
+        </div>
+      )}
 
       {/* Progress Overview */}
       <div className="p-3 border-b-3 border-[var(--color-border)]">

@@ -39,7 +39,7 @@ export const useGameLoop = ({
   const gameTick = useCallback(() => {
     // OPTIMIZATION: Get state imperatively at start of tick
     const state = useGameStore.getState();
-    const { roomCombat, dungeon, dungeonSettings, maxDungeonLevel, permanentBonuses } = state;
+    const { roomCombat, dungeon, dungeonSettings, maxDungeonLevel } = state;
     const homesteadBonuses = state.getHomesteadBonuses();
 
     if (!roomCombat || !dungeon) return;
@@ -73,8 +73,7 @@ export const useGameLoop = ({
         if (aliveMonsters.length === 0) {
           // OPTIMIZATION: Single batched update
           updateRoomCombat({ phase: PHASES.COMPLETE, tick: 0 });
-          const pb = permanentBonuses || {};
-          const goldMultiplier = 1 + (homesteadBonuses.goldFind || 0) + (pb.goldFind || 0);
+          const goldMultiplier = 1 + (homesteadBonuses.goldFind || 0);
           const bonus = Math.floor(100 * dungeon.level * goldMultiplier);
           addGold(bonus);
           incrementStat('totalDungeonsCleared');

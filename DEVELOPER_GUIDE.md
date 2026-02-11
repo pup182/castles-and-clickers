@@ -69,7 +69,7 @@ src/
 │   ├── homestead.js         # Building definitions
 │   ├── raids.js             # Special encounters
 │   ├── uniqueItems.js       # Legendary items
-│   └── milestones.js        # Achievements
+│   └── milestones.js        # Dungeon tier definitions
 │
 ├── game/                     # Core mechanics
 │   ├── combatEngine.js      # Combat initialization
@@ -133,7 +133,6 @@ Single Zustand store (`gameStore.js`) with localStorage persistence.
   inventory: [item],
   maxDungeonLevel: number,
   buildings: { buildingId: level },
-  permanentBonuses: { ... },
   stats: { totalDungeonsCleared, totalMonstersKilled, ... },
 }
 ```
@@ -779,6 +778,112 @@ handleCombatTick():
 | `game/monsterAI.js` | 300+ lines | AI behaviors |
 | `data/monsters.js` | 600+ lines | Monster definitions |
 | `data/itemAffixes.js` | 800+ lines | Affix definitions |
+
+---
+
+## Art Style
+
+This game uses a **pixel art RPG aesthetic**. All visual elements must maintain this consistent style.
+
+### Icons - SVG Pixel Art
+
+**NEVER use emojis in the UI.** Always use SVG pixel art icons from `src/components/icons/`.
+
+| File | Contents |
+|------|----------|
+| `ui.jsx` | General UI (gold, hearts, swords, shields, crowns, etc.) |
+| `monsters.jsx` | Monster sprites by ID |
+| `weapons.jsx` | Equipment/weapon icons |
+| `skills.jsx` | Skill and ability icons |
+| `statusEffects.jsx` | Buff/debuff indicators |
+| `ClassIcon.jsx` | Hero class portraits |
+| `HeroIcon.jsx` | Hero rendering component |
+| `ItemIcon.jsx` | Equipment rendering component |
+
+### Icon Architecture
+
+All icons use a 16x16 grid system with pixelated rendering:
+
+```jsx
+// IconWrapper - base SVG container
+const IconWrapper = ({ children, size = 32, className = '' }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 16 16"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    style={{ imageRendering: 'pixelated' }}
+  >
+    {children}
+  </svg>
+);
+
+// P helper - places rectangular "pixels"
+const P = ({ x, y, c, w = 1, h = 1 }) => (
+  <rect x={x} y={y} width={w} height={h} fill={c} />
+);
+```
+
+### Creating New Icons
+
+Feel free to create new SVG icons that match the existing art style. Guidelines:
+
+1. **Use 16x16 grid** - All coordinates 0-15
+2. **Use Tailwind colors** - Hex values from Tailwind palette for consistency
+3. **Add depth** - Lighter colors top-left (highlights), darker bottom-right (shadows)
+4. **Keep it simple** - Icons must be readable at 16-32px sizes
+5. **Export properly** - Add to appropriate file based on category
+
+Example icon:
+
+```jsx
+export const TreasureIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Chest base */}
+    <P x={2} y={8} w={12} h={6} c="#92400e" />
+    {/* Chest lid */}
+    <P x={2} y={6} w={12} h={3} c="#b45309" />
+    <P x={3} y={5} w={10} h={1} c="#d97706" />
+    {/* Lock */}
+    <P x={7} y={9} w={2} h={3} c="#fbbf24" />
+    {/* Highlight */}
+    <P x={3} y={7} w={2} h={1} c="#d97706" />
+  </IconWrapper>
+);
+```
+
+### CSS Classes
+
+Use pixel-styled CSS classes for UI consistency:
+
+| Class | Usage |
+|-------|-------|
+| `pixel-panel` | Bordered container with background |
+| `pixel-panel-dark` | Darker variant for nested panels |
+| `pixel-btn` | Base button style |
+| `pixel-btn-primary` | Primary action button |
+| `pixel-btn-secondary` | Secondary action button |
+| `pixel-bar` | Progress bar container |
+| `pixel-bar-fill` | Progress bar fill |
+| `pixel-text` | Standard text |
+| `pixel-label` | Small label text |
+| `pixel-title` | Large title text |
+| `pixel-subtitle` | Medium subtitle text |
+
+### Theme Colors
+
+Tier/zone colors used throughout the UI:
+
+| Theme | Color | Hex |
+|-------|-------|-----|
+| Cave | Cyan | `#06b6d4` |
+| Crypt | Lime | `#84cc16` |
+| Forest | Green | `#22c55e` |
+| Castle | Amber | `#f59e0b` |
+| Volcano | Red | `#ef4444` |
+| Void | Purple | `#a855f7` |
 
 ---
 

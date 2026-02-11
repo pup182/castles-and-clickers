@@ -9,7 +9,6 @@ export const RAIDS = {
     emoji: '🐉',
     description: 'Face the Dragon Council in their ancient lair',
     requiredLevel: 15,
-    unlockMilestone: 'milestone_15',
     statMultiplier: 2.0,
     weeklyLockout: true,
     wings: [
@@ -96,7 +95,6 @@ export const RAIDS = {
     emoji: '💀',
     description: 'Assault the undead citadel',
     requiredLevel: 20,
-    unlockMilestone: 'milestone_20',
     statMultiplier: 2.2,
     weeklyLockout: true,
     wings: [
@@ -158,7 +156,6 @@ export const RAIDS = {
     emoji: '🌑',
     description: 'Enter the realm of eternal darkness',
     requiredLevel: 25,
-    unlockMilestone: 'milestone_25',
     statMultiplier: 2.5,
     weeklyLockout: true,
     wings: [
@@ -221,19 +218,12 @@ export const getRaid = (raidId) => RAIDS[raidId];
 export const getAllRaids = () => Object.values(RAIDS);
 
 // Check if a raid is unlocked
-export const isRaidUnlocked = (raidId, claimedMilestones = [], highestDungeon = 0) => {
+export const isRaidUnlocked = (raidId, highestDungeon = 0) => {
   const raid = RAIDS[raidId];
   if (!raid) return false;
 
   // Check level requirement
-  if (highestDungeon < raid.requiredLevel) return false;
-
-  // Check milestone requirement
-  if (raid.unlockMilestone && !claimedMilestones.includes(raid.unlockMilestone)) {
-    return false;
-  }
-
-  return true;
+  return highestDungeon >= raid.requiredLevel;
 };
 
 // Check if a raid is on weekly lockout

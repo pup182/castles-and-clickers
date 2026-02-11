@@ -104,6 +104,8 @@ export const generateRoomMonsters = (roomType, dungeonLevel, roomNumber) => {
   // Exponential scaling: starts gentle, ramps up significantly at higher levels
   // Level 1: 1.0x, Level 5: 1.8x, Level 10: 3.2x, Level 15: 5.4x, Level 20: 8.6x
   const scaleFactor = Math.pow(1.12, dungeonLevel - 1);
+  // Speed scales at 25% of other stats - keeps monsters relevant at high levels
+  const speedScaleFactor = 1 + (scaleFactor - 1) * 0.25;
 
   if (roomType === ROOM_TYPES.BOSS) {
     const boss = getBossByTier(tier);
@@ -129,7 +131,7 @@ export const generateRoomMonsters = (roomType, dungeonLevel, roomNumber) => {
         hp: Math.floor(boss.baseStats.maxHp * scaleFactor),
         attack: Math.floor(boss.baseStats.attack * scaleFactor),
         defense: Math.floor(boss.baseStats.defense * scaleFactor),
-        speed: boss.baseStats.speed,
+        speed: Math.floor(boss.baseStats.speed * speedScaleFactor),
       },
       xpReward: Math.floor(boss.xpReward * scaleFactor),
       goldReward: {
@@ -176,7 +178,7 @@ export const generateRoomMonsters = (roomType, dungeonLevel, roomNumber) => {
         hp: Math.floor(template.baseStats.maxHp * scaleFactor),
         attack: Math.floor(template.baseStats.attack * scaleFactor),
         defense: Math.floor(template.baseStats.defense * scaleFactor),
-        speed: template.baseStats.speed,
+        speed: Math.floor(template.baseStats.speed * speedScaleFactor),
       },
       xpReward: Math.floor(template.xpReward * scaleFactor),
       goldReward: {

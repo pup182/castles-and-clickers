@@ -31,7 +31,7 @@ export const DUNGEON_TYPES = {
     goldMultiplier: 1.75,
     hasAffix: true,
     affixCount: 1, // Number of random affixes
-    unlockRequirement: { milestone: 5 },
+    unlockRequirement: { dungeonLevel: 5 },
   },
 
   [DUNGEON_TYPE.RAID]: {
@@ -45,7 +45,7 @@ export const DUNGEON_TYPES = {
     goldMultiplier: 2.5,
     hasAffix: true,
     affixCount: 2,
-    unlockRequirement: { milestone: 15 },
+    unlockRequirement: { dungeonLevel: 15 },
     playerTriggered: true, // Must be manually started by player
     weeklyLockout: true,
     guaranteedUnique: true, // Final boss drops unique item
@@ -238,17 +238,14 @@ export const applyAffixesToMonster = (monster, affixes) => {
 export const getDungeonType = (typeId) => DUNGEON_TYPES[typeId];
 
 // Check if dungeon type is unlocked
-export const isDungeonTypeUnlocked = (typeId, claimedMilestones = []) => {
+export const isDungeonTypeUnlocked = (typeId, highestDungeonCleared = 0) => {
   const type = DUNGEON_TYPES[typeId];
   if (!type) return false;
   if (!type.unlockRequirement) return true;
 
   const req = type.unlockRequirement;
-  if (req.milestone) {
-    return claimedMilestones.some(m => {
-      const milestoneLevel = parseInt(m.replace('milestone_', ''));
-      return milestoneLevel >= req.milestone;
-    });
+  if (req.dungeonLevel) {
+    return highestDungeonCleared >= req.dungeonLevel;
   }
 
   return false;

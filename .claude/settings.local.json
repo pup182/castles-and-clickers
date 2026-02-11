@@ -20,7 +20,17 @@
       "Bash(ls:*)",
       "Bash(git init)",
       "Bash(gh auth:*)",
-      "Bash(git add .claude .gitignore ARCHITECTURE_REDESIGN.md BACKLOG.md CLAUDE.md DEVELOPER_GUIDE.md README.md docs eslint.config.js index.html package-lock.json package.json postcss.config.js src tailwind.config.js todo.md vite.config.js)"
+      "Bash(git add .claude .gitignore ARCHITECTURE_REDESIGN.md BACKLOG.md CLAUDE.md DEVELOPER_GUIDE.md README.md docs eslint.config.js index.html package-lock.json package.json postcss.config.js src tailwind.config.js todo.md vite.config.js)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: Castles & Clickers idle dungeon crawler\n\nReact 19 + Zustand + Vite browser game with:\n- Initiative-based combat system\n- Procedural dungeon generation with A* pathfinding\n- Skill trees and homestead upgrades\n- Loot system with affixes\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(gh repo create castles-and-clickers --private --source=. --push)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix damage stat tracking for all sources\n\n- Track skill damage dealt \\(was completely missing for all abilities\\)\n- Track chain damage, bonus attacks, and AOE cleave damage\n- Track damage taken from DOTs, redirects, damage sharing, martyr intercepts, and monster skills\n- Update todo.md with completed stat tracking fix\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd base crit chance for all classes\n\n- DPS classes \\(Mage, Ranger, Rogue, Necromancer, Bard\\): 10% base crit\n- Tanks & Healers: 5% base crit\n- Stacks with skill passives, equipment affixes, and milestone bonuses\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd contextual retry/continue messaging after dungeon runs\n\n- After loss: \"Your heroes need to regroup...\" + \"Retry Level X\"\n- After win: \"Victory! Ready for the next challenge?\" + \"Continue to Level X\"\n- Helps players understand their progress state\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git checkout:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix first dungeon screen showing retry before any run\n\n- Use == null to handle both null and undefined \\(old persisted state\\)\n- Add lastDungeonSuccess to resetGame function\n- \"Start Your First Adventure\" only shows before any dungeon run\n- \"Retry Level X\" only shows after actually failing\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)"
     ]
   }
 }

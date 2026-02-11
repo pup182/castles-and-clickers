@@ -32,10 +32,15 @@ export const calculateDodgeChance = (defenderSpeed, attackerSpeed) => {
   // Bonus: 4% per point of speed advantage
   // Cap: 60%
   const SPEED_THRESHOLD = 6;
-  if (defenderSpeed <= SPEED_THRESHOLD) return 0;
 
-  const baseDodge = (defenderSpeed - SPEED_THRESHOLD) * 0.05;
-  const speedDiff = defenderSpeed - attackerSpeed;
+  // Guard against undefined/NaN values
+  const dSpeed = defenderSpeed || 0;
+  const aSpeed = attackerSpeed || 0;
+
+  if (dSpeed <= SPEED_THRESHOLD) return 0;
+
+  const baseDodge = (dSpeed - SPEED_THRESHOLD) * 0.05;
+  const speedDiff = dSpeed - aSpeed;
   const speedBonus = Math.max(0, speedDiff * 0.04);
   return Math.min(0.60, baseDodge + speedBonus);
 };

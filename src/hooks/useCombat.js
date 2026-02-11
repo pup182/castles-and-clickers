@@ -178,7 +178,7 @@ export const useCombat = ({ addEffect }) => {
   const handleCombatTick = useCallback(() => {
     // OPTIMIZATION: Get all state imperatively at start of tick
     const state = useGameStore.getState();
-    const { roomCombat, heroes, heroHp, dungeon, permanentBonuses } = state;
+    const { roomCombat, heroes, heroHp, dungeon } = state;
     const homesteadBonuses = state.getHomesteadBonuses();
 
     if (!roomCombat || roomCombat.phase !== PHASES.COMBAT) return false;
@@ -236,13 +236,12 @@ export const useCombat = ({ addEffect }) => {
       }
     }
 
-    // Get homestead and permanent bonuses for rewards
-    const pb = permanentBonuses || {};
-    const goldMultiplier = 1 + (homesteadBonuses.goldFind || 0) + (pb.goldFind || 0);
-    const xpMultiplier = 1 + (homesteadBonuses.xpGain || 0) + (pb.xpGain || 0);
-    const damageBonus = 1 + (pb.damage || 0) + (pb.allStats || 0);
-    const defenseBonus = 1 + (pb.defense || 0) + (pb.allStats || 0);
-    const critBonus = pb.critChance || 0;
+    // Get homestead bonuses for rewards
+    const goldMultiplier = 1 + (homesteadBonuses.goldFind || 0);
+    const xpMultiplier = 1 + (homesteadBonuses.xpGain || 0);
+    const damageBonus = 1;
+    const defenseBonus = 1;
+    const critBonus = 0;
 
     // Get monsters currently in combat - reuse Set to reduce GC pressure
     const combatMonsterIds = combatMonsters || [];
@@ -1084,6 +1083,25 @@ export const useCombat = ({ addEffect }) => {
                     const heroIdx = findHeroIndex(actionResult.targetId);
                     if (heroIdx !== -1) {
                       const targetHero = newHeroes[heroIdx];
+
+                      // Check for dodge (monster abilities can be dodged too)
+                      const targetBuffs = newBuffs[targetHero.id] || {};
+                      if (targetBuffs.evasion > 0) {
+                        addCombatLog({ type: 'system', message: `${targetHero.name} evades in smoke!` });
+                        continue; // Skip this damage result
+                      }
+
+                      // Calculate dodge chance for ability damage
+                      let abilityDodgeChance = calculateDodgeChance(targetHero.stats.speed, actor.stats.speed);
+                      const targetDefenderBonuses = applyPassiveEffects(targetHero, 'on_defend', {});
+                      abilityDodgeChance += targetDefenderBonuses.dodgeChance || 0;
+
+                      if (Math.random() < abilityDodgeChance) {
+                        incrementStat('totalDodges', 1, { heroId: targetHero.id });
+                        addCombatLog({ type: 'system', message: `${targetHero.name} dodged ${ability.name}!` });
+                        continue; // Skip this damage result
+                      }
+
                       const wasAlive = targetHero.stats.hp > 0;
                       // HP synced at end of tick via syncHeroHp
                       targetHero.stats.hp = Math.max(0, targetHero.stats.hp - actionResult.damage);

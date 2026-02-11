@@ -21,9 +21,30 @@ import SkillTreeScreen from './SkillTreeScreen';
 import HomesteadScreen from './HomesteadScreen';
 import ShopScreen from './ShopScreen';
 import DungeonMap from './DungeonMap';
+import CurrentZoneIndicator from './CurrentZoneIndicator';
 import WelcomeBackModal from './WelcomeBackModal';
+import { DUNGEON_TIERS } from '../data/milestones';
 import LootNotifications from './LootNotifications';
-import { PartyIcon, TreeIcon, BagIcon, HomeIcon, CastleIcon, GoldIcon, TrophyIcon, SkullIcon, ChestIcon, ChartIcon } from './icons/ui';
+import { PartyIcon, TreeIcon, BagIcon, HomeIcon, CastleIcon, GoldIcon, TrophyIcon, SkullIcon, ChestIcon, ChartIcon, GemIcon, FireIcon, GhostIcon } from './icons/ui';
+
+// Theme visuals for zone header - pixel art icons
+const TIER_THEME_ICONS = {
+  cave: GemIcon,
+  crypt: SkullIcon,
+  forest: TreeIcon,
+  castle: CastleIcon,
+  volcano: FireIcon,
+  void: GhostIcon,
+};
+
+const TIER_THEME_COLORS = {
+  cave: '#06b6d4',
+  crypt: '#84cc16',
+  forest: '#22c55e',
+  castle: '#f59e0b',
+  volcano: '#ef4444',
+  void: '#a855f7',
+};
 import StatsScreen from './StatsScreen';
 import BestiaryScreen from './BestiaryScreen';
 
@@ -449,17 +470,123 @@ const GameLayout = () => {
         {/* Dungeon View - Always visible */}
         <main className="flex-1 p-4 overflow-hidden flex flex-col">
           {dungeon && mazeDungeonState ? (
-            <>
-              <div className="flex-1 min-h-0">
-                <CanvasDungeonView
-                  effects={combatEffects}
-                  onEffectComplete={memoizedRemoveEffect}
-                />
-              </div>
-              <div className="mt-4 max-h-32">
-                <CombatLog />
-              </div>
-            </>
+            (() => {
+              // Find current tier for zone header
+              const currentTier = DUNGEON_TIERS.find(
+                t => dungeon.level >= t.minLevel && dungeon.level <= t.maxLevel
+              ) || DUNGEON_TIERS[0];
+              const TierIcon = TIER_THEME_ICONS[currentTier.theme];
+              const tierColor = TIER_THEME_COLORS[currentTier.theme];
+              const tierSize = currentTier.maxLevel - currentTier.minLevel + 1;
+
+              // Get monster counts from displayRoomCombat
+              const monsters = displayRoomCombat?.monsters || [];
+              const aliveMonsters = monsters.filter(m => m?.stats?.hp > 0 && !m.isBoss).length;
+              const totalMonsters = monsters.filter(m => !m.isBoss).length;
+              const killedMonsters = totalMonsters - aliveMonsters;
+              const boss = monsters.find(m => m.isBoss);
+              const bossAlive = boss && boss.stats.hp > 0;
+              const bossUnlocked = displayRoomCombat?.bossUnlocked || false;
+              const round = displayRoomCombat?.round || 1;
+
+              // Phase display
+              const getPhaseDisplay = () => {
+                switch (phase) {
+                  case PHASES.EXPLORING: return { text: 'Exploring', color: 'text-blue-400' };
+                  case PHASES.COMBAT: return { text: 'In Combat', color: 'text-red-400' };
+                  case PHASES.COMPLETE: return { text: 'Complete!', color: 'text-green-400' };
+                  case PHASES.DEFEAT: return { text: 'Defeated', color: 'text-red-500' };
+                  default: return { text: 'Idle', color: 'text-gray-400' };
+                }
+              };
+              const phaseInfo = getPhaseDisplay();
+
+              return (
+                <>
+                  {/* Zone Header - Pixel Art Style */}
+                  <div className="pixel-panel mb-3">
+                    <div className="flex items-center gap-4 px-3 py-2">
+                      {/* Zone icon and name */}
+                      <div className="flex items-center gap-2">
+                        <div style={{ color: tierColor }}>
+                          <TierIcon size={24} />
+                        </div>
+                        <div>
+                          <div className="pixel-text font-bold" style={{ color: tierColor }}>
+                            {currentTier.name}
+                          </div>
+                          <div className="pixel-label">
+                            Level {dungeon.level}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tier progress mini-bar */}
+                      <div className="flex gap-1">
+                        {Array.from({ length: tierSize }, (_, i) => {
+                          const level = currentTier.minLevel + i;
+                          const isCurrent = level === dungeon.level;
+                          const isCleared = level < dungeon.level || (level === dungeon.level && phase === PHASES.COMPLETE);
+                          return (
+                            <div
+                              key={level}
+                              className="w-4 h-2 border border-[var(--color-border)]"
+                              style={{
+                                background: isCleared ? tierColor : isCurrent ? `${tierColor}60` : 'var(--color-panel-dark)',
+                              }}
+                              title={`Level ${level}${isCleared ? ' (Cleared)' : isCurrent ? ' (Current)' : ''}`}
+                            />
+                          );
+                        })}
+                      </div>
+
+                      {/* Phase indicator */}
+                      <div className={`pixel-label ${phaseInfo.color}`}>
+                        {phaseInfo.text}
+                      </div>
+
+                      {/* Enemy progress */}
+                      <div className="flex items-center gap-2 ml-auto">
+                        <span className="pixel-label">
+                          Enemies: {killedMonsters}/{totalMonsters}
+                        </span>
+                        <div className="pixel-bar w-20 h-2">
+                          <div
+                            className="pixel-bar-fill pixel-bar-red"
+                            style={{ width: `${totalMonsters > 0 ? (killedMonsters / totalMonsters) * 100 : 0}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Boss indicator */}
+                      {boss && (
+                        <div className={`flex items-center gap-1 ${bossUnlocked ? 'text-red-400' : 'text-gray-500'}`}>
+                          <SkullIcon size={16} />
+                          <span className="pixel-label">
+                            {bossAlive ? (bossUnlocked ? 'Boss Ready' : 'Locked') : 'Slain!'}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Round counter */}
+                      <div className="pixel-label text-gray-500">
+                        R{round}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 min-h-0">
+                    <CanvasDungeonView
+                      effects={combatEffects}
+                      onEffectComplete={memoizedRemoveEffect}
+                    />
+                  </div>
+                  <div className="mt-4 max-h-32">
+                    <CombatLog />
+                  </div>
+                </>
+              );
+            })()
           ) : dungeonTransition ? (
             // Show empty space during transition (transition overlay handles the display)
             <div className="flex-1" />

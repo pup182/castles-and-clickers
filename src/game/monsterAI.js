@@ -27,8 +27,10 @@ const AI_PRIORITIES = {
   },
   [AI_TYPE.TANK]: {
     targetPriority: 'nearest',
-    abilityPriority: [ABILITY_TYPE.BUFF, ABILITY_TYPE.ATTACK, ABILITY_TYPE.DEBUFF],
+    // Tanks now attack first, buff when hurt or when allies need protection
+    abilityPriority: [ABILITY_TYPE.ATTACK, ABILITY_TYPE.BUFF, ABILITY_TYPE.DEBUFF],
     protectsAllies: true,
+    buffsWhenHurt: true, // New flag: only use buffs when HP < 50%
   },
   [AI_TYPE.ASSASSIN]: {
     targetPriority: 'lowest_hp',
@@ -37,8 +39,9 @@ const AI_PRIORITIES = {
   },
   [AI_TYPE.DEBUFFER]: {
     targetPriority: 'highest_threat',
-    abilityPriority: [ABILITY_TYPE.DEBUFF, ABILITY_TYPE.ATTACK],
-    prioritizesStatus: true,
+    // Debuffers now prioritize attacks (especially those that apply status), then pure debuffs
+    abilityPriority: [ABILITY_TYPE.ATTACK, ABILITY_TYPE.DEBUFF],
+    prioritizesStatusAttacks: true, // New flag: prefer attacks that also apply debuffs
   },
   [AI_TYPE.SUPPORT]: {
     targetPriority: 'ally_lowest_hp',
@@ -210,20 +213,8 @@ export const chooseMonsterAbility = (monster, heroes, allies, cooldowns = {}, co
     }
   }
 
-  // Debuffer AI: prioritize applying status effects
-  if (aiConfig.prioritizesStatus) {
-    const debuffAbility = readyAbilities.find(a =>
-      a.type === ABILITY_TYPE.DEBUFF ||
-      (a.type === ABILITY_TYPE.ATTACK && a.appliesStatus)
-    );
-    if (debuffAbility) {
-      return {
-        ability: debuffAbility,
-        target: getAbilityTarget(debuffAbility, monster, heroes, allies, aiConfig),
-        useBasicAttack: false,
-      };
-    }
-  }
+  // Debuffer AI: handled in selectAbilityByPriority with prioritizesStatusAttacks flag
+  // This prefers ATTACKS that apply status effects, dealing damage while debuffing
 
   // Select ability based on priority
   const ability = selectAbilityByPriority(readyAbilities, aiConfig, monster, heroes, allies);
@@ -249,8 +240,30 @@ export const chooseMonsterAbility = (monster, heroes, allies, cooldowns = {}, co
  */
 const selectAbilityByPriority = (abilities, aiConfig, monster, heroes, allies) => {
   const aliveHeroCount = heroes.filter(h => h.stats.hp > 0).length;
+  const monsterHpPercent = monster.stats.hp / monster.stats.maxHp;
 
-  for (const abilityType of aiConfig.abilityPriority) {
+  // For tanks with buffsWhenHurt: skip buffs if at high HP
+  let effectivePriority = [...aiConfig.abilityPriority];
+  if (aiConfig.buffsWhenHurt && monsterHpPercent > 0.5) {
+    // Remove BUFF from priority when healthy - attack instead
+    effectivePriority = effectivePriority.filter(t => t !== ABILITY_TYPE.BUFF);
+  }
+
+  // For debuffers with prioritizesStatusAttacks: prefer attacks that apply status
+  if (aiConfig.prioritizesStatusAttacks) {
+    // Check for attacks that also apply debuffs first
+    const statusAttacks = abilities.filter(a =>
+      a.type === ABILITY_TYPE.ATTACK && (a.appliesStatus || a.appliesMultipleStatus)
+    );
+    if (statusAttacks.length > 0) {
+      // Prefer highest damage among status-applying attacks
+      return statusAttacks.reduce((best, a) =>
+        (a.damageMultiplier || 1) > (best.damageMultiplier || 1) ? a : best
+      );
+    }
+  }
+
+  for (const abilityType of effectivePriority) {
     const matchingAbilities = abilities.filter(a => a.type === abilityType);
     if (matchingAbilities.length > 0) {
       // For attacks, prefer higher damage multiplier but avoid wasting AoE on single targets

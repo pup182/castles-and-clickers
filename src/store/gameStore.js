@@ -550,17 +550,6 @@ export const useGameStore = create(
         homesteadSeen: false, // Tracks if player has visited homestead after unlock
       },
 
-      // Milestone tracking
-      claimedMilestones: [], // ['milestone_5', 'milestone_10', ...]
-      permanentBonuses: {
-        goldFind: 0,
-        xpGain: 0,
-        critChance: 0,
-        damage: 0,
-        defense: 0,
-        allStats: 0,
-      },
-
       // Ascension mode (post dungeon 30)
       ascension: {
         level: 0,           // Current ascension level
@@ -1806,44 +1795,13 @@ export const useGameStore = create(
         }
       },
 
-      // Claim a milestone reward
-      claimMilestone: (milestoneId) => {
-        set(state => {
-          if (state.claimedMilestones.includes(milestoneId)) {
-            return state; // Already claimed
-          }
-
-          // Import would cause circular dependency, so we hardcode milestone data lookup
-          const milestoneLevel = parseInt(milestoneId.replace('milestone_', ''));
-          if (state.highestDungeonCleared < milestoneLevel) {
-            return state; // Haven't cleared this level yet
-          }
-
-          // Milestone rewards are applied via the milestone data file
-          // For now just track that it's been claimed
-          return {
-            claimedMilestones: [...state.claimedMilestones, milestoneId],
-          };
-        });
-      },
-
-      // Apply permanent bonuses from milestones
-      applyMilestoneBonus: (bonusType, value) => {
-        set(state => ({
-          permanentBonuses: {
-            ...state.permanentBonuses,
-            [bonusType]: (state.permanentBonuses[bonusType] || 0) + value,
-          },
-        }));
-      },
-
       // Start a raid (player-triggered only)
       startRaid: (raidId, wingIndex = 0) => {
-        const { heroes, claimedMilestones, initializeHeroHp, dungeonProgress } = get();
+        const { heroes, highestDungeonCleared, initializeHeroHp, dungeonProgress } = get();
         if (heroes.length === 0) return false;
 
-        // Check if raid is unlocked (requires milestone_15)
-        if (!claimedMilestones.includes('milestone_15')) return false;
+        // Check if raid is unlocked (requires clearing dungeon 15)
+        if (highestDungeonCleared < 15) return false;
 
         // Check weekly lockout
         const lockoutKey = `${raidId}:${wingIndex}`;
@@ -2192,7 +2150,7 @@ export const useGameStore = create(
       },
 
       // Estimate rewards per dungeon run at given level
-      _estimateDungeonRewards: (level, homesteadBonuses, permanentBonuses) => {
+      _estimateDungeonRewards: (level, homesteadBonuses) => {
         const tier = Math.min(4, Math.ceil(level / 5));
         const tierRewards = {
           1: { gold: 10, xp: 8 },
@@ -2206,8 +2164,8 @@ export const useGameStore = create(
         const monsterXp = tierRewards[tier].xp * monsterCount;
         const completionGold = 100 * level;
 
-        const goldMult = 1 + (homesteadBonuses.goldFind || 0) + (permanentBonuses.goldFind || 0);
-        const xpMult = 1 + (homesteadBonuses.xpGain || 0) + (permanentBonuses.xpGain || 0);
+        const goldMult = 1 + (homesteadBonuses.goldFind || 0);
+        const xpMult = 1 + (homesteadBonuses.xpGain || 0);
 
         return {
           gold: Math.floor((monsterGold + completionGold) * goldMult),
@@ -2222,7 +2180,6 @@ export const useGameStore = create(
           heroes,
           highestDungeonCleared,
           homestead,
-          permanentBonuses,
           maxDungeonLevel,
           dungeonSettings,
           _estimateDungeonDuration,
@@ -2263,7 +2220,7 @@ export const useGameStore = create(
           if (remainingSeconds < duration) break;
 
           remainingSeconds -= duration;
-          const rewards = _estimateDungeonRewards(currentLevel, homesteadBonuses, permanentBonuses);
+          const rewards = _estimateDungeonRewards(currentLevel, homesteadBonuses);
           totalGold += rewards.gold;
           totalXp += rewards.xp;
           runsCompleted++;
@@ -2391,16 +2348,6 @@ export const useGameStore = create(
           },
           heroHp: {},
           roomCombat: null,
-          // Reset milestones and progression
-          claimedMilestones: [],
-          permanentBonuses: {
-            goldFind: 0,
-            xpGain: 0,
-            critChance: 0,
-            damage: 0,
-            defense: 0,
-            allStats: 0,
-          },
           dungeonSettings: {
             type: 'normal',
             autoAdvance: false,

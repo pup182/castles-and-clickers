@@ -601,6 +601,8 @@ export function placeMonsters(dungeon, level, options = {}) {
   const monsters = [];
   const tier = Math.min(4, Math.ceil(level / 5));
   const scaleFactor = Math.pow(1.08, level - 1);
+  // Speed scales at 25% of other stats - keeps monsters relevant at high levels
+  const speedScaleFactor = 1 + (scaleFactor - 1) * 0.25;
 
   // Level 1 is easier to help new players with solo tank
   const earlyGameMultiplier = level === 1 ? 0.7 : 1.0;
@@ -676,7 +678,7 @@ export function placeMonsters(dungeon, level, options = {}) {
             hp: Math.floor(boss.baseStats.maxHp * scaleFactor * typeMultiplier),
             attack: Math.floor(boss.baseStats.attack * scaleFactor * typeMultiplier),
             defense: Math.floor(boss.baseStats.defense * scaleFactor * typeMultiplier),
-            speed: boss.baseStats.speed,
+            speed: Math.floor(boss.baseStats.speed * speedScaleFactor),
           },
           abilities: boss.abilities || [],
           aiType: boss.aiType || 'boss',
@@ -733,7 +735,7 @@ export function placeMonsters(dungeon, level, options = {}) {
           hp: Math.floor(template.baseStats.maxHp * scaleFactor * typeMultiplier),
           attack: Math.floor(template.baseStats.attack * scaleFactor * typeMultiplier),
           defense: Math.floor(template.baseStats.defense * scaleFactor * typeMultiplier),
-          speed: template.baseStats.speed,
+          speed: Math.floor(template.baseStats.speed * speedScaleFactor),
         },
         abilities: template.abilities || [],
         aiType: template.aiType || 'aggressive',
@@ -784,7 +786,7 @@ export function placeMonsters(dungeon, level, options = {}) {
           hp: Math.floor(template.baseStats.maxHp * scaleFactor * typeMultiplier),
           attack: Math.floor(template.baseStats.attack * scaleFactor * typeMultiplier),
           defense: Math.floor(template.baseStats.defense * scaleFactor * typeMultiplier),
-          speed: template.baseStats.speed,
+          speed: Math.floor(template.baseStats.speed * speedScaleFactor),
         },
         abilities: template.abilities || [],
         aiType: template.aiType || 'aggressive',
