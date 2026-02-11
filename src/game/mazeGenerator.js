@@ -600,7 +600,9 @@ function getMonsterCount(roomType, roomSize, dungeonLevel) {
 export function placeMonsters(dungeon, level, options = {}) {
   const monsters = [];
   const tier = Math.min(4, Math.ceil(level / 5));
-  const scaleFactor = Math.pow(1.08, level - 1);
+  // Exponential scaling: 1.11x per level for balanced progression
+  // Level 1: 1.0x, Level 5: 1.52x, Level 10: 2.56x, Level 15: 4.31x, Level 20: 7.26x
+  const scaleFactor = Math.pow(1.11, level - 1);
   // Speed scales at 25% of other stats - keeps monsters relevant at high levels
   const speedScaleFactor = 1 + (scaleFactor - 1) * 0.25;
 

@@ -237,6 +237,7 @@ export const chooseMonsterAbility = (monster, heroes, allies, cooldowns = {}, co
 
 /**
  * Select ability based on AI priority order
+ * Returns null if no good ability found (caller should use basic attack)
  */
 const selectAbilityByPriority = (abilities, aiConfig, monster, heroes, allies) => {
   const aliveHeroCount = heroes.filter(h => h.stats.hp > 0).length;
@@ -261,6 +262,18 @@ const selectAbilityByPriority = (abilities, aiConfig, monster, heroes, allies) =
         (a.damageMultiplier || 1) > (best.damageMultiplier || 1) ? a : best
       );
     }
+
+    // If no status attacks, check for ANY attack ability (like drain_life)
+    const anyAttacks = abilities.filter(a => a.type === ABILITY_TYPE.ATTACK);
+    if (anyAttacks.length > 0) {
+      return anyAttacks.reduce((best, a) =>
+        (a.damageMultiplier || 1) > (best.damageMultiplier || 1) ? a : best
+      );
+    }
+
+    // No attack abilities ready - return null to trigger basic attack
+    // This prevents debuffers from wasting turns on pure utility when they could deal damage
+    return null;
   }
 
   for (const abilityType of effectivePriority) {
@@ -288,7 +301,10 @@ const selectAbilityByPriority = (abilities, aiConfig, monster, heroes, allies) =
       return matchingAbilities[0];
     }
   }
-  return abilities[0]; // Fallback to any ability
+
+  // No matching abilities in priority - return null to use basic attack
+  // This is better than picking a random utility ability
+  return null;
 };
 
 /**
