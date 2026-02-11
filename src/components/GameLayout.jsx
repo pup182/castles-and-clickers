@@ -428,6 +428,10 @@ const GameLayout = () => {
                     ? 'Recruit some heroes to begin your adventure!'
                     : highestDungeonCleared === 0
                     ? 'Your heroes are ready for their first adventure!'
+                    : lastDungeonSuccess === false
+                    ? 'Your heroes need to regroup and try again!'
+                    : lastDungeonSuccess === true
+                    ? 'Victory! Ready for the next challenge?'
                     : 'Select a dungeon to start exploring'}
                 </p>
                 {hasNewHeroSlotAvailable && heroes.length > 0 && (
@@ -459,7 +463,7 @@ const GameLayout = () => {
                         onClick={() => handleStartDungeon(highestDungeonCleared + 1)}
                         className="pixel-btn pixel-btn-primary"
                       >
-                        Start Level {highestDungeonCleared + 1}
+                        {lastDungeonSuccess === false ? 'Retry' : 'Continue to'} Level {highestDungeonCleared + 1}
                       </button>
                     )}
                     <button
