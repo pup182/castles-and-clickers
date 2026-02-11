@@ -65,11 +65,11 @@ function createHero(classId, level = 10, skillTier = 2) {
   // Get skills from skill tree
   const skills = getSkillsForClass(classId, skillTier);
 
-  // Apply stat bonuses from passive skills
+  // Apply stat bonuses from passive skills (stats can be on any passive type)
   for (const skillId of skills) {
     const skill = getSkillById(skillId);
-    if (skill?.type === SKILL_TYPE.PASSIVE && skill.passive?.type === 'stat_bonus') {
-      const bonusStats = skill.passive.stats || {};
+    if (skill?.type === SKILL_TYPE.PASSIVE && skill.passive?.stats) {
+      const bonusStats = skill.passive.stats;
       if (bonusStats.maxHp) stats.maxHp += bonusStats.maxHp;
       if (bonusStats.attack) stats.attack += bonusStats.attack;
       if (bonusStats.defense) stats.defense += bonusStats.defense;
