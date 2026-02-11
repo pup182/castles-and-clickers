@@ -426,10 +426,10 @@ export const SKILL_TREES = {
         id: 'knight_constitution',
         name: 'Constitution',
         emoji: '❤️',
-        description: 'Increases maximum HP by 35.',
+        description: '+35 max HP, +4 speed.',
         type: SKILL_TYPE.PASSIVE,
         tier: 0,
-        passive: { type: 'stat_bonus', stats: { maxHp: 35 } },
+        passive: { type: 'stat_bonus', stats: { maxHp: 35, speed: 4 } },
       },
       {
         id: 'knight_stalwart',
