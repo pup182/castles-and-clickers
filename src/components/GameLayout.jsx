@@ -426,13 +426,11 @@ const GameLayout = () => {
                 <p className="text-[var(--color-text-dim)] mb-4">
                   {heroes.length === 0
                     ? 'Recruit some heroes to begin your adventure!'
-                    : highestDungeonCleared === 0
+                    : lastDungeonSuccess == null
                     ? 'Your heroes are ready for their first adventure!'
                     : lastDungeonSuccess === false
                     ? 'Your heroes need to regroup and try again!'
-                    : lastDungeonSuccess === true
-                    ? 'Victory! Ready for the next challenge?'
-                    : 'Select a dungeon to start exploring'}
+                    : 'Victory! Ready for the next challenge?'}
                 </p>
                 {hasNewHeroSlotAvailable && heroes.length > 0 && (
                   <button
@@ -449,7 +447,7 @@ const GameLayout = () => {
                   >
                     Recruit Heroes
                   </button>
-                ) : highestDungeonCleared === 0 ? (
+                ) : lastDungeonSuccess == null ? (
                   <button
                     onClick={() => handleStartDungeon(1)}
                     className="pixel-btn pixel-btn-primary animate-pulse"

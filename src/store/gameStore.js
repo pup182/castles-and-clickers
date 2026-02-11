@@ -2356,6 +2356,7 @@ export const useGameStore = create(
           gameSpeed: 1,
           highestDungeonCleared: 0,
           dungeonUnlocked: 1,
+          lastDungeonSuccess: null,
           lastSaveTime: Date.now(),
           stats: {
             totalGoldEarned: 0,
