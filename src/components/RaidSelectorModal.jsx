@@ -191,7 +191,7 @@ const RaidCard = ({ raid, isUnlocked, ownedUniques, onEnterRaid, isExpanded, onT
               <h3 className="pixel-subtitle">{raid.name}</h3>
               <p className="text-xs text-gray-400 mt-0.5">{raid.description}</p>
               <div className="text-xs text-gray-500 mt-1">
-                {totalBosses} bosses
+                <span className="text-yellow-500">Lv {raid.recommendedLevel}</span> · {totalBosses} bosses
               </div>
             </div>
           </div>
