@@ -7,24 +7,24 @@ const LogEntry = memo(({ log }) => {
     return <span className="text-[var(--color-gold)]">{log.message}</span>;
   }
   if (log.type === 'attack') {
-    return <span>{log.actor.name} ATK {log.target.name} <span className="text-[var(--color-red)]">-{log.damage}</span></span>;
+    return <span>{log.actor?.name || '???'} ATK {log.target?.name || '???'} <span className="text-[var(--color-red)]">-{log.damage}</span></span>;
   }
   if (log.type === 'skill') {
     return (
       <span className="text-[#ff8844]">
-        {log.actor.name} {log.skill?.name || 'SKILL'} {log.target.name} <span className="text-[var(--color-red)]">-{log.damage}</span>
+        {log.actor?.name || '???'} {log.skill?.name || 'SKILL'} {log.target?.name || '???'} <span className="text-[var(--color-red)]">-{log.damage}</span>
       </span>
     );
   }
   if (log.type === 'heal') {
     return (
       <span className="text-[var(--color-green)]">
-        {log.actor.name} {log.skill?.name || 'HEAL'} {log.target.name} <span className="text-[#88ff88]">+{log.amount}</span>
+        {log.actor?.name || '???'} {log.skill?.name || 'HEAL'} {log.target?.name || '???'} <span className="text-[#88ff88]">+{log.amount}</span>
       </span>
     );
   }
   if (log.type === 'death') {
-    return <span className={log.isHero ? 'text-[var(--color-red)]' : 'text-[var(--color-green)]'}>{log.target.name} DEFEATED</span>;
+    return <span className={log.isHero ? 'text-[var(--color-red)]' : 'text-[var(--color-green)]'}>{log.target?.name || '???'} DEFEATED</span>;
   }
   return null;
 });
