@@ -667,6 +667,295 @@ export const LichKingSprite = ({ size }) => (
   </IconWrapper>
 );
 
+// === TIER 5 MONSTERS - VOLCANIC ===
+
+export const MagmaElementalSprite = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Body - molten rock */}
+    <P x={4} y={4} w={8} h={9} c="#dc2626" />
+    <P x={5} y={3} w={6} h={1} c="#ef4444" />
+    {/* Lava cracks */}
+    <P x={6} y={5} w={1} h={3} c="#fbbf24" />
+    <P x={9} y={6} w={1} h={4} c="#fbbf24" />
+    <P x={5} y={9} w={3} h={1} c="#f97316" />
+    {/* Eyes */}
+    <P x={5} y={5} w={2} h={2} c="#fbbf24" />
+    <P x={9} y={5} w={2} h={2} c="#fbbf24" />
+    {/* Rock chunks */}
+    <P x={3} y={6} w={1} h={3} c="#78716c" />
+    <P x={12} y={6} w={1} h={3} c="#78716c" />
+    {/* Arms */}
+    <P x={2} y={7} w={2} h={4} c="#b91c1c" />
+    <P x={12} y={7} w={2} h={4} c="#b91c1c" />
+    {/* Legs */}
+    <P x={5} y={13} w={2} h={2} c="#991b1b" />
+    <P x={9} y={13} w={2} h={2} c="#991b1b" />
+  </IconWrapper>
+);
+
+export const FireImpSprite = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Body */}
+    <P x={5} y={6} w={6} h={6} c="#dc2626" />
+    {/* Head */}
+    <P x={5} y={2} w={6} h={5} c="#ef4444" />
+    {/* Horns */}
+    <P x={4} y={1} w={2} h={2} c="#fbbf24" />
+    <P x={10} y={1} w={2} h={2} c="#fbbf24" />
+    {/* Eyes - mischievous */}
+    <P x={6} y={4} w={2} h={2} c="#fbbf24" />
+    <P x={9} y={4} w={2} h={2} c="#fbbf24" />
+    <P x={7} y={5} w={1} h={1} c="#1f2937" />
+    <P x={10} y={5} w={1} h={1} c="#1f2937" />
+    {/* Grin */}
+    <P x={7} y={6} w={3} h={1} c="#1f2937" />
+    {/* Wings - small */}
+    <P x={2} y={6} w={3} h={3} c="#f97316" />
+    <P x={11} y={6} w={3} h={3} c="#f97316" />
+    {/* Tail with flame */}
+    <P x={3} y={10} w={2} h={1} c="#dc2626" />
+    <P x={2} y={9} w={2} h={1} c="#fbbf24" />
+    {/* Legs */}
+    <P x={6} y={12} w={2} h={2} c="#b91c1c" />
+    <P x={9} y={12} w={2} h={2} c="#b91c1c" />
+  </IconWrapper>
+);
+
+export const LavaSerpentSprite = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Body coils */}
+    <P x={3} y={8} w={10} h={4} c="#dc2626" />
+    <P x={5} y={6} w={6} h={2} c="#ef4444" />
+    <P x={2} y={10} w={3} h={3} c="#b91c1c" />
+    {/* Lava pattern */}
+    <P x={5} y={9} w={2} h={1} c="#fbbf24" />
+    <P x={9} y={10} w={2} h={1} c="#fbbf24" />
+    {/* Head */}
+    <P x={9} y={3} w={5} h={4} c="#ef4444" />
+    {/* Eyes */}
+    <P x={11} y={4} w={2} h={2} c="#fbbf24" />
+    <P x={12} y={5} w={1} h={1} c="#1f2937" />
+    {/* Fangs */}
+    <P x={13} y={6} w={1} h={2} c="#fef3c7" />
+    {/* Forked tongue */}
+    <P x={14} y={5} w={1} h={1} c="#f97316" />
+    {/* Tail flame */}
+    <P x={1} y={12} w={2} h={2} c="#fbbf24" />
+  </IconWrapper>
+);
+
+export const ObsidianGolemSprite = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Body - dark rock */}
+    <P x={3} y={4} w={10} h={9} c="#1f2937" />
+    {/* Head */}
+    <P x={4} y={1} w={8} h={4} c="#374151" />
+    {/* Lava veins */}
+    <P x={6} y={2} w={1} h={2} c="#f97316" />
+    <P x={9} y={2} w={1} h={2} c="#f97316" />
+    <P x={5} y={7} w={1} h={4} c="#dc2626" />
+    <P x={10} y={6} w={1} h={5} c="#dc2626" />
+    {/* Eyes - glowing */}
+    <P x={5} y={2} w={2} h={2} c="#fbbf24" />
+    <P x={9} y={2} w={2} h={2} c="#fbbf24" />
+    {/* Arms - massive */}
+    <P x={1} y={5} w={2} h={6} c="#374151" />
+    <P x={13} y={5} w={2} h={6} c="#374151" />
+    {/* Legs */}
+    <P x={4} y={13} w={3} h={2} c="#1f2937" />
+    <P x={9} y={13} w={3} h={2} c="#1f2937" />
+  </IconWrapper>
+);
+
+export const EmberWraithSprite = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Body - fiery ethereal */}
+    <P x={4} y={3} w={8} h={10} c="#f97316" />
+    <P x={5} y={2} w={6} h={1} c="#fbbf24" />
+    {/* Fade effect */}
+    <P x={4} y={12} w={2} h={2} c="#dc2626" />
+    <P x={7} y={13} w={2} h={2} c="#f97316" />
+    <P x={10} y={12} w={2} h={2} c="#dc2626" />
+    {/* Hood */}
+    <P x={4} y={2} w={8} h={4} c="#b91c1c" />
+    {/* Eyes */}
+    <P x={6} y={4} w={1} h={2} c="#fef3c7" />
+    <P x={9} y={4} w={1} h={2} c="#fef3c7" />
+    {/* Claws */}
+    <P x={2} y={7} w={2} h={3} c="#fbbf24" />
+    <P x={12} y={7} w={2} h={3} c="#fbbf24" />
+  </IconWrapper>
+);
+
+export const InfernoTitanSprite = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Massive body */}
+    <P x={2} y={4} w={12} h={10} c="#b91c1c" />
+    {/* Head */}
+    <P x={4} y={0} w={8} h={5} c="#dc2626" />
+    {/* Horns - large */}
+    <P x={2} y={0} w={2} h={3} c="#78716c" />
+    <P x={12} y={0} w={2} h={3} c="#78716c" />
+    {/* Eyes */}
+    <P x={5} y={2} w={2} h={2} c="#fbbf24" />
+    <P x={9} y={2} w={2} h={2} c="#fbbf24" />
+    {/* Molten core */}
+    <P x={6} y={6} w={4} h={4} c="#fbbf24" />
+    <P x={7} y={7} w={2} h={2} c="#fef3c7" />
+    {/* Lava veins */}
+    <P x={4} y={8} w={2} h={1} c="#f97316" />
+    <P x={10} y={8} w={2} h={1} c="#f97316" />
+    {/* Arms */}
+    <P x={0} y={5} w={2} h={7} c="#dc2626" />
+    <P x={14} y={5} w={2} h={7} c="#dc2626" />
+    {/* Legs */}
+    <P x={3} y={14} w={4} h={2} c="#991b1b" />
+    <P x={9} y={14} w={4} h={2} c="#991b1b" />
+  </IconWrapper>
+);
+
+// === TIER 6 MONSTERS - VOID ===
+
+export const VoidStalkerSprite = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Body - shadowy */}
+    <P x={5} y={5} w={6} h={7} c="#1f2937" />
+    {/* Head */}
+    <P x={5} y={2} w={6} h={4} c="#374151" />
+    {/* Void eyes */}
+    <P x={6} y={3} w={2} h={2} c="#a855f7" />
+    <P x={9} y={3} w={2} h={2} c="#a855f7" />
+    <P x={7} y={4} w={1} h={1} c="#e9d5ff" />
+    <P x={10} y={4} w={1} h={1} c="#e9d5ff" />
+    {/* Void tendrils */}
+    <P x={3} y={6} w={2} h={1} c="#7c3aed" />
+    <P x={2} y={7} w={2} h={1} c="#6d28d9" />
+    <P x={11} y={6} w={2} h={1} c="#7c3aed" />
+    <P x={12} y={7} w={2} h={1} c="#6d28d9" />
+    {/* Claws */}
+    <P x={3} y={8} w={2} h={3} c="#374151" />
+    <P x={11} y={8} w={2} h={3} c="#374151" />
+    {/* Legs */}
+    <P x={5} y={12} w={2} h={3} c="#1f2937" />
+    <P x={9} y={12} w={2} h={3} c="#1f2937" />
+  </IconWrapper>
+);
+
+export const EldritchHorrorSprite = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Main body - bulbous */}
+    <P x={3} y={4} w={10} h={8} c="#581c87" />
+    <P x={4} y={3} w={8} h={1} c="#6b21a8" />
+    {/* Eyes - many */}
+    <P x={4} y={5} w={2} h={2} c="#fbbf24" />
+    <P x={7} y={4} w={2} h={2} c="#22c55e" />
+    <P x={10} y={5} w={2} h={2} c="#ef4444" />
+    <P x={6} y={7} w={1} h={1} c="#a855f7" />
+    <P x={9} y={7} w={1} h={1} c="#3b82f6" />
+    {/* Tentacles */}
+    <P x={1} y={8} w={2} h={4} c="#7c3aed" />
+    <P x={0} y={10} w={2} h={3} c="#6d28d9" />
+    <P x={13} y={8} w={2} h={4} c="#7c3aed" />
+    <P x={14} y={10} w={2} h={3} c="#6d28d9" />
+    {/* Lower tentacles */}
+    <P x={4} y={12} w={2} h={3} c="#581c87" />
+    <P x={7} y={13} w={2} h={2} c="#6b21a8" />
+    <P x={10} y={12} w={2} h={3} c="#581c87" />
+  </IconWrapper>
+);
+
+export const NullShadeSprite = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Body - pure void */}
+    <P x={4} y={3} w={8} h={11} c="#0f0f0f" />
+    <P x={5} y={2} w={6} h={1} c="#1f1f1f" />
+    {/* Hood outline */}
+    <P x={3} y={2} w={1} h={4} c="#374151" />
+    <P x={12} y={2} w={1} h={4} c="#374151" />
+    <P x={4} y={1} w={8} h={1} c="#374151" />
+    {/* Eyes - hollow voids */}
+    <P x={6} y={4} w={2} h={2} c="#7c3aed" />
+    <P x={9} y={4} w={2} h={2} c="#7c3aed" />
+    {/* Void wisps */}
+    <P x={3} y={10} w={2} h={3} c="#1f1f1f" />
+    <P x={6} y={13} w={2} h={2} c="#0f0f0f" />
+    <P x={11} y={10} w={2} h={3} c="#1f1f1f" />
+    {/* Hands */}
+    <P x={2} y={7} w={2} h={3} c="#1f1f1f" />
+    <P x={12} y={7} w={2} h={3} c="#1f1f1f" />
+  </IconWrapper>
+);
+
+export const RealityRipperSprite = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Body - distorted */}
+    <P x={4} y={4} w={8} h={8} c="#4c1d95" />
+    {/* Rift pattern */}
+    <P x={6} y={5} w={4} h={6} c="#7c3aed" />
+    <P x={7} y={6} w={2} h={4} c="#a855f7" />
+    {/* Head */}
+    <P x={5} y={1} w={6} h={4} c="#581c87" />
+    {/* Eyes - reality-warping */}
+    <P x={6} y={2} w={2} h={2} c="#f472b6" />
+    <P x={9} y={2} w={2} h={2} c="#22d3d1" />
+    {/* Distortion claws */}
+    <P x={2} y={5} w={2} h={5} c="#7c3aed" />
+    <P x={1} y={6} w={1} h={3} c="#a855f7" />
+    <P x={12} y={5} w={2} h={5} c="#7c3aed" />
+    <P x={14} y={6} w={1} h={3} c="#a855f7" />
+    {/* Legs */}
+    <P x={5} y={12} w={2} h={3} c="#4c1d95" />
+    <P x={9} y={12} w={2} h={3} c="#4c1d95" />
+  </IconWrapper>
+);
+
+export const VoidSpawnSprite = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Body - small void creature */}
+    <P x={5} y={6} w={6} h={6} c="#1f1f1f" />
+    <P x={6} y={5} w={4} h={1} c="#0f0f0f" />
+    {/* Head */}
+    <P x={5} y={3} w={6} h={3} c="#374151" />
+    {/* Single large eye */}
+    <P x={6} y={4} w={4} h={2} c="#7c3aed" />
+    <P x={7} y={4} w={2} h={2} c="#a855f7" />
+    <P x={8} y={5} w={1} h={1} c="#e9d5ff" />
+    {/* Tendrils */}
+    <P x={3} y={7} w={2} h={2} c="#374151" />
+    <P x={11} y={7} w={2} h={2} c="#374151" />
+    {/* Legs */}
+    <P x={5} y={12} w={2} h={2} c="#1f1f1f" />
+    <P x={9} y={12} w={2} h={2} c="#1f1f1f" />
+  </IconWrapper>
+);
+
+export const TheNamelessOneSprite = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Massive void form */}
+    <P x={2} y={3} w={12} h={11} c="#0f0f0f" />
+    <P x={3} y={2} w={10} h={1} c="#1f1f1f" />
+    {/* Central eye */}
+    <P x={5} y={5} w={6} h={4} c="#4c1d95" />
+    <P x={6} y={6} w={4} h={2} c="#7c3aed" />
+    <P x={7} y={6} w={2} h={2} c="#a855f7" />
+    <P x={8} y={7} w={1} h={1} c="#fef3c7" />
+    {/* Smaller eyes */}
+    <P x={3} y={6} w={2} h={2} c="#ef4444" />
+    <P x={11} y={6} w={2} h={2} c="#22d3d1" />
+    {/* Void tendrils */}
+    <P x={0} y={6} w={2} h={6} c="#1f1f1f" />
+    <P x={14} y={6} w={2} h={6} c="#1f1f1f" />
+    {/* Crown of void */}
+    <P x={4} y={0} w={2} h={2} c="#7c3aed" />
+    <P x={7} y={0} w={2} h={2} c="#a855f7" />
+    <P x={10} y={0} w={2} h={2} c="#7c3aed" />
+    {/* Lower mass */}
+    <P x={3} y={13} w={3} h={2} c="#1f1f1f" />
+    <P x={7} y={14} w={2} h={1} c="#0f0f0f" />
+    <P x={10} y={13} w={3} h={2} c="#1f1f1f" />
+  </IconWrapper>
+);
+
 // Monster sprite mapping - IDs must match monsters.js
 export const MONSTER_SPRITES = {
   // Tier 1
@@ -693,6 +982,18 @@ export const MONSTER_SPRITES = {
   wraith: WraithSprite,
   lich: LichSprite,
   titan: TitanSprite,
+  // Tier 5 - Volcanic
+  magma_elemental: MagmaElementalSprite,
+  fire_imp: FireImpSprite,
+  lava_serpent: LavaSerpentSprite,
+  obsidian_golem: ObsidianGolemSprite,
+  ember_wraith: EmberWraithSprite,
+  // Tier 6 - Void
+  void_stalker: VoidStalkerSprite,
+  eldritch_horror: EldritchHorrorSprite,
+  null_shade: NullShadeSprite,
+  reality_ripper: RealityRipperSprite,
+  void_spawn: VoidSpawnSprite,
   // Bosses - unique sprites for each
   goblin_king: GoblinKingSprite,
   orc_warlord: OrcWarlordSprite,
@@ -700,6 +1001,8 @@ export const MONSTER_SPRITES = {
   dragon: DragonSprite,
   demon_lord: DemonLordSprite,
   lich_king: LichKingSprite,
+  inferno_titan: InfernoTitanSprite,
+  the_nameless_one: TheNamelessOneSprite,
 };
 
 // Helper component to render monster by ID

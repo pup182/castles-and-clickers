@@ -1,147 +1,65 @@
-# TODO
+# TODO - Unimplemented Features
 
-## Bugs
-- [x] Units can shoot through walls (projectiles should respect line of sight)
-- [ ] Dungeon transition screen appears on top of modals (should be behind)
-- [ ] Investigate: what is the little question mark that sometimes pops up?
-- [x] Homestead shouldn't be unlocked at game start (gate behind progression) - unlocks at D3, shows NEW badge until visited
-- [x] Welcome back screen/offline progress system is inaccurate - needs full rework
-- [x] Verify stats are being tracked consistently across all sources (fixed: skill dmg out, chain dmg, bonus attacks, AOE cleave, dmg taken from DOTs/redirects/sharing/martyr/monster skills)
-- [x] "INVENTORY FULL" message appearing in combat log even when inventory isn't full
-- [ ] Followers can get stuck when going around corners
-- [ ] Rogues with bows should either have ranged attacks or bows removed from rogue item pool
+This file tracks skills, passives, affixes, and special effects that are defined in data files but not yet implemented in game logic.
 
-## Visual/Animation Improvements
-- [ ] Unique icons for every skill (no duplicates) - try creative variations first, fallback to recolors/sprite flips
-- [ ] Skill animations (icon + name display) should linger for less time
-- [ ] Consider uncapping animations on screen (currently stuff gets cut off before animation finishes)
-- [ ] Unique animations for each skill (not just icon display)
-- [x] Dungeon select and dungeon overview screens need redesign (look more like a map, better visual overview, clearer progression outlook)
-- [x] "No active dungeon" screen should have a one-click button to start next dungeon
-- [ ] More unique tilesets for each dungeon type
+## Critical Priority (Completely Non-Functional)
 
-## AI/Combat Improvements
-- [x] Smarter ability decision making (e.g., don't use AoE spells on single enemies)
-- [ ] Monster balance pass
+### Skill Effects
+_None remaining_
 
-## Boss Enhancements
-- [x] Unique names for bosses (generated or from name pool)
-- [x] Unique boss sprites (distinct from regular monsters)
-- [x] Boss-specific visual flair (auras, size, colors, etc.)
-- [ ] Unique boss for each dungeon zone's pinnacle level
-- [ ] Show pinnacle boss on dungeon progression screen
+### Dungeon Affixes
+_None remaining_
 
-## Elite Mobs
-- [ ] Elite enemies with distinct health bars and more attacks
-- [ ] Spawn among regular enemies in higher level dungeons
+### Monster Abilities
+_None remaining_
 
-## Bestiary
-- [x] Monster collection/log showing all encountered creatures (uses in-game sprites)
-- [x] Track stats per monster type (kill count, base stats display)
-- [x] Discovery progress bar and tier filtering
-- [ ] Unlock lore/details as you fight more of each type
-- [ ] Monster descriptions/flavor text for each creature
-- [ ] Make kill count display bigger/more prominent
-- [ ] Need more monsters for later levels (no unique monsters for Void and Volcanic Caverns)
-- [ ] Track unique/pinnacle bosses in the bestiary
+## High Priority (Partially Implemented)
 
-## Milestones Rework
-- [ ] Rethink milestones system completely
+### Dungeon Affixes
+_None remaining_
 
-## Branding
-- [ ] New game name
-- [ ] New branding/logo
-- [ ] Art style refresh
+### Monster Abilities
+_None remaining_
 
-## Progression Gating
-- [x] Auto dungeon run unlocks after first full party (permanently unlocked, toggle in header)
-- [x] Auto-run button needs a notification/badge when it first becomes available
-- [x] Auto-run button should be visible but disabled before unlocking
-- [x] Journey tab in Stats showing progression roadmap and upcoming unlocks
+### Skill Effects
+_None remaining_
 
-## Hero Management
-- [ ] Consider why players would switch classes or retire a hero
+## Medium Priority
+
+_None remaining_
+
+## Completed
+
+- [x] **bonusIfTaunting** - Knight "Punish" skill deals bonus damage when hero is taunting
+- [x] **requiresCorpse** - Necromancer "Corpse Explosion" only works with dead enemies
+- [x] **resetOnKill** - Necromancer "Death Coil" resets cooldown on kill
+- [x] **selfDamagePercent** - Necromancer "Death Coil" costs 30% HP to cast
+- [x] **hpCostPerAttack** - Necromancer "Life Tap" costs 10% HP per attack for +30% damage
+- [x] **deathExplosion** - "Explosive" affix: monsters explode for 20% max HP on death
+- [x] **armorPen** - Ranger "Piercing Arrow" penetrates enemy defense
+- [x] **onDeathAllyBuff** - "Bolstering" affix: surviving monsters gain attack when ally dies
+- [x] **regenPercent** - "Regenerating" affix: monsters regen HP per turn
+- [x] **trigger (on_damage)** - Monster passive abilities like "Enrage" now trigger when damaged
+- [x] **hitCount** - Monster "Quick Strike" already works (was implemented in monsterAI.js)
+- [x] **summonType** - Monster summons now work (fixed tier_1_random handling)
+- [x] **onHitStatus** - Enemies now apply status effects on hit (Venomous, Burning, etc.)
+- [x] **reflectDamage** - "Thorny" affix: monsters now reflect damage back to attackers
+- [x] **lifesteal** - Monster abilities like "Soul Drain", "Drain Life" now heal the monster (added visual effect)
+- [x] **heal_shield** - Cleric "Radiance" already works (was implemented in useCombat.js)
+- [x] **party_stat_bonus** - Auras now also benefit the caster (Paladin/Cleric get their own buff)
 
 ---
 
-## 1. Stats Page
-- [x] Create stats screen showing aggregate game statistics
-- [x] Damage done (total, per hero)
-- [x] Monsters killed (by type, boss tracking)
-- [x] Deaths and defeats
-- [x] Gold earned/spent
-- [x] Break down stats by individual hero
-- [x] Track healing done, damage taken
-- [x] Track additional hero stats (crits, dodges, mitigation)
+## Notes
 
-## 2. Raids and Unique Weapons
-- [ ] Implement raid system (weekly lockouts?)
-- [ ] Design raid encounters with mechanics
-- [ ] Create unique/legendary weapon drops
-- [ ] Raid-specific loot tables
-- [ ] Boss mechanics beyond normal combat
+### File Locations
+- **Skill definitions:** `src/data/skillTrees.js`
+- **Monster abilities:** `src/data/monsterAbilities.js`
+- **Dungeon affixes:** `src/data/dungeonTypes.js`
+- **Equipment affixes:** `src/data/itemAffixes.js`
 
-## 3. Shop Redesign
-- [ ] Rework shop UI/UX
-- [ ] Better item previews and comparisons
-- [ ] More interesting items to buy
-- [ ] Rotating stock improvements
-- [ ] Consider removing or reworking refresh timer
-
-## 4. Homestead Redesign
-- [ ] Revamp building system
-- [ ] More meaningful upgrade choices
-- [ ] Visual representation of homestead?
-- [ ] New buildings with unique effects
-- [ ] Building synergies
-
-## 5. Gold Economy Rework
-- [ ] Audit gold income sources
-- [ ] Add more gold sinks
-- [ ] Balance gold rewards vs costs
-- [ ] New things to spend gold on
-- [ ] Consider scaling costs with progression
-
-## 6. Game Ending and Prestiging
-- [ ] Define end-game goal/boss
-- [ ] Design prestige system
-- [ ] Prestige rewards and bonuses
-- [ ] What resets vs what persists
-- [ ] Multiple prestige tiers?
-- [ ] Gear score progression: after max character level, gear drops with gear score as next progression path
-- [ ] Endgame skill tree with more nodes and passives (Diablo paragon-style)
-
-## 7. Unlockable Classes
-- [ ] Lock some classes behind achievements/progression
-- [ ] Class unlock requirements (dungeon level, gold, milestones)
-- [ ] Prestige-only classes?
-- [ ] Class upgrade paths or promotions
-
-## 8. Camera Fixes
-- [ ] Fix camera getting confused on position
-- [ ] Smoother camera transitions
-- [ ] Better viewport tracking of party
-
-## 9. Item Drop Animation Improvements
-- [ ] Show actual item icon when loot drops
-- [ ] Different animations for rarity tiers
-- [ ] Equipment slot indicator on drop
-
-## 10. Inventory Redesign
-- [ ] Rethink how items, equipment, and inventory work in the context of game flow
-- [ ] Rework inventory UI/UX
-- [ ] Better sorting and filtering
-- [ ] Item comparison tooltips
-- [ ] Bulk sell/salvage options
-- [ ] Equipment loadouts or sets
-
----
-
-# Stretch Goals
-
-## 1. Hash-Based Multiplayer
-- [ ] Shareable party/hero hash codes
-- [ ] PvP arena using hash imports
-- [ ] Co-op raids with hash-shared parties
-- [ ] Leaderboards based on hash submissions
-- [ ] Async battles (fight someone's exported party)
+### Logic Files
+- **Skill execution:** `src/game/skillEngine.js`
+- **Monster AI:** `src/game/monsterAI.js`
+- **Combat loop:** `src/hooks/useCombat.js`
+- **Affix processing:** `src/game/affixEngine.js`

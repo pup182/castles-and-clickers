@@ -229,6 +229,9 @@ export const applyAffixesToMonster = (monster, affixes) => {
     if (effect.deathExplosion) {
       modified.deathExplosion = effect.deathExplosion;
     }
+    if (effect.onDeathAllyBuff) {
+      modified.onDeathAllyBuff = effect.onDeathAllyBuff;
+    }
   }
 
   return modified;

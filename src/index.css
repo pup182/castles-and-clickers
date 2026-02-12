@@ -190,6 +190,10 @@ svg {
   background: linear-gradient(180deg, #aa66ff 0%, #8844cc 50%, #662288 100%);
 }
 
+.pixel-bar-red {
+  background: linear-gradient(180deg, #ff6666 0%, #cc4444 50%, #882222 100%);
+}
+
 .pixel-bar-blue {
   background: linear-gradient(180deg, #66aaff 0%, #4488cc 50%, #226688 100%);
 }
