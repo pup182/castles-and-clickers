@@ -263,35 +263,9 @@ export const useCombat = ({ addEffect }) => {
     const newUsedPhoenixRevives = { ...(roomCombat.usedPhoenixRevives || {}) };
     let summonsSpawned = roomCombat.summonsSpawned || false;
 
-    // Spawn pets and clones at combat start (first tick of first round)
+    // Spawn pets and clones at combat start, or respawn dead ones at new room
     if (!summonsSpawned && roomCombat.round <= 1 && roomCombat.currentTurnIndex === 0) {
-      for (const hero of newHeroes) {
-        if (hero.stats.hp <= 0) continue;
-
-        const summonData = getSummonData(hero);
-        for (const summon of summonData) {
-          // Find a position near the hero for the summon
-          const summonPosition = {
-            x: hero.position.x + (Math.random() < 0.5 ? -1 : 1),
-            y: hero.position.y + (Math.random() < 0.5 ? -1 : 1),
-          };
-
-          if (summon.type === 'pet') {
-            const pet = createPetUnit(hero, summon, summonPosition);
-            newHeroes.push(pet);
-            newTurnOrder.push(pet.id);
-            addCombatLog({ type: 'system', message: `${hero.name}'s ${pet.name} joins the battle!` });
-            addEffect({ type: 'healBurst', position: summonPosition });
-          } else if (summon.type === 'clone') {
-            const clone = createShadowClone(hero, summon, summonPosition);
-            newHeroes.push(clone);
-            newTurnOrder.push(clone.id);
-            addCombatLog({ type: 'system', message: `${hero.name}'s Shadow Clone appears!` });
-            addEffect({ type: 'buffAura', position: summonPosition, color: '#6b21a8' });
-          }
-        }
-      }
-      // Also respawn dead pets/clones at room start (if owner is alive)
+      // First, respawn any dead pets/clones (if owner is alive)
       for (let i = 0; i < newHeroes.length; i++) {
         const summon = newHeroes[i];
         if ((summon.isPet || summon.isClone) && summon.stats.hp <= 0) {
@@ -316,6 +290,41 @@ export const useCombat = ({ addEffect }) => {
 
             addCombatLog({ type: 'system', message: `${summon.name} returns to battle!` });
             addEffect({ type: 'healBurst', position: respawnPosition });
+          }
+        }
+      }
+
+      // Then spawn NEW pets/clones for heroes that don't have one yet
+      for (const hero of newHeroes) {
+        if (hero.stats.hp <= 0) continue;
+
+        const summonData = getSummonData(hero);
+        for (const summon of summonData) {
+          // Check if this hero already has a pet/clone
+          const existingSummon = newHeroes.find(h =>
+            h.ownerId === hero.id &&
+            ((summon.type === 'pet' && h.isPet) || (summon.type === 'clone' && h.isClone))
+          );
+          if (existingSummon) continue; // Already has one, skip
+
+          // Find a position near the hero for the summon
+          const summonPosition = {
+            x: hero.position.x + (Math.random() < 0.5 ? -1 : 1),
+            y: hero.position.y + (Math.random() < 0.5 ? -1 : 1),
+          };
+
+          if (summon.type === 'pet') {
+            const pet = createPetUnit(hero, summon, summonPosition);
+            newHeroes.push(pet);
+            newTurnOrder.push(pet.id);
+            addCombatLog({ type: 'system', message: `${hero.name}'s ${pet.name} joins the battle!` });
+            addEffect({ type: 'healBurst', position: summonPosition });
+          } else if (summon.type === 'clone') {
+            const clone = createShadowClone(hero, summon, summonPosition);
+            newHeroes.push(clone);
+            newTurnOrder.push(clone.id);
+            addCombatLog({ type: 'system', message: `${hero.name}'s Shadow Clone appears!` });
+            addEffect({ type: 'buffAura', position: summonPosition, color: '#6b21a8' });
           }
         }
       }
