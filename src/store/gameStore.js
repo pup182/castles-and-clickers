@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { CLASSES, PARTY_SLOTS, getClassesByRole } from '../data/classes';
 import { getPassiveAffixBonuses } from '../game/affixEngine';
+import { RAIDS, isRaidUnlocked } from '../data/raids';
+import { scaleUniqueStats } from '../data/uniqueItems';
 
 // State validation middleware - catches bugs early by checking state integrity
 const validateState = (state) => {
@@ -316,7 +318,7 @@ const updatePartySkillBonusCache = (allHeroes) => {
 
 // Generate a cache key for hero stats - OPTIMIZED: no .sort(), pre-computed party skills
 const getStatCacheKey = (hero, allHeroes = [], homesteadBonuses = null) => {
-  // Key components: hero id, level, equipment ids, skills, homestead bonuses, party skills version
+  // Key components: hero id, level, equipment ids, skills, homestead bonuses, party skills version, highest party level
   const equipmentHash = [
     hero.equipment.weapon?.id || 'null',
     hero.equipment.armor?.id || 'null',
@@ -331,7 +333,12 @@ const getStatCacheKey = (hero, allHeroes = [], homesteadBonuses = null) => {
     ? `${homesteadBonuses.hp || 0},${homesteadBonuses.attack || 0},${homesteadBonuses.defense || 0}`
     : 'null';
 
-  return `${hero.id}:${hero.level}:${equipmentHash}:${skillsHash}:${partySkillBonusCacheVersion}:${homesteadHash}`;
+  // Include highest party level for unique item scaling
+  const highestPartyLevel = allHeroes.length > 0
+    ? Math.max(...allHeroes.map(h => h.level))
+    : hero.level;
+
+  return `${hero.id}:${hero.level}:${equipmentHash}:${skillsHash}:${partySkillBonusCacheVersion}:${homesteadHash}:${highestPartyLevel}`;
 };
 
 // Helper to calculate hero stats including equipment, passive skills, and homestead bonuses
@@ -372,11 +379,20 @@ const calculateHeroStats = (hero, allHeroes = [], homesteadBonuses = null) => {
     }
   }
 
+  // Calculate highest party level for unique item scaling
+  const highestPartyLevel = allHeroes.length > 0
+    ? Math.max(...allHeroes.map(h => h.level))
+    : hero.level;
+
   // Apply equipment bonuses
   for (const slot of ['weapon', 'armor', 'accessory']) {
     const item = hero.equipment[slot];
     if (item) {
-      for (const [stat, value] of Object.entries(item.stats)) {
+      // For unique items with baseStats, rescale based on highest party level
+      const itemStats = (item.isUnique && item.baseStats)
+        ? scaleUniqueStats(item.baseStats, highestPartyLevel)
+        : item.stats;
+      for (const [stat, value] of Object.entries(itemStats)) {
         if (stats[stat] !== undefined) {
           stats[stat] += value;
         }
@@ -551,6 +567,11 @@ export const useGameStore = create(
       dungeonUnlocked: 1,
       lastDungeonSuccess: null, // null = no dungeon run yet, true = victory, false = defeat
 
+      // Unique item collection tracking
+      ownedUniques: [],  // Array of unique item template IDs (e.g., ['ancient_bark', 'void_heart'])
+      unreadUniques: [], // Array of unique item IDs that haven't been viewed yet (for "NEW" badge)
+      pendingUniqueCelebration: null, // Item to show in celebration modal
+
       // Combat state (full state machine)
       combat: null,
       // OPTIMIZATION: Circular buffer for combat log to avoid array slice allocations
@@ -635,6 +656,7 @@ export const useGameStore = create(
       featureUnlocks: {
         autoAdvance: false, // Unlocks when player clears Dungeon 5
         homesteadSeen: false, // Tracks if player has visited homestead after unlock
+        lastSeenRaidsAt: 0, // Tracks highest dungeon level when raids were last visited
       },
 
       // Ascension mode (post dungeon 30)
@@ -653,6 +675,17 @@ export const useGameStore = create(
         lastRefresh: 0,      // Timestamp of last refresh
         refreshCost: 50,     // Gold cost to manually refresh
       },
+
+      // Hub-based Raid State
+      raidState: {
+        active: false,           // Is a raid dungeon in progress?
+        raidId: null,            // Which raid (e.g., 'sunken_temple')
+        defeatedWingBosses: [],  // Array of wing boss IDs defeated this run
+        heroHpSnapshot: {},      // HP when raid started
+      },
+
+      // Raid recap (shown after completing a raid)
+      pendingRaidRecap: null,
 
       // Actions
       addHero: (classId, name, slotIndex) => {
@@ -1168,6 +1201,11 @@ export const useGameStore = create(
       },
 
       removeFromInventory: (itemId) => {
+        const { inventory } = get();
+        const item = inventory.find(i => i.id === itemId);
+        // Prevent deletion of unique items
+        if (item?.isUnique) return;
+
         set(state => ({
           inventory: state.inventory.filter(i => i.id !== itemId),
         }));
@@ -1177,6 +1215,9 @@ export const useGameStore = create(
         const { inventory } = get();
         const item = inventory.find(i => i.id === itemId);
         if (!item) return 0;
+
+        // Prevent selling unique items
+        if (item.isUnique) return 0;
 
         const sellValue = calculateSellValue(item);
 
@@ -1200,6 +1241,12 @@ export const useGameStore = create(
         const itemsToSell = [];
 
         for (const item of inventory) {
+          // Never sell unique items
+          if (item.isUnique) {
+            itemsToKeep.push(item);
+            continue;
+          }
+
           const upgradeCheck = isUpgradeForAnyHero(item);
           if (upgradeCheck.isUpgrade) {
             itemsToKeep.push(item);
@@ -1432,14 +1479,23 @@ export const useGameStore = create(
         const upgradeCheck = get().isUpgradeForAnyHero(item);
 
         // If auto-equip is on and item is an upgrade, equip it immediately
-        if (equipmentSettings.autoEquipUpgrades && upgradeCheck.isUpgrade && upgradeCheck.hero) {
+        // Never auto-replace unique items - they're too valuable
+        if (equipmentSettings.autoEquipUpgrades && upgradeCheck.isUpgrade && upgradeCheck.hero && !upgradeCheck.hero.equipment[item.slot]?.isUnique) {
           const hero = upgradeCheck.hero;
           const oldItem = hero.equipment[item.slot];
           let goldGain = 0;
 
-          // Handle old item - sell if autoSellJunk, otherwise add to inventory
+          // Handle old item - never sell uniques, sell if autoSellJunk, otherwise add to inventory
           if (oldItem) {
-            if (equipmentSettings.autoSellJunk) {
+            // Never auto-sell unique items - always keep them
+            if (oldItem.isUnique) {
+              if (inventory.length < maxInventory) {
+                set(state => ({
+                  inventory: [...state.inventory, oldItem],
+                }));
+              }
+              // If inventory full, unique stays in inventory (don't lose it)
+            } else if (equipmentSettings.autoSellJunk) {
               goldGain = calculateSellValue(oldItem);
             } else if (inventory.length < maxInventory) {
               set(state => ({
@@ -1473,8 +1529,8 @@ export const useGameStore = create(
           return { action: 'equipped', hero, oldItem };
         }
 
-        // If auto-sell junk is on and item is not an upgrade, sell it
-        if (equipmentSettings.autoSellJunk && !upgradeCheck.isUpgrade) {
+        // If auto-sell junk is on and item is not an upgrade, sell it (but never sell uniques)
+        if (equipmentSettings.autoSellJunk && !upgradeCheck.isUpgrade && !item.isUnique) {
           const goldValue = calculateSellValue(item);
           set(state => ({
             gold: state.gold + goldValue,
@@ -1512,6 +1568,108 @@ export const useGameStore = create(
         // Inventory full
         get().addLootNotification({ type: 'inventory-full', item });
         return { action: 'lost' };
+      },
+
+      // Process a unique item drop - handles duplicates, tracking, etc.
+      processUniqueDrop: (uniqueItem) => {
+        const { ownedUniques, inventory, maxInventory } = get();
+
+        // Check if we already own this unique
+        const templateId = uniqueItem.templateId || uniqueItem.id;
+        if (ownedUniques.includes(templateId)) {
+          // Duplicate - convert to gold
+          const goldValue = 500 + Math.floor(
+            Object.values(uniqueItem.stats || {}).reduce((a, b) => a + Math.abs(b), 0) * 25
+          );
+
+          set(state => ({
+            gold: state.gold + goldValue,
+            stats: {
+              ...state.stats,
+              totalGoldEarned: state.stats.totalGoldEarned + goldValue,
+            },
+          }));
+
+          get().addLootNotification({
+            type: 'unique-duplicate',
+            item: uniqueItem,
+            gold: goldValue,
+          });
+
+          return { action: 'duplicate', gold: goldValue };
+        }
+
+        // New unique - add to collection and inventory
+        if (inventory.length < maxInventory) {
+          set(state => ({
+            ownedUniques: [...state.ownedUniques, templateId],
+            unreadUniques: [...state.unreadUniques, uniqueItem.id],
+            inventory: [...state.inventory, uniqueItem],
+            stats: {
+              ...state.stats,
+              totalItemsLooted: (state.stats.totalItemsLooted || 0) + 1,
+            },
+          }));
+
+          get().addLootNotification({
+            type: 'unique-drop',
+            item: uniqueItem,
+          });
+
+          // Trigger celebration modal for new unique
+          get().triggerUniqueCelebration(uniqueItem);
+
+          return { action: 'unique-looted', item: uniqueItem };
+        } else {
+          // Inventory full but still track ownership
+          set(state => ({
+            ownedUniques: [...state.ownedUniques, templateId],
+            unreadUniques: [...state.unreadUniques, uniqueItem.id],
+            inventory: [...state.inventory.slice(1), uniqueItem], // Remove oldest item
+            stats: {
+              ...state.stats,
+              totalItemsLooted: (state.stats.totalItemsLooted || 0) + 1,
+            },
+          }));
+
+          get().addLootNotification({
+            type: 'unique-drop',
+            item: uniqueItem,
+          });
+
+          // Trigger celebration modal for new unique
+          get().triggerUniqueCelebration(uniqueItem);
+
+          return { action: 'unique-looted', item: uniqueItem };
+        }
+      },
+
+      // Mark a unique item as read (removes "NEW" badge)
+      markUniqueRead: (itemId) => {
+        set(state => ({
+          unreadUniques: state.unreadUniques.filter(id => id !== itemId),
+        }));
+      },
+
+      // Mark all uniques in inventory as read
+      markAllUniquesRead: () => {
+        set({ unreadUniques: [] });
+      },
+
+      // Trigger unique item celebration modal
+      triggerUniqueCelebration: (item) => {
+        set({ pendingUniqueCelebration: item });
+      },
+
+      // Clear the celebration modal
+      clearUniqueCelebration: () => {
+        set({ pendingUniqueCelebration: null });
+      },
+
+      // Check if player owns a specific unique
+      ownsUnique: (templateId) => {
+        const { ownedUniques } = get();
+        return ownedUniques.includes(templateId);
       },
 
       // Get item score for a hero (for comparison UI)
@@ -1825,7 +1983,17 @@ export const useGameStore = create(
 
       // Abandon current dungeon without rewards
       abandonDungeon: () => {
-        const { processPendingRecruits } = get();
+        const { processPendingRecruits, raidState } = get();
+
+        // Clear raid state if abandoning a raid
+        const raidCleanup = raidState.active ? {
+          raidState: {
+            active: false,
+            raidId: null,
+            defeatedWingBosses: [],
+            heroHpSnapshot: {},
+          },
+        } : {};
 
         set(state => ({
           dungeon: null,
@@ -1835,8 +2003,10 @@ export const useGameStore = create(
           dungeonProgress: {
             ...state.dungeonProgress,
             currentType: 'normal',
+            currentRaidId: null,
             activeAffixes: [],
           },
+          ...raidCleanup,
         }));
 
         // Still process pending recruits and party changes even on abandon
@@ -1859,10 +2029,12 @@ export const useGameStore = create(
 
       // Mark a feature as seen/unlocked
       markFeatureSeen: (feature) => {
+        const { highestDungeonCleared } = get();
         set(state => ({
           featureUnlocks: {
             ...state.featureUnlocks,
-            [feature]: true,
+            // For raids, store the dungeon level to track when new raids unlock
+            [feature]: feature === 'lastSeenRaidsAt' ? highestDungeonCleared : true,
           },
         }));
       },
@@ -1882,52 +2054,155 @@ export const useGameStore = create(
         }
       },
 
-      // Start a raid (player-triggered only)
-      startRaid: (raidId, wingIndex = 0) => {
-        const { heroes, highestDungeonCleared, initializeHeroHp, dungeonProgress } = get();
-        if (heroes.length === 0) return false;
+      // ========================================
+      // MULTI-BOSS RAID DUNGEON ACTIONS
+      // ========================================
 
-        // Check if raid is unlocked (requires clearing dungeon 15)
-        if (highestDungeonCleared < 15) return false;
+      // Enter a raid - generates and starts a multi-boss dungeon directly
+      enterRaid: (raidId) => {
+        const { heroes, highestDungeonCleared, heroHp, initializeHeroHp } = get();
+        if (heroes.filter(Boolean).length === 0) return false;
 
-        // Check weekly lockout
-        const lockoutKey = `${raidId}:${wingIndex}`;
-        if (dungeonProgress.completedRaidWings.includes(lockoutKey)) {
-          return false; // Already completed this wing this week
-        }
+        const raid = RAIDS[raidId];
+        if (!raid) return false;
+
+        // Check if raid is unlocked
+        if (!isRaidUnlocked(raidId, highestDungeonCleared)) return false;
+
+        // Snapshot hero HP at raid start
+        const hpSnapshot = {};
+        heroes.filter(Boolean).forEach(hero => {
+          const maxHp = hero.stats?.maxHp || 100;
+          hpSnapshot[hero.id] = heroHp[hero.id] ?? maxHp;
+        });
 
         initializeHeroHp();
 
         set(state => ({
+          raidState: {
+            active: true,
+            raidId,
+            defeatedWingBosses: [], // Track killed wing bosses
+            heroHpSnapshot: hpSnapshot,
+          },
           dungeonProgress: {
             ...state.dungeonProgress,
             currentType: 'raid',
             currentRaidId: raidId,
-            currentRaidWing: wingIndex,
           },
-          isRunning: true,
+          dungeon: {
+            level: raid.requiredLevel,
+            isRaid: true,
+            raidId,
+            // The actual maze dungeon will be generated by useDungeon
+          },
+          roomCombat: null,
           combatLog: [],
+          isRunning: true,
         }));
 
         return true;
       },
 
-      // Complete a raid wing
-      completeRaidWing: () => {
-        set(state => {
-          const { currentRaidId, currentRaidWing, completedRaidWings } = state.dungeonProgress;
-          const lockoutKey = `${currentRaidId}:${currentRaidWing}`;
+      // Record a wing boss defeat (called when a wing boss dies in combat)
+      // Also used to record final boss defeat for UI display
+      defeatWingBoss: (bossId) => {
+        if (!bossId) return; // Defensive check for null/undefined bossId
 
-          return {
-            dungeonProgress: {
-              ...state.dungeonProgress,
-              completedRaidWings: [...completedRaidWings, lockoutKey],
-            },
-          };
-        });
+        const { raidState } = get();
+        if (!raidState.active) return;
+
+        if (raidState.defeatedWingBosses.includes(bossId)) return;
+
+        set(state => ({
+          raidState: {
+            ...state.raidState,
+            defeatedWingBosses: [...state.raidState.defeatedWingBosses, bossId],
+          },
+        }));
       },
 
-      // Reset weekly raid lockouts (call this on Monday)
+      // Check if the final boss room is accessible (all wing bosses dead)
+      isFinalBossUnlocked: () => {
+        const { raidState } = get();
+        if (!raidState.active) return false;
+
+        const raid = RAIDS[raidState.raidId];
+        if (!raid) return false;
+
+        return raid.wingBosses.every(
+          wb => raidState.defeatedWingBosses.includes(wb.id)
+        );
+      },
+
+      // Complete the raid (called after final boss defeated)
+      completeRaid: () => {
+        const { raidState, combatLog } = get();
+        if (!raidState.active) return;
+
+        const raid = RAIDS[raidState.raidId];
+        if (!raid) return;
+
+        // Record completion
+        const completionKey = `${raidState.raidId}:complete`;
+
+        // Collect loot info from combat log
+        const lootDrops = combatLog
+          .filter(log => log.type === 'system' && (log.message?.includes('LEGENDARY DROP') || log.message?.includes('Loot:')))
+          .map(log => log.message);
+
+        set(state => ({
+          // Store recap info before clearing
+          pendingRaidRecap: {
+            raidId: raidState.raidId,
+            raidName: raid.name,
+            defeatedBosses: [...raidState.defeatedWingBosses],
+            totalBosses: raid.wingBosses.length + 1,
+            lootDrops,
+            completedAt: Date.now(),
+          },
+          raidState: {
+            active: false,
+            raidId: null,
+            defeatedWingBosses: [],
+            heroHpSnapshot: {},
+          },
+          dungeonProgress: {
+            ...state.dungeonProgress,
+            currentType: 'normal',
+            currentRaidId: null,
+            completedRaidWings: [...state.dungeonProgress.completedRaidWings, completionKey],
+          },
+          dungeon: null,
+          roomCombat: null,
+          isRunning: false,
+        }));
+      },
+
+      // Clear raid recap (user dismissed the screen)
+      clearRaidRecap: () => set({ pendingRaidRecap: null }),
+
+      // Abandon raid (leave without completing)
+      abandonRaid: () => {
+        set(state => ({
+          raidState: {
+            active: false,
+            raidId: null,
+            defeatedWingBosses: [],
+            heroHpSnapshot: {},
+          },
+          dungeonProgress: {
+            ...state.dungeonProgress,
+            currentType: 'normal',
+            currentRaidId: null,
+          },
+          dungeon: null,
+          roomCombat: null,
+          isRunning: false,
+        }));
+      },
+
+      // Legacy: Reset weekly raid lockouts (call this on Monday)
       resetWeeklyLockouts: () => {
         set(state => ({
           dungeonProgress: {
@@ -2022,7 +2297,7 @@ export const useGameStore = create(
         const { heroes } = get();
         const heroHp = {};
         heroes.filter(Boolean).forEach(hero => {
-          const stats = calculateHeroStats(hero);
+          const stats = calculateHeroStats(hero, heroes);
           heroHp[hero.id] = stats.maxHp;
         });
         set({ heroHp });
@@ -2034,7 +2309,7 @@ export const useGameStore = create(
         if (heroHp[heroId] !== undefined) return heroHp[heroId];
         // Fallback to max if not set
         const hero = heroes.filter(Boolean).find(h => h.id === heroId);
-        if (hero) return calculateHeroStats(hero).maxHp;
+        if (hero) return calculateHeroStats(hero, heroes).maxHp;
         return 0;
       },
 
@@ -2060,7 +2335,7 @@ export const useGameStore = create(
         const { heroes } = get();
         const hero = heroes.filter(Boolean).find(h => h.id === heroId);
         if (!hero) return;
-        const maxHp = calculateHeroStats(hero).maxHp;
+        const maxHp = calculateHeroStats(hero, heroes).maxHp;
         set(state => ({
           heroHp: {
             ...state.heroHp,
@@ -2074,7 +2349,7 @@ export const useGameStore = create(
         const { heroes } = get();
         const heroHp = {};
         heroes.filter(Boolean).forEach(hero => {
-          heroHp[hero.id] = calculateHeroStats(hero).maxHp;
+          heroHp[hero.id] = calculateHeroStats(hero, heroes).maxHp;
         });
         set({ heroHp });
       },
@@ -2432,6 +2707,9 @@ export const useGameStore = create(
             academy: 0,
             infirmary: 0,
           },
+          ownedUniques: [],
+          unreadUniques: [],
+          pendingUniqueCelebration: null,
           shop: {
             items: [],
             lastRefresh: 0,
@@ -2447,6 +2725,7 @@ export const useGameStore = create(
           featureUnlocks: {
             autoAdvance: false,
             homesteadSeen: false,
+            lastSeenRaidsAt: 0,
           },
           dungeonProgress: {
             currentType: 'normal',
@@ -2456,6 +2735,12 @@ export const useGameStore = create(
             weeklyRaidCompletions: [],
             lastWeeklyReset: Date.now(),
             activeAffixes: [],
+          },
+          raidState: {
+            active: false,
+            raidId: null,
+            defeatedWingBosses: [],
+            heroHpSnapshot: {},
           },
           ascension: {
             unlocked: false,

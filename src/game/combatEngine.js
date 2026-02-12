@@ -4,7 +4,7 @@ import { CLASSES } from '../data/classes';
 // Initialize combat state
 export const initializeCombat = (heroes, monsters) => {
   const heroUnits = heroes.map(hero => {
-    const stats = calculateHeroStats(hero);
+    const stats = calculateHeroStats(hero, heroes);
     const classData = CLASSES[hero.classId];
     return {
       id: hero.id,

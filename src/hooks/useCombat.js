@@ -30,7 +30,43 @@ import {
   getDotLifestealPercent,
   hasArmorVsDot,
 } from '../game/skillEngine';
-import { generateEquipment, generateConsumableDrop } from '../data/equipment';
+import { generateEquipment, generateConsumableDrop, RARITY } from '../data/equipment';
+import { createUniqueItemInstance, getUniqueItem } from '../data/uniqueItems';
+import { ELITE_CONFIG } from '../data/monsters';
+import {
+  getWorldBossLoot,
+  checkPhaseTransition,
+  processPhaseStartActions,
+  isBossImmune,
+  isBossEnraged,
+  setBossEnraged,
+  getBossPhaseDamageBonus,
+  getBossPhaseDamageReduction,
+  getEnrageDamageBonus,
+  initBossState,
+  getBossState,
+  resetBossStates,
+} from '../game/bossEngine';
+import { rollRaidDrop, getWingBoss } from '../data/raids';
+import {
+  resetUniqueStates,
+  resetRoomUniqueStates,
+  getHeroUniqueItems,
+  getUniquePassiveBonuses,
+  processOnHitUniques,
+  processOnCritUniques,
+  processOnKillUniques,
+  processOnDamageTakenUniques,
+  processOnCombatStartUniques,
+  processOnRoomStartUniques,
+  processOnDeathUniques,
+  processOnLowHpUniques,
+  getStealthBonusDamage,
+  getRootedBonusDamage,
+  getShieldBonusDamage,
+  tickUniqueEffects,
+  isHeroInvisible,
+} from '../game/uniqueEngine';
 import {
   PHASES,
   calculateDodgeChance,
@@ -82,7 +118,8 @@ export const useCombat = ({ addEffect }) => {
   const getState = useCallback(() => useGameStore.getState(), []);
   const addGold = useCallback((amount) => useGameStore.getState().addGold(amount), []);
   const addXpToHero = useCallback((heroId, xp) => useGameStore.getState().addXpToHero(heroId, xp), []);
-  const processLootDrop = useCallback((level, isBoss, dungeonType) => useGameStore.getState().processLootDrop(level, isBoss, dungeonType), []);
+  const processLootDrop = useCallback((item) => useGameStore.getState().processLootDrop(item), []);
+  const processUniqueDrop = useCallback((item) => useGameStore.getState().processUniqueDrop(item), []);
   const incrementStat = useCallback((stat, amount = 1, options = {}) => useGameStore.getState().incrementStat(stat, amount, options), []);
   const addCombatLog = useCallback((log) => useGameStore.getState().addCombatLog(log), []);
   const updateRoomCombat = useCallback((updates) => useGameStore.getState().updateRoomCombat(updates), []);
@@ -180,7 +217,7 @@ export const useCombat = ({ addEffect }) => {
   const handleCombatTick = useCallback(() => {
     // OPTIMIZATION: Get all state imperatively at start of tick
     const state = useGameStore.getState();
-    const { roomCombat, heroes, heroHp, dungeon } = state;
+    const { roomCombat, heroes, heroHp, dungeon, dungeonProgress } = state;
     const homesteadBonuses = state.getHomesteadBonuses();
 
     if (!roomCombat || roomCombat.phase !== PHASES.COMBAT) return false;
@@ -354,10 +391,16 @@ export const useCombat = ({ addEffect }) => {
       newBuffs[unitId] = { ghost: true };
       newStatusEffects[unitId] = [];
 
-      // Handle death explosion affix (Explosive dungeon affix)
-      if (monster && monster.deathExplosion && monster.deathExplosion > 0) {
-        const explosionDamage = Math.floor(monster.stats.maxHp * monster.deathExplosion);
-        const explosionRange = 3; // Tiles around the dead monster
+      // Handle death explosion affix (Explosive dungeon affix or elite affix)
+      // Support both number format (dungeon affix) and object format (elite affix)
+      const explosionData = monster?.deathExplosion;
+      const hasExplosion = explosionData && (
+        typeof explosionData === 'number' ? explosionData > 0 : explosionData.damage > 0
+      );
+      if (monster && hasExplosion) {
+        const explosionPercent = typeof explosionData === 'number' ? explosionData : explosionData.damage;
+        const explosionDamage = Math.floor(monster.stats.maxHp * explosionPercent);
+        const explosionRange = typeof explosionData === 'object' && explosionData.range ? explosionData.range : 3;
 
         // Damage nearby heroes
         for (const hero of newHeroes) {
@@ -774,6 +817,20 @@ export const useCombat = ({ addEffect }) => {
             addCombatLog({ type: 'death', target: { name: actor.name }, isHero: false });
             addEffect({ type: 'death', position: actor.position, isHero: false, monsterId: actor.templateId });
             handleUnitDeath(actor.id, actor);
+
+            // Track raid boss defeat from DOT damage
+            if (actor.wingBossId) {
+              const { defeatWingBoss } = useGameStore.getState();
+              defeatWingBoss(actor.wingBossId);
+              addCombatLog({ type: 'system', message: `Wing Boss defeated: ${actor.name}!` });
+            }
+            if (actor.finalBossId) {
+              const { defeatWingBoss, completeRaid } = useGameStore.getState();
+              defeatWingBoss(actor.finalBossId);
+              addCombatLog({ type: 'system', message: `FINAL BOSS DEFEATED: ${actor.name}! Raid Complete!` });
+              setTimeout(() => completeRaid(), 2000);
+            }
+
             // OPTIMIZATION: Single batched update including turn advance
             const nextTurn = getNextTurnState(roomCombat, newHeroes, newMonsters);
             updateRoomCombat({
@@ -940,6 +997,19 @@ export const useCombat = ({ addEffect }) => {
                   addEffect({ type: 'death', position: m.position, isHero: false, monsterId: m.templateId });
                   handleUnitDeath(m.id, m);
 
+                  // Track raid boss defeat from skill damage
+                  if (m.wingBossId) {
+                    const { defeatWingBoss } = useGameStore.getState();
+                    defeatWingBoss(m.wingBossId);
+                    addCombatLog({ type: 'system', message: `Wing Boss defeated: ${m.name}!` });
+                  }
+                  if (m.finalBossId) {
+                    const { defeatWingBoss, completeRaid } = useGameStore.getState();
+                    defeatWingBoss(m.finalBossId);
+                    addCombatLog({ type: 'system', message: `FINAL BOSS DEFEATED: ${m.name}! Raid Complete!` });
+                    setTimeout(() => completeRaid(), 2000);
+                  }
+
                   // Handle resetOnKill - reset the skill's cooldown
                   if (result.resetOnKill && result.skillId) {
                     if (newSkillCooldowns[actor.id]) {
@@ -973,8 +1043,92 @@ export const useCombat = ({ addEffect }) => {
 
                   newKillBonusStacks[actor.id] = (newKillBonusStacks[actor.id] || 0) + 1;
 
-                  if (Math.random() < (m.isBoss ? 0.9 : 0.25)) {
-                    const item = generateEquipment(dungeon.level);
+                  // Handle unique drops from world bosses
+                  if (m.isWorldBoss && m.uniqueDrop) {
+                    const uniqueItem = createUniqueItemInstance(m.uniqueDrop, dungeon.level);
+                    if (uniqueItem) {
+                      const lootResult = processUniqueDrop(uniqueItem);
+
+                      // Legendary drop celebration
+                      addEffect({
+                        type: 'legendaryDrop',
+                        position: m.position,
+                        slot: uniqueItem.slot,
+                        rarityColor: '#f59e0b',
+                        itemName: uniqueItem.name,
+                      });
+
+                      if (lootResult.action === 'unique-looted') {
+                        addCombatLog({ type: 'legendary', message: `LEGENDARY DROP: ${uniqueItem.name}!` });
+                      } else if (lootResult.action === 'duplicate') {
+                        addCombatLog({ type: 'system', message: `${uniqueItem.name} (duplicate - +${lootResult.gold}g)` });
+                      }
+                    }
+                  }
+
+                  // Handle raid boss drops
+                  const isRaidDungeon = dungeonProgress?.currentType === 'raid';
+                  if (isRaidDungeon && m.isBoss) {
+                    const targetBossId = m.wingBossId || m.finalBossId;
+                    const raidBoss = getWingBoss(dungeonProgress.currentRaidId, targetBossId);
+                    const ownedUniques = useGameStore.getState().ownedUniques || [];
+                    const raidDrop = rollRaidDrop(raidBoss?.dropTable, ownedUniques);
+
+                    if (raidDrop?.type === 'unique') {
+                      const uniqueTemplate = getUniqueItem(raidDrop.itemId);
+                      if (uniqueTemplate) {
+                        const uniqueInstance = createUniqueItemInstance(raidDrop.itemId);
+                        const result = processUniqueDrop(uniqueInstance);
+
+                        addEffect({ type: 'legendaryDrop', position: m.position, itemName: uniqueTemplate.name });
+
+                        if (result.action === 'duplicate') {
+                          addCombatLog({ type: 'system', message: `LEGENDARY DROP: ${uniqueTemplate.name} (duplicate - converted to ${result.gold}g)` });
+                        } else if (result.action === 'looted') {
+                          addCombatLog({ type: 'system', message: `LEGENDARY DROP: ${uniqueTemplate.name}!` });
+                        } else {
+                          addCombatLog({ type: 'system', message: `LEGENDARY DROP: ${uniqueTemplate.name} (inventory full!)` });
+                        }
+                      }
+                    } else if (raidDrop) {
+                      // Random gear drop with guaranteed rarity from raid
+                      const item = generateEquipment(dungeon.level, { guaranteedRarity: raidDrop.rarity || 'epic' });
+                      const lootResult = processLootDrop(item);
+
+                      addEffect({
+                        type: 'lootDrop',
+                        position: m.position,
+                        slot: item.slot,
+                        rarityColor: item.rarityColor || '#9ca3af',
+                      });
+
+                      if (lootResult.action === 'sold') {
+                        addCombatLog({ type: 'system', message: `Sold: ${item.name} (+${lootResult.gold}g)` });
+                      } else if (lootResult.action === 'looted') {
+                        addCombatLog({ type: 'system', message: `Loot: ${item.name}` });
+                      }
+                    }
+                  }
+
+                  // Calculate drop chance and minimum rarity (skip for raid bosses - they use drop tables)
+                  const skipNormalDrop = isRaidDungeon && m.isBoss;
+                  let dropChance = skipNormalDrop ? 0 : (m.isBoss ? 0.95 : 0.25);
+                  let minRarity = null;
+
+                  // Elite mobs have guaranteed rare+ drops
+                  if (m.isElite) {
+                    dropChance = 1.0;
+                    minRarity = ELITE_CONFIG.guaranteedMinRarity;
+                  }
+
+                  // World bosses have guaranteed drops at their tier
+                  if (m.isWorldBoss) {
+                    dropChance = 1.0;
+                    minRarity = m.guaranteedRarity || 'epic';
+                  }
+
+                  if (Math.random() < dropChance) {
+                    const item = generateEquipment(dungeon.level, { guaranteedRarity: minRarity });
                     const lootResult = processLootDrop(item);
 
                     // Visual loot drop effect
@@ -1065,7 +1219,7 @@ export const useCombat = ({ addEffect }) => {
               } else if (debuff.type === 'stun') {
                 // Apply stun as status effect
                 const mockTarget = { statusEffects: newStatusEffects[result.targetId] || [] };
-                const statusResult = applyStatusEffect(mockTarget, 'stunned', actor, { duration: debuff.duration });
+                const statusResult = applyStatusEffect(mockTarget, 'stun', actor, { duration: debuff.duration });
                 newStatusEffects[result.targetId] = statusResult.effects;
               }
             } else if (result.type === 'heal') {
@@ -1426,6 +1580,11 @@ export const useCombat = ({ addEffect }) => {
         const heroData = actor.isHero ? heroes.find(h => h.id === actor.id) : null;
         const affixBonuses = heroData ? getPassiveAffixBonuses(heroData) : { critChanceBonus: 0 };
 
+        // Get unique item passive bonuses for heroes
+        const uniqueBonuses = heroData ? getUniquePassiveBonuses({ ...heroData, stats: actor.stats }) : {
+          damageMultiplier: 1.0, lifesteal: 0, armorPenetration: 0, critChance: 0
+        };
+
         // Apply permanent bonuses for heroes
         const actorDamageBonus = actor.isHero ? damageBonus : 1;
         const targetDefenseBonus = target.isHero ? defenseBonus : 1;
@@ -1466,19 +1625,27 @@ export const useCombat = ({ addEffect }) => {
         const weaknessDebuff = actorBuffs.weakness || 0;
         const weaknessMultiplier = 1 - weaknessDebuff;
 
+        // Check for boss phase damage bonuses
+        let bossDamageMultiplier = 1;
+        if (!actor.isHero && (actor.isBoss || actor.isWorldBoss) && actor.phases) {
+          const phaseDamageBonus = getBossPhaseDamageBonus(actor);
+          const enrageDamageBonus = getEnrageDamageBonus(actor);
+          bossDamageMultiplier = 1 + phaseDamageBonus + enrageDamageBonus;
+        }
+
         let baseDmg = Math.max(1, Math.floor(
           (actor.stats.attack * actorDamageBonus + (passiveBonuses.attackBonus || 0) - target.stats.defense * targetDefenseBonus * 0.5) * (0.85 + Math.random() * 0.3)
         ));
 
-        let dmg = Math.floor(baseDmg * passiveBonuses.damageMultiplier * executeMultiplier * berserkerMultiplier * vengeanceMultiplier * tauntPartyMultiplier * buffDamageMultiplier * weaknessMultiplier);
+        let dmg = Math.floor(baseDmg * passiveBonuses.damageMultiplier * uniqueBonuses.damageMultiplier * executeMultiplier * berserkerMultiplier * vengeanceMultiplier * tauntPartyMultiplier * buffDamageMultiplier * weaknessMultiplier * bossDamageMultiplier);
         let isCrit = false;
 
         // Base crit chance: 5% for tanks/healers, 10% for DPS classes
         const dpsClasses = ['mage', 'ranger', 'rogue', 'necromancer', 'bard'];
         const baseCritChance = actor.isHero && dpsClasses.includes(actor.classId) ? 0.10 : 0.05;
 
-        // Total crit chance includes base, skill passives, permanent bonuses, and affix bonuses
-        const totalCritChance = baseCritChance + (passiveBonuses.critChance || 0) + actorCritBonus + affixBonuses.critChanceBonus;
+        // Total crit chance includes base, skill passives, permanent bonuses, affix bonuses, and unique item bonuses
+        const totalCritChance = baseCritChance + (passiveBonuses.critChance || 0) + actorCritBonus + affixBonuses.critChanceBonus + (uniqueBonuses.critChance || 0);
         if (Math.random() < totalCritChance) {
           // Process ON_CRIT affixes for bonus crit damage
           let critMultiplier = 1.5 + (passiveBonuses.critDamageBonus || 0);
@@ -1609,6 +1776,31 @@ export const useCombat = ({ addEffect }) => {
                 // Apply damageTakenMultiplier from passive affixes (e.g., of_the_titan)
                 const passiveAffixBonuses = getPassiveAffixBonuses(targetHeroData);
                 damageTakenMultiplier = passiveAffixBonuses.damageTakenMultiplier || 1;
+
+                // Process unique item ON_DAMAGE_TAKEN effects (Phantom Cloak phase, Thunder Guard reflect)
+                const uniqueOnDamageTakenResult = processOnDamageTakenUniques(
+                  { ...targetHeroData, stats: target.stats },
+                  actor,
+                  dmg,
+                  {}
+                );
+
+                // Check if damage was phased through (Phantom Cloak)
+                if (uniqueOnDamageTakenResult.phased) {
+                  totalDamageReduction = 1.0; // 100% reduction - phased through
+                  addCombatLog({ type: 'system', message: `${target.name} phases through the attack!` });
+                  addEffect({ type: 'status', position: target.position, status: 'phase' });
+                }
+
+                // Add unique reflect damage (Thunder Guard)
+                if (uniqueOnDamageTakenResult.reflectDamage > 0) {
+                  reflectDamage += uniqueOnDamageTakenResult.reflectDamage;
+                }
+
+                // Block damage from unique effects
+                if (uniqueOnDamageTakenResult.damageBlocked > 0 && !uniqueOnDamageTakenResult.phased) {
+                  totalDamageReduction += uniqueOnDamageTakenResult.damageBlocked / dmg;
+                }
               }
 
               // Apply damage taken multiplier first, then reduction
@@ -1683,6 +1875,22 @@ export const useCombat = ({ addEffect }) => {
                 newHeroes[targetHeroIdx].stats.hp = Math.max(0, newHeroes[targetHeroIdx].stats.hp - reducedDmg);
                 // Track damage taken per hero for stats
                 damageTakenByHero[target.id] = (damageTakenByHero[target.id] || 0) + reducedDmg;
+
+                // Elite monster lifesteal (Vampiric affix)
+                if (!actor.isHero && actor.passive?.lifesteal > 0) {
+                  const actorMonsterIdx = findMonsterIndex(actor.id);
+                  if (actorMonsterIdx !== -1 && newMonsters[actorMonsterIdx].stats.hp > 0) {
+                    const lifestealAmount = Math.floor(reducedDmg * actor.passive.lifesteal);
+                    if (lifestealAmount > 0) {
+                      const actualHeal = Math.min(lifestealAmount, newMonsters[actorMonsterIdx].stats.maxHp - newMonsters[actorMonsterIdx].stats.hp);
+                      if (actualHeal > 0) {
+                        newMonsters[actorMonsterIdx].stats.hp += actualHeal;
+                        addCombatLog({ type: 'system', message: `${actor.name} drains ${actualHeal} HP!` });
+                        addEffect({ type: 'damage', position: actor.position, damage: actualHeal, isHeal: true });
+                      }
+                    }
+                  }
+                }
               }
 
               // Check for reactive taunt (Righteous Defense - chance to taunt attacker when ally hit)
@@ -1796,26 +2004,47 @@ export const useCombat = ({ addEffect }) => {
                       addCombatLog({ type: 'system', message: `${skillCheatDeath.skillName}! ${target.name} refuses to fall!` });
                       addEffect({ type: 'healBurst', position: target.position });
                     } else {
-                      addCombatLog({ type: 'death', target: { name: target.name }, isHero: true });
-                      addEffect({
-                        type: 'death',
-                        position: target.position,
-                        isHero: true,
-                        classId: target.classId,
-                      });
-                      handleUnitDeath(target.id);
+                      // Check for unique item cheat death (Void Heart, Void God's Crown)
+                      const uniqueCheatDeath = processOnDeathUniques(
+                        { ...targetHeroData, stats: target.stats },
+                        {}
+                      );
+                      if (uniqueCheatDeath.preventDeath) {
+                        const reviveHp = uniqueCheatDeath.healAmount || 1;
+                        if (targetHeroIdx !== -1) {
+                          newHeroes[targetHeroIdx].stats.hp = Math.min(reviveHp, target.stats.maxHp);
+                        }
+                        addCombatLog({ type: 'system', message: `Unique power saves ${target.name}! Restored to ${reviveHp} HP!` });
+                        addEffect({ type: 'healBurst', position: target.position });
 
-                      // Check for vengeance triggers on surviving heroes
-                      const deadHeroCount = newHeroes.filter(h => h.stats.hp <= 0).length;
-                      for (const hero of newHeroes) {
-                        if (hero.stats.hp > 0 && hero.id !== target.id) {
-                          const vengeance = checkVengeanceTrigger(hero, deadHeroCount);
-                          if (vengeance.triggered) {
-                            if (!newBuffs[hero.id]) newBuffs[hero.id] = {};
-                            newBuffs[hero.id].vengeanceDamageBonus = vengeance.damageBonus;
-                            newBuffs[hero.id].vengeanceDuration = vengeance.duration;
-                            addCombatLog({ type: 'system', message: `${hero.name} is filled with vengeance! +${Math.round(vengeance.damageBonus * 100)}% damage!` });
-                            addEffect({ type: 'buffAura', position: hero.position, color: '#ef4444' });
+                        // Apply invulnerability if granted
+                        if (uniqueCheatDeath.invulnerableTurns > 0) {
+                          if (!newBuffs[target.id]) newBuffs[target.id] = {};
+                          newBuffs[target.id].invulnerable = uniqueCheatDeath.invulnerableTurns;
+                          addCombatLog({ type: 'system', message: `${target.name} becomes invulnerable for ${uniqueCheatDeath.invulnerableTurns} turns!` });
+                        }
+                      } else {
+                        addCombatLog({ type: 'death', target: { name: target.name }, isHero: true });
+                        addEffect({
+                          type: 'death',
+                          position: target.position,
+                          isHero: true,
+                          classId: target.classId,
+                        });
+                        handleUnitDeath(target.id);
+
+                        // Check for vengeance triggers on surviving heroes
+                        const deadHeroCount = newHeroes.filter(h => h.stats.hp <= 0).length;
+                        for (const hero of newHeroes) {
+                          if (hero.stats.hp > 0 && hero.id !== target.id) {
+                            const vengeance = checkVengeanceTrigger(hero, deadHeroCount);
+                            if (vengeance.triggered) {
+                              if (!newBuffs[hero.id]) newBuffs[hero.id] = {};
+                              newBuffs[hero.id].vengeanceDamageBonus = vengeance.damageBonus;
+                              newBuffs[hero.id].vengeanceDuration = vengeance.duration;
+                              addCombatLog({ type: 'system', message: `${hero.name} is filled with vengeance! +${Math.round(vengeance.damageBonus * 100)}% damage!` });
+                              addEffect({ type: 'buffAura', position: hero.position, color: '#ef4444' });
+                            }
                           }
                         }
                       }
@@ -1837,10 +2066,80 @@ export const useCombat = ({ addEffect }) => {
               // OPTIMIZATION: Mutate in place
               const targetMonsterIdx = findMonsterIndex(target.id);
               const oldMonsterHp = targetMonsterIdx !== -1 ? newMonsters[targetMonsterIdx].stats.hp : 0;
-              if (targetMonsterIdx !== -1) {
-                newMonsters[targetMonsterIdx].stats.hp = Math.max(0, oldMonsterHp - finalDmg);
+
+              // Check boss immunity and damage reduction before applying damage
+              let actualDmg = finalDmg;
+              if ((target.isBoss || target.isWorldBoss) && target.phases) {
+                const bossState = getBossState(target.id);
+                if (bossState && isBossImmune(target, roomCombat.turn || 0)) {
+                  actualDmg = 0;
+                  addCombatLog({ type: 'system', message: `${target.name} is immune to damage!` });
+                } else {
+                  // Apply boss phase damage reduction
+                  const phaseDamageReduction = getBossPhaseDamageReduction(target);
+                  if (phaseDamageReduction > 0) {
+                    actualDmg = Math.floor(actualDmg * (1 - phaseDamageReduction));
+                  }
+                }
+              }
+
+              // Handle elite monster shield absorption
+              if (targetMonsterIdx !== -1 && actualDmg > 0 && newMonsters[targetMonsterIdx].shield > 0) {
+                const shieldAmount = newMonsters[targetMonsterIdx].shield;
+                const shieldAbsorbed = Math.min(shieldAmount, actualDmg);
+                newMonsters[targetMonsterIdx].shield = shieldAmount - shieldAbsorbed;
+                actualDmg = actualDmg - shieldAbsorbed;
+                if (shieldAbsorbed > 0) {
+                  addCombatLog({ type: 'system', message: `${target.name}'s shield absorbs ${shieldAbsorbed} damage!` });
+                  if (newMonsters[targetMonsterIdx].shield <= 0) {
+                    addCombatLog({ type: 'system', message: `${target.name}'s shield is broken!` });
+                    addEffect({ type: 'buffAura', position: target.position, color: '#6495ed' });
+                  }
+                }
+              }
+
+              if (targetMonsterIdx !== -1 && actualDmg > 0) {
+                newMonsters[targetMonsterIdx].stats.hp = Math.max(0, oldMonsterHp - actualDmg);
               }
               const currentMonsterHpAfterDmg = targetMonsterIdx !== -1 ? newMonsters[targetMonsterIdx].stats.hp : 0;
+
+              // Check boss phase transitions
+              if ((target.isBoss || target.isWorldBoss) && target.phases && currentMonsterHpAfterDmg > 0 && targetMonsterIdx !== -1) {
+                const phaseResult = checkPhaseTransition(target, currentMonsterHpAfterDmg, target.stats.maxHp);
+                if (phaseResult) {
+                  addCombatLog({ type: 'system', message: phaseResult.message });
+                  addEffect({ type: 'buffAura', position: target.position, color: '#f59e0b' });
+
+                  // Set enraged if phase triggers enrage
+                  if (phaseResult.enraged) {
+                    setBossEnraged(target, true);
+                    addCombatLog({ type: 'system', message: `${target.name} becomes ENRAGED!` });
+                  }
+
+                  // Process phase start actions (summon adds, immunity)
+                  if (phaseResult.onPhaseStart) {
+                    const phaseActions = processPhaseStartActions(target, phaseResult.onPhaseStart, {
+                      scaleFactor: dungeon.level * 0.5,
+                      currentTurn: roomCombat.turn || 0,
+                    });
+
+                    // Add summoned monsters to the fight
+                    if (phaseActions.summonedMonsters.length > 0) {
+                      for (const add of phaseActions.summonedMonsters) {
+                        newMonsters.push(add);
+                        newTurnOrder.push(add.id);
+                        addCombatLog({ type: 'system', message: `${target.name} summons ${add.name}!` });
+                        addEffect({ type: 'healBurst', position: add.position });
+                      }
+                    }
+
+                    // Apply immunity
+                    if (phaseActions.immunityGranted) {
+                      addCombatLog({ type: 'system', message: phaseActions.immunityMessage });
+                    }
+                  }
+                }
+              }
 
               // Trigger on_damage abilities (Enrage) if monster survived
               if (currentMonsterHpAfterDmg > 0 && targetMonsterIdx !== -1) {
@@ -1941,6 +2240,71 @@ export const useCombat = ({ addEffect }) => {
                   }
                 }
 
+                // Process unique item ON_HIT effects
+                const otherEnemies = activeCombatMonsters.filter(m => m.id !== target.id && m.stats.hp > 0);
+                const uniqueOnHitResult = processOnHitUniques(
+                  { ...heroData, stats: actor.stats },
+                  target,
+                  dmg,
+                  { otherEnemies }
+                );
+
+                // Apply unique lifesteal (from Vampire's Embrace, etc.)
+                if (uniqueBonuses.lifesteal > 0) {
+                  const uniqueLifestealAmount = Math.floor(dmg * uniqueBonuses.lifesteal);
+                  if (uniqueLifestealAmount > 0) {
+                    const actorHeroIdx = findHeroIndex(actor.id);
+                    if (actorHeroIdx !== -1) {
+                      const currentHp = newHeroes[actorHeroIdx].stats.hp;
+                      const maxHp = newHeroes[actorHeroIdx].stats.maxHp;
+                      const healAmount = Math.min(uniqueLifestealAmount, maxHp - currentHp);
+                      if (healAmount > 0) {
+                        newHeroes[actorHeroIdx].stats.hp = Math.min(maxHp, currentHp + healAmount);
+                        addCombatLog({ type: 'system', message: `Vampire's Embrace! ${actor.name} drains ${healAmount} HP` });
+                        healingDoneByHero[actor.id] = (healingDoneByHero[actor.id] || 0) + healAmount;
+                        healingReceivedByHero[actor.id] = (healingReceivedByHero[actor.id] || 0) + healAmount;
+                      }
+                    }
+                  }
+                }
+
+                // Apply unique bonus damage
+                if (uniqueOnHitResult.bonusDamage > 0 && targetMonsterIdx !== -1) {
+                  const bonusDmg = Math.floor(uniqueOnHitResult.bonusDamage);
+                  newMonsters[targetMonsterIdx].stats.hp = Math.max(0, newMonsters[targetMonsterIdx].stats.hp - bonusDmg);
+                  totalDamageDealtThisTurn += bonusDmg;
+                  addCombatLog({ type: 'system', message: `Unique power deals ${bonusDmg} bonus damage!` });
+                }
+
+                // Apply unique healing
+                if (uniqueOnHitResult.healing > 0) {
+                  const actorHeroIdx = findHeroIndex(actor.id);
+                  if (actorHeroIdx !== -1) {
+                    const currentHp = newHeroes[actorHeroIdx].stats.hp;
+                    const maxHp = newHeroes[actorHeroIdx].stats.maxHp;
+                    const healAmount = Math.min(Math.floor(uniqueOnHitResult.healing), maxHp - currentHp);
+                    if (healAmount > 0) {
+                      newHeroes[actorHeroIdx].stats.hp = Math.min(maxHp, currentHp + healAmount);
+                      addEffect({ type: 'damage', position: actor.position, damage: healAmount, isHeal: true });
+                    }
+                  }
+                }
+
+                // Apply unique chain attacks (Stormcaller's Rod)
+                if (uniqueOnHitResult.chainTargets.length > 0 && uniqueOnHitResult.chainDamage > 0) {
+                  for (const chainTarget of uniqueOnHitResult.chainTargets) {
+                    const chainIdx = findMonsterIndex(chainTarget.id);
+                    if (chainIdx !== -1) {
+                      const chainDmg = Math.floor(uniqueOnHitResult.chainDamage);
+                      newMonsters[chainIdx].stats.hp = Math.max(0, newMonsters[chainIdx].stats.hp - chainDmg);
+                      totalDamageDealtThisTurn += chainDmg;
+                      addCombatLog({ type: 'system', message: `Chain lightning hits ${chainTarget.name} for ${chainDmg}!` });
+                      addEffect({ type: 'beam', from: target.position, to: chainTarget.position, attackerClass: 'mage' });
+                      addEffect({ type: 'damage', position: chainTarget.position, damage: chainDmg });
+                    }
+                  }
+                }
+
                 // Process ON_CRIT status effects (e.g., Savage - bleed on crit)
                 if (isCrit) {
                   const critAffixResult = processOnCritAffixes(heroData, dmg, target);
@@ -1955,6 +2319,31 @@ export const useCombat = ({ addEffect }) => {
                     if (statusDef) {
                       addCombatLog({ type: 'system', message: `Critical hit causes ${statusDef.name.toLowerCase()}!` });
                     }
+                  }
+
+                  // Process unique item ON_CRIT effects (e.g., Serpent's Fang chain strikes)
+                  const uniqueCritResult = processOnCritUniques(
+                    { ...heroData, stats: actor.stats },
+                    target,
+                    dmg,
+                    {}
+                  );
+
+                  // Apply chain attack (Serpent's Fang - 50% chance to strike again)
+                  if (uniqueCritResult.chainAttack && targetMonsterIdx !== -1) {
+                    const chainDmg = Math.floor(uniqueCritResult.chainAttack.damage);
+                    newMonsters[targetMonsterIdx].stats.hp = Math.max(0, newMonsters[targetMonsterIdx].stats.hp - chainDmg);
+                    totalDamageDealtThisTurn += chainDmg;
+                    addCombatLog({ type: 'system', message: `Chain Strike! ${actor.name} hits again for ${chainDmg}!` });
+                    addEffect({ type: 'beam', from: actor.position, to: target.position, attackerClass: actor.classId });
+                    addEffect({ type: 'damage', position: target.position, damage: chainDmg });
+                  }
+
+                  // Apply crit bonus damage
+                  if (uniqueCritResult.bonusDamage > 0 && targetMonsterIdx !== -1) {
+                    const bonusDmg = Math.floor(uniqueCritResult.bonusDamage);
+                    newMonsters[targetMonsterIdx].stats.hp = Math.max(0, newMonsters[targetMonsterIdx].stats.hp - bonusDmg);
+                    totalDamageDealtThisTurn += bonusDmg;
                   }
                 }
               }
@@ -2020,6 +2409,29 @@ export const useCombat = ({ addEffect }) => {
                     addCombatLog({ type: 'system', message: `${raiseDeadData.skillName}! ${target.name} rises as an undead ally!` });
                     addEffect({ type: 'healBurst', position: target.position });
                   }
+
+                  // Process unique item ON_KILL effects (Abyssal Maw stacks, extra turns, etc.)
+                  const uniqueOnKillResult = processOnKillUniques(
+                    { ...heroData, stats: actor.stats },
+                    target,
+                    { usedExtraTurnThisRound: false }
+                  );
+
+                  // Handle extra turn from unique
+                  if (uniqueOnKillResult.extraTurn) {
+                    addCombatLog({ type: 'system', message: `${actor.name}'s unique power grants an extra action!` });
+                    // TODO: Implement extra turn logic
+                  }
+
+                  // Handle cooldown reset
+                  if (uniqueOnKillResult.resetCooldowns) {
+                    // Reset all cooldowns for this hero
+                    if (!newSkillCooldowns[actor.id]) newSkillCooldowns[actor.id] = {};
+                    for (const skill in newSkillCooldowns[actor.id]) {
+                      newSkillCooldowns[actor.id][skill] = 0;
+                    }
+                    addCombatLog({ type: 'system', message: `${actor.name}'s cooldowns reset!` });
+                  }
                 }
 
                 const baseGold = target.goldReward.min + Math.floor(Math.random() * (target.goldReward.max - target.goldReward.min));
@@ -2028,6 +2440,27 @@ export const useCombat = ({ addEffect }) => {
                 const xpPerHero = Math.floor((target.xpReward / heroes.length) * xpMultiplier);
                 heroes.forEach(h => addXpToHero(h.id, xpPerHero));
                 incrementStat('totalMonstersKilled', 1, { heroId: actor.ownerId || actor.id, monsterId: target.templateId, isBoss: target.isBoss });
+
+                // Track wing boss defeat for raid dungeons
+                // Just check for wingBossId - if set, it's a wing boss
+                if (target.wingBossId) {
+                  const { defeatWingBoss } = useGameStore.getState();
+                  defeatWingBoss(target.wingBossId);
+                  addCombatLog({ type: 'system', message: `Wing Boss defeated: ${target.name}!` });
+                }
+
+                // Track final boss defeat and complete the raid
+                // Just check for finalBossId - if set, it's the final boss
+                if (target.finalBossId) {
+                  const { defeatWingBoss, completeRaid } = useGameStore.getState();
+                  // Add final boss to defeated list for UI to show as defeated
+                  defeatWingBoss(target.finalBossId);
+                  addCombatLog({ type: 'system', message: `FINAL BOSS DEFEATED: ${target.name}! Raid Complete!` });
+                  // Complete the raid after a short delay to allow effects to play
+                  setTimeout(() => {
+                    completeRaid();
+                  }, 2000);
+                }
 
                 // Visual gold drop effect
                 if (gold > 0) {
@@ -2038,7 +2471,120 @@ export const useCombat = ({ addEffect }) => {
                   });
                 }
 
-                if (Math.random() < (target.isBoss ? 0.9 : 0.25)) {
+                // Handle loot drops - special handling for raid bosses
+                const isRaid = dungeonProgress?.currentType === 'raid';
+                const isRaidBoss = isRaid && target.isBoss;
+
+                if (isRaidBoss) {
+                  // Raid boss always drops - use drop table
+                  // Get the boss ID from the target (wingBossId for wing bosses, finalBossId for final boss)
+                  const targetBossId = target.wingBossId || target.finalBossId;
+                  const raidBoss = getWingBoss(dungeonProgress.currentRaidId, targetBossId);
+                  const ownedUniques = useGameStore.getState().ownedUniques || [];
+                  const raidDrop = rollRaidDrop(raidBoss?.dropTable, ownedUniques);
+
+                  if (raidDrop?.type === 'unique') {
+                    // Unique item drop - use unique item system
+                    const uniqueTemplate = getUniqueItem(raidDrop.itemId);
+                    if (uniqueTemplate) {
+                      const uniqueInstance = createUniqueItemInstance(raidDrop.itemId);
+                      const result = processUniqueDrop(uniqueInstance);
+
+                      // Legendary drop celebration effect
+                      addEffect({ type: 'legendaryDrop', position: target.position, itemName: uniqueTemplate.name });
+
+                      if (result.action === 'duplicate') {
+                        addCombatLog({ type: 'system', message: `LEGENDARY DROP: ${uniqueTemplate.name} (duplicate - converted to ${result.gold}g)` });
+                      } else if (result.action === 'looted') {
+                        addCombatLog({ type: 'system', message: `LEGENDARY DROP: ${uniqueTemplate.name}!` });
+                      } else {
+                        addCombatLog({ type: 'system', message: `LEGENDARY DROP: ${uniqueTemplate.name} (inventory full!)` });
+                      }
+                    }
+                  } else {
+                    // Random gear drop with guaranteed rarity
+                    const item = generateEquipment(dungeon.level, { guaranteedRarity: raidDrop?.rarity || 'epic' });
+                    const result = processLootDrop(item);
+
+                    addEffect({
+                      type: 'lootDrop',
+                      position: target.position,
+                      slot: item.slot,
+                      rarityColor: item.rarityColor || '#9ca3af',
+                    });
+
+                    if (result.action === 'sold') {
+                      addCombatLog({ type: 'system', message: `Sold: ${item.name} (+${result.gold}g)` });
+                    } else if (result.action === 'looted') {
+                      addCombatLog({ type: 'system', message: `Loot: ${item.name}` });
+                    } else {
+                      addCombatLog({ type: 'system', message: `${item.name} (inventory full!)` });
+                    }
+                  }
+                } else if (target.isWorldBoss) {
+                  // World boss always drops - check for unique
+                  const worldBossLoot = getWorldBossLoot(target);
+
+                  if (worldBossLoot.uniqueItemId) {
+                    // World boss unique drop
+                    const uniqueTemplate = getUniqueItem(worldBossLoot.uniqueItemId);
+                    if (uniqueTemplate) {
+                      const uniqueInstance = createUniqueItemInstance(worldBossLoot.uniqueItemId);
+                      const result = processUniqueDrop(uniqueInstance);
+
+                      // Legendary drop celebration effect
+                      addEffect({ type: 'legendaryDrop', position: target.position, itemName: uniqueTemplate.name });
+
+                      if (result.action === 'duplicate') {
+                        addCombatLog({ type: 'system', message: `LEGENDARY DROP: ${uniqueTemplate.name} (duplicate - converted to ${result.gold}g)` });
+                      } else if (result.action === 'looted') {
+                        addCombatLog({ type: 'system', message: `LEGENDARY DROP: ${uniqueTemplate.name}!` });
+                      } else {
+                        addCombatLog({ type: 'system', message: `LEGENDARY DROP: ${uniqueTemplate.name} (inventory full!)` });
+                      }
+                    }
+                  }
+
+                  // World boss also drops guaranteed epic+ gear
+                  const item = generateEquipment(dungeon.level, { guaranteedRarity: worldBossLoot.guaranteedRarity });
+                  const result = processLootDrop(item);
+
+                  addEffect({
+                    type: 'lootDrop',
+                    position: target.position,
+                    slot: item.slot,
+                    rarityColor: item.rarityColor || '#9ca3af',
+                  });
+
+                  if (result.action === 'sold') {
+                    addCombatLog({ type: 'system', message: `Sold: ${item.name} (+${result.gold}g)` });
+                  } else if (result.action === 'looted') {
+                    addCombatLog({ type: 'system', message: `Loot: ${item.name}` });
+                  } else {
+                    addCombatLog({ type: 'system', message: `${item.name} (inventory full!)` });
+                  }
+                } else if (target.isElite) {
+                  // Elite mob always drops rare+ gear
+                  const item = generateEquipment(dungeon.level, { guaranteedRarity: ELITE_CONFIG.guaranteedMinRarity });
+                  const result = processLootDrop(item);
+
+                  // Visual loot drop effect
+                  addEffect({
+                    type: 'lootDrop',
+                    position: target.position,
+                    slot: item.slot,
+                    rarityColor: item.rarityColor || '#9ca3af',
+                  });
+
+                  if (result.action === 'sold') {
+                    addCombatLog({ type: 'system', message: `Sold: ${item.name} (+${result.gold}g)` });
+                  } else if (result.action === 'looted') {
+                    addCombatLog({ type: 'system', message: `Loot: ${item.name}` });
+                  } else {
+                    addCombatLog({ type: 'system', message: `${item.name} (inventory full!)` });
+                  }
+                } else if (Math.random() < (target.isBoss ? 0.9 : 0.25)) {
+                  // Normal dungeon loot
                   const item = generateEquipment(dungeon.level);
                   const result = processLootDrop(item);
 
@@ -2107,6 +2653,19 @@ export const useCombat = ({ addEffect }) => {
                     addEffect({ type: 'death', position: target.position, isHero: false, monsterId: target.templateId });
                     handleUnitDeath(target.id, target);
                     incrementStat('totalMonstersKilled', 1, { heroId: actor.ownerId || actor.id, monsterId: target.templateId, isBoss: target.isBoss });
+
+                    // Track raid boss defeat from bonus damage
+                    if (target.wingBossId) {
+                      const { defeatWingBoss } = useGameStore.getState();
+                      defeatWingBoss(target.wingBossId);
+                      addCombatLog({ type: 'system', message: `Wing Boss defeated: ${target.name}!` });
+                    }
+                    if (target.finalBossId) {
+                      const { defeatWingBoss, completeRaid } = useGameStore.getState();
+                      defeatWingBoss(target.finalBossId);
+                      addCombatLog({ type: 'system', message: `FINAL BOSS DEFEATED: ${target.name}! Raid Complete!` });
+                      setTimeout(() => completeRaid(), 2000);
+                    }
                   }
                 }
               }
@@ -2133,6 +2692,19 @@ export const useCombat = ({ addEffect }) => {
                       addEffect({ type: 'death', position: otherTarget.position, isHero: false, monsterId: otherTarget.templateId });
                       handleUnitDeath(otherTarget.id, otherTarget);
                       incrementStat('totalMonstersKilled', 1, { heroId: actor.ownerId || actor.id, monsterId: otherTarget.templateId, isBoss: otherTarget.isBoss });
+
+                      // Track raid boss defeat from AOE damage
+                      if (otherTarget.wingBossId) {
+                        const { defeatWingBoss } = useGameStore.getState();
+                        defeatWingBoss(otherTarget.wingBossId);
+                        addCombatLog({ type: 'system', message: `Wing Boss defeated: ${otherTarget.name}!` });
+                      }
+                      if (otherTarget.finalBossId) {
+                        const { defeatWingBoss, completeRaid } = useGameStore.getState();
+                        defeatWingBoss(otherTarget.finalBossId);
+                        addCombatLog({ type: 'system', message: `FINAL BOSS DEFEATED: ${otherTarget.name}! Raid Complete!` });
+                        setTimeout(() => completeRaid(), 2000);
+                      }
                     }
                   }
                 }

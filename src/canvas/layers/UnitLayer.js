@@ -15,6 +15,39 @@ const BOSS_AURA_COLORS = {
   lich_king: { primary: '#3b82f6', secondary: '#2563eb' },     // Ice blue
 };
 
+// Elite mob aura colors (golden/red themed)
+const ELITE_AURA_COLOR = { primary: '#fbbf24', secondary: '#f59e0b' }; // Gold
+
+// Raid boss sprite mapping - maps raid boss templateIds to custom raid boss sprites
+// IMPORTANT: Keep this in sync with CanvasDungeonView.jsx RAID_BOSS_SPRITE_MAP
+const RAID_BOSS_SPRITE_MAP = {
+  // Sunken Temple
+  corrupted_priest: 'boss_corrupted_priest',
+  naga_queen: 'boss_naga_queen',
+  sea_serpent: 'boss_sea_serpent',
+  // Cursed Manor
+  phantom_butler: 'boss_phantom_butler',
+  banshee_queen: 'boss_banshee',
+  flesh_golem: 'boss_flesh_golem',
+  vampire_lord: 'boss_vampire_lord',
+  // Sky Fortress
+  wind_elemental_lord: 'boss_wind_elemental',
+  lightning_golem: 'boss_lightning_golem',
+  storm_hawk: 'boss_storm_hawk',
+  storm_lord: 'boss_storm_lord',
+  // The Abyss
+  abyssal_horror: 'boss_abyssal_horror',
+  kraken: 'boss_kraken',
+  deep_one_prophet: 'boss_deep_one_prophet',
+  leviathan: 'boss_leviathan',
+  // Void Throne
+  void_stalker_prime: 'boss_void_stalker_prime',
+  reality_ripper_alpha: 'boss_reality_ripper',
+  null_shade_omega: 'boss_null_shade',
+  entropy_avatar: 'boss_entropy_avatar',
+  void_god: 'boss_void_god',
+};
+
 export class UnitLayer {
   constructor(spriteManager, tileSize) {
     this.spriteManager = spriteManager;
@@ -112,13 +145,19 @@ export class UnitLayer {
     const pos = this.getInterpolatedPosition(monster.id, monster.position);
     const baseSize = this.tileSize - 8;
     const isBoss = monster.isBoss;
+    const isElite = monster.isElite;
 
-    // Boss size scaling (1.4x larger)
-    const size = isBoss ? Math.floor(baseSize * 1.4) : baseSize;
+    // Boss size scaling (1.4x larger), elite slightly larger (1.15x)
+    let size = baseSize;
+    if (isBoss) {
+      size = Math.floor(baseSize * 1.4);
+    } else if (isElite) {
+      size = Math.floor(baseSize * 1.15);
+    }
 
     // Adjust offset to center larger sprite
-    const offsetX = isBoss ? 4 - (size - baseSize) / 2 : 4;
-    const offsetY = isBoss ? 2 - (size - baseSize) / 2 : 2;
+    const offsetX = (isBoss || isElite) ? 4 - (size - baseSize) / 2 : 4;
+    const offsetY = (isBoss || isElite) ? 2 - (size - baseSize) / 2 : 2;
 
     const screenX = (pos.x - cameraPos.x) * this.tileSize + offsetX;
     const screenY = (pos.y - cameraPos.y) * this.tileSize + offsetY;
@@ -129,13 +168,25 @@ export class UnitLayer {
       return pos;
     }
 
+    // Get sprite ID - use mapping for raid bosses
+    const isRaidBoss = monster.isWingBoss || monster.isFinalBoss || monster.isRaidBoss;
+    const spriteId = isRaidBoss ? (RAID_BOSS_SPRITE_MAP[monster.templateId] || monster.templateId) : monster.templateId;
+
     // Animated boss aura effect
     if (isBoss) {
-      this.renderBossAura(ctx, screenX, screenY, size, monster.templateId, monster.colorVariation);
+      this.renderBossAura(ctx, screenX, screenY, size, spriteId, monster.colorVariation);
+    } else if (isElite) {
+      // Elite monsters get a golden aura
+      this.renderEliteAura(ctx, screenX, screenY, size);
     }
 
     // Draw the monster sprite (with color variation for bosses)
-    drawMonsterSprite(ctx, monster.templateId, screenX, screenY, size, false, monster.colorVariation);
+    drawMonsterSprite(ctx, spriteId, screenX, screenY, size, false, monster.colorVariation);
+
+    // Draw skull icon above elite monsters
+    if (isElite) {
+      this.renderEliteSkullIcon(ctx, screenX, screenY, size);
+    }
 
     return pos;
   }
@@ -184,6 +235,71 @@ export class UnitLayer {
     ctx.beginPath();
     ctx.arc(centerX, centerY, size / 2 + 4, 0, Math.PI * 2);
     ctx.fill();
+
+    ctx.restore();
+  }
+
+  // Render animated pulsing elite aura (golden)
+  renderEliteAura(ctx, screenX, screenY, size) {
+    const centerX = screenX + size / 2;
+    const centerY = screenY + size / 2;
+
+    const colors = ELITE_AURA_COLOR;
+
+    // Faster pulsing for elites
+    const pulsePhase = Math.sin(this.animTime * 4) * 0.5 + 0.5;
+    const pulseRadius = size / 2 + 3 + pulsePhase * 2;
+
+    ctx.save();
+
+    // Outer pulsing ring
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, pulseRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = colors.primary;
+    ctx.lineWidth = 1.5 + pulsePhase * 0.5;
+    ctx.globalAlpha = 0.5 + pulsePhase * 0.3;
+    ctx.stroke();
+
+    // Inner radial gradient glow
+    const gradient = ctx.createRadialGradient(
+      centerX, centerY, size / 4,
+      centerX, centerY, size / 2 + 2
+    );
+    gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    gradient.addColorStop(0.6, this.hexToRgba(colors.secondary, 0.15));
+    gradient.addColorStop(1, this.hexToRgba(colors.primary, 0.3));
+
+    ctx.globalAlpha = 0.5 + pulsePhase * 0.2;
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, size / 2 + 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  // Render skull icon above elite monsters
+  renderEliteSkullIcon(ctx, screenX, screenY, size) {
+    const iconSize = 8;
+    const iconX = screenX + size / 2 - iconSize / 2;
+    const iconY = screenY - iconSize - 2;
+
+    ctx.save();
+
+    // Skull icon (simple pixel art)
+    ctx.fillStyle = '#fbbf24'; // Gold
+    // Skull shape
+    ctx.fillRect(iconX + 1, iconY, 6, 1);     // Top
+    ctx.fillRect(iconX, iconY + 1, 8, 4);      // Head
+    ctx.fillRect(iconX + 1, iconY + 5, 6, 2);  // Jaw
+
+    // Eyes (dark)
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(iconX + 1, iconY + 2, 2, 2);  // Left eye
+    ctx.fillRect(iconX + 5, iconY + 2, 2, 2);  // Right eye
+
+    // Nose
+    ctx.fillRect(iconX + 3, iconY + 4, 2, 1);
 
     ctx.restore();
   }

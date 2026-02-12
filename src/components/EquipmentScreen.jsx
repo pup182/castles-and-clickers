@@ -3,9 +3,10 @@ import { useGameStore, calculateHeroStats, calculateSellValue, STAT_PRIORITIES }
 import { CLASSES } from '../data/classes';
 import { canClassUseEquipment } from '../data/equipment';
 import { ITEM_AFFIXES } from '../data/itemAffixes';
+import { scaleUniqueStats } from '../data/uniqueItems';
 import HeroIcon from './icons/HeroIcon';
 import ItemIcon, { WeaponSlotIcon, ArmorSlotIcon, AccessorySlotIcon } from './icons/ItemIcon';
-import { GoldIcon, PartyIcon } from './icons/ui';
+import { GoldIcon, PartyIcon, StarIcon } from './icons/ui';
 
 // Helper to get affix descriptions for an item
 const getAffixDescriptions = (item) => {
@@ -16,6 +17,14 @@ const getAffixDescriptions = (item) => {
     .map(affix => ({ name: affix.name, description: affix.description }));
 };
 
+// Helper to format class restrictions for unique items
+const formatClassRestrictions = (item) => {
+  if (!item?.isUnique) return null;
+  const classes = item.classes;
+  if (!classes || classes.length === 0) return 'All Classes';
+  return classes.map(c => CLASSES[c]?.name || c).join(', ');
+};
+
 // Slot icon mapping
 const SLOT_ICONS = {
   weapon: WeaponSlotIcon,
@@ -23,34 +32,74 @@ const SLOT_ICONS = {
   accessory: AccessorySlotIcon,
 };
 
+// Get display stats for an item, scaling unique items based on highest party level
+const getItemDisplayStats = (item, highestPartyLevel) => {
+  if (item?.isUnique && item?.baseStats) {
+    return scaleUniqueStats(item.baseStats, highestPartyLevel);
+  }
+  return item?.stats || {};
+};
+
+// Build tooltip text for item
+const buildItemTooltip = (item, affixes) => {
+  const lines = [];
+  if (affixes.length > 0) {
+    lines.push(...affixes.map(a => `${a.name}: ${a.description}`));
+  }
+  if (item?.isUnique && item?.uniquePower) {
+    if (lines.length > 0) lines.push('');
+    lines.push(`★ ${item.uniquePower.name}`);
+    lines.push(item.uniquePower.description);
+    const classRestriction = formatClassRestrictions(item);
+    if (classRestriction) {
+      lines.push(`Classes: ${classRestriction}`);
+    }
+  }
+  return lines.length > 0 ? lines.join('\n') : undefined;
+};
+
 // Compact equipped item slot
-const EquippedSlot = ({ label, slot, item, onClick, isSelected }) => {
+const EquippedSlot = ({ label, slot, item, onClick, isSelected, highestPartyLevel }) => {
   const affixes = getAffixDescriptions(item);
   const SlotIcon = SLOT_ICONS[slot];
+  const isUnique = item?.isUnique;
+  const displayStats = getItemDisplayStats(item, highestPartyLevel);
 
   return (
     <button
       onClick={onClick}
       className={`p-2 rounded border flex items-center gap-2 transition-all text-left w-full
-        ${isSelected ? 'border-yellow-400 bg-yellow-400/10' : 'border-gray-700 bg-gray-900 hover:border-gray-500'}`}
-      title={affixes.length > 0 ? affixes.map(a => `${a.name}: ${a.description}`).join('\n') : undefined}
+        ${isSelected ? 'border-yellow-400 bg-yellow-400/10' : isUnique ? 'border-cyan-500 bg-cyan-900/10 hover:border-cyan-400' : 'border-gray-700 bg-gray-900 hover:border-gray-500'}`}
+      title={buildItemTooltip(item, affixes)}
     >
       <div
-        className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0 ${
+        className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0 relative ${
           item ? '' : 'border border-dashed border-gray-600'
         }`}
         style={item ? { backgroundColor: item.rarityColor + '20', border: `1px solid ${item.rarityColor}` } : {}}
       >
         {item ? <ItemIcon item={item} size={20} /> : <SlotIcon size={20} />}
+        {isUnique && (
+          <div className="absolute -top-1 -right-1">
+            <StarIcon size={10} className="text-cyan-400" />
+          </div>
+        )}
       </div>
       <div className="flex-1 min-w-0">
         {item ? (
           <>
-            <div className="text-xs font-medium truncate" style={{ color: item.rarityColor }}>{item.name}</div>
-            <div className="text-[10px] text-gray-500">
-              {Object.entries(item.stats).map(([s, v]) => `+${v} ${s.replace('maxHp', 'HP')}`).join(' ')}
+            <div className="text-xs font-medium truncate flex items-center gap-1" style={{ color: item.rarityColor }}>
+              {item.name}
+              {isUnique && <StarIcon size={10} className="text-cyan-400 flex-shrink-0" />}
             </div>
-            {affixes.length > 0 && (
+            <div className="text-[10px] text-gray-500">
+              {Object.entries(displayStats).map(([s, v]) => `+${v} ${s.replace('maxHp', 'HP')}`).join(' ')}
+            </div>
+            {isUnique && item.uniquePower ? (
+              <div className="text-[9px] text-cyan-400 truncate">
+                {item.uniquePower.name}
+              </div>
+            ) : affixes.length > 0 && (
               <div className="text-[9px] text-purple-400 truncate">
                 {affixes.map(a => a.name).join(' • ')}
               </div>
@@ -65,33 +114,50 @@ const EquippedSlot = ({ label, slot, item, onClick, isSelected }) => {
 };
 
 // Compact inventory row
-const InventoryRow = ({ item, canEquip, onEquip, onSell, comparison }) => {
+const InventoryRow = ({ item, canEquip, onEquip, onSell, comparison, highestPartyLevel }) => {
   const affixes = getAffixDescriptions(item);
+  const isUnique = item?.isUnique;
+  const displayStats = getItemDisplayStats(item, highestPartyLevel);
 
   return (
     <div
       className={`p-1.5 rounded border flex items-center gap-2
-        ${comparison?.isBetter ? 'border-green-500/50 bg-green-500/5' : 'border-gray-700 bg-gray-900/50'}
+        ${comparison?.isBetter ? 'border-green-500/50 bg-green-500/5' : isUnique ? 'border-cyan-500/50 bg-cyan-900/10' : 'border-gray-700 bg-gray-900/50'}
         ${!canEquip ? 'opacity-50' : ''}`}
-      title={affixes.length > 0 ? affixes.map(a => `${a.name}: ${a.description}`).join('\n') : undefined}
+      title={buildItemTooltip(item, affixes)}
     >
       <div
-        className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0"
+        className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0 relative"
         style={{ backgroundColor: item.rarityColor + '20', border: `1px solid ${item.rarityColor}` }}
       >
         <ItemIcon item={item} size={18} />
+        {isUnique && (
+          <div className="absolute -top-1 -right-1">
+            <StarIcon size={8} className="text-cyan-400" />
+          </div>
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1">
           <span className="text-xs font-medium truncate" style={{ color: item.rarityColor }}>{item.name}</span>
           {comparison?.isBetter && <span className="text-green-400 text-[10px] font-bold">▲</span>}
-          {affixes.length > 0 && <span className="text-purple-400 text-[10px]">✦</span>}
+          {isUnique && <StarIcon size={10} className="text-cyan-400 flex-shrink-0" />}
+          {!isUnique && affixes.length > 0 && <span className="text-purple-400 text-[10px]">✦</span>}
         </div>
         <div className="text-[10px] text-gray-500">
-          {Object.entries(item.stats).map(([s, v]) => `+${v} ${s.replace('maxHp', 'HP')}`).join(' ')}
+          {Object.entries(displayStats).map(([s, v]) => `+${v} ${s.replace('maxHp', 'HP')}`).join(' ')}
         </div>
-        {affixes.length > 0 && (
-          <div className="text-[9px] text-purple-400 truncate">
+        {isUnique && item.uniquePower ? (
+          <>
+            <div className="text-xs text-cyan-400 mt-1">
+              <span className="font-medium">{item.uniquePower.name}:</span> {item.uniquePower.description}
+            </div>
+            <div className="text-[9px] text-gray-500">
+              {formatClassRestrictions(item)}
+            </div>
+          </>
+        ) : affixes.length > 0 && (
+          <div className="text-[10px] text-purple-400 truncate">
             {affixes.map(a => a.description).join(' | ')}
           </div>
         )}
@@ -108,10 +174,15 @@ const InventoryRow = ({ item, canEquip, onEquip, onSell, comparison }) => {
           </button>
         )}
         <button
-          onClick={() => onSell(item.id)}
-          className="px-1.5 py-1 bg-gray-700 hover:bg-orange-600 text-gray-300 text-[10px] rounded flex items-center gap-0.5"
+          onClick={() => !isUnique && onSell(item.id)}
+          className={`px-1.5 py-1 text-[10px] rounded flex items-center gap-0.5 ${
+            isUnique
+              ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+              : 'bg-gray-700 hover:bg-orange-600 text-gray-300'
+          }`}
+          title={isUnique ? 'Unique items cannot be sold' : undefined}
         >
-          <GoldIcon size={10} />{calculateSellValue(item)}
+          <GoldIcon size={10} />{isUnique ? '—' : calculateSellValue(item)}
         </button>
       </div>
     </div>
@@ -137,7 +208,8 @@ const EquipmentScreen = () => {
   const [sortBy, setSortBy] = useState('rarity');
 
   const selectedHero = heroes.find(h => h.id === selectedHeroId);
-  const stats = selectedHero ? calculateHeroStats(selectedHero) : null;
+  const stats = selectedHero ? calculateHeroStats(selectedHero, heroes) : null;
+  const highestPartyLevel = heroes.length > 0 ? Math.max(...heroes.map(h => h.level)) : 1;
 
   const processedInventory = useMemo(() => {
     let items = [...inventory];
@@ -220,6 +292,7 @@ const EquipmentScreen = () => {
                 item={selectedHero.equipment[slot]}
                 onClick={() => setSelectedSlot(selectedSlot === slot ? null : slot)}
                 isSelected={selectedSlot === slot}
+                highestPartyLevel={highestPartyLevel}
               />
             ))}
           </div>
@@ -334,6 +407,7 @@ const EquipmentScreen = () => {
                 onEquip={handleEquip}
                 onSell={sellItem}
                 comparison={selectedHero ? compareToEquipped(item, selectedHero.id) : null}
+                highestPartyLevel={highestPartyLevel}
               />
             ))
           )}

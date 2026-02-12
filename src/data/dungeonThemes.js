@@ -1,5 +1,69 @@
 // Dungeon themes - visual styles based on dungeon level
 
+// Raid-specific themes
+export const RAID_THEMES = {
+  water: {
+    id: 'water',
+    name: 'Sunken Temple',
+    colors: {
+      wall: '#134e4a',
+      wallHighlight: '#115e59',
+      floor: '#042f2e',
+      floorAlt: '#022c22',
+      accent: '#22d3ee', // cyan water
+    },
+    props: ['coral', 'seaweed', 'shell', 'puddle'],
+  },
+  undead: {
+    id: 'undead',
+    name: 'Cursed Manor',
+    colors: {
+      wall: '#1f1f2e',
+      wallHighlight: '#2d2d44',
+      floor: '#0f0f1a',
+      floorAlt: '#080810',
+      accent: '#9333ea', // purple ghostly
+    },
+    props: ['coffin', 'candle', 'cobweb', 'bones'],
+  },
+  sky: {
+    id: 'sky',
+    name: 'Sky Fortress',
+    colors: {
+      wall: '#1e3a5f',
+      wallHighlight: '#2563eb',
+      floor: '#0c1929',
+      floorAlt: '#030712',
+      accent: '#60a5fa', // sky blue
+    },
+    props: ['cloud', 'lightning', 'windChime', 'feather'],
+  },
+  abyss: {
+    id: 'abyss',
+    name: 'The Abyss',
+    colors: {
+      wall: '#0a1628',
+      wallHighlight: '#1e293b',
+      floor: '#020617',
+      floorAlt: '#000000',
+      accent: '#0ea5e9', // deep blue
+    },
+    props: ['tentacle', 'bubbles', 'bioluminescent', 'coral'],
+  },
+  void_raid: {
+    id: 'void_raid',
+    name: 'Void Throne',
+    colors: {
+      wall: '#2e1065',
+      wallHighlight: '#4c1d95',
+      floor: '#1a0533',
+      floorAlt: '#0d0019',
+      accent: '#c084fc', // bright purple
+    },
+    props: ['portal', 'voidCrack', 'rune', 'floatingRock'],
+  },
+};
+
 export const DUNGEON_THEMES = {
   cave: {
     id: 'cave',
@@ -82,7 +146,12 @@ export const DUNGEON_THEMES = {
 };
 
 // Get theme for a dungeon level
-export const getThemeForLevel = (level) => {
+export const getThemeForLevel = (level, raidTheme = null) => {
+  // If a raid theme is specified, use the raid theme
+  if (raidTheme && RAID_THEMES[raidTheme]) {
+    return RAID_THEMES[raidTheme];
+  }
+
   for (const theme of Object.values(DUNGEON_THEMES)) {
     if (level >= theme.levelRange[0] && level <= theme.levelRange[1]) {
       return theme;
@@ -90,6 +159,19 @@ export const getThemeForLevel = (level) => {
   }
   // Default to void for anything beyond 30
   return DUNGEON_THEMES.void;
+};
+
+// Get theme for a raid by raid ID
+export const getThemeForRaid = (raidId) => {
+  const raidThemeMap = {
+    sunken_temple: 'water',
+    cursed_manor: 'undead',
+    sky_fortress: 'sky',
+    the_abyss: 'abyss',
+    void_throne: 'void_raid',
+  };
+  const themeId = raidThemeMap[raidId];
+  return RAID_THEMES[themeId] || RAID_THEMES.water;
 };
 
 // Get random props for a room based on theme

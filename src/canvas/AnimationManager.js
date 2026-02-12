@@ -84,6 +84,7 @@ export class AnimationManager {
       skillActivation: 1500,
       lootDrop: 1500,
       goldDrop: 1200,
+      legendaryDrop: 2500, // Longer duration for legendary celebration
     };
     return durations[type] || 1000;
   }
@@ -139,6 +140,9 @@ export class AnimationManager {
         break;
       case 'goldDrop':
         this.renderGoldDrop(ctx, cameraPos, effect, progress);
+        break;
+      case 'legendaryDrop':
+        this.renderLegendaryDrop(ctx, cameraPos, effect, progress);
         break;
     }
   }
@@ -738,6 +742,149 @@ export class AnimationManager {
     ctx.fillText(`+${amount}g`, screenX, screenY - 30 - progress * 20);
 
     ctx.restore();
+  }
+
+  // Render legendary drop effect - big celebration with sparkles and glow
+  renderLegendaryDrop(ctx, cameraPos, effect, progress) {
+    const pos = effect.position;
+    const screenX = (pos.x - cameraPos.x) * this.tileSize + this.tileSize / 2;
+    const screenY = (pos.y - cameraPos.y) * this.tileSize + this.tileSize / 2;
+
+    const legendaryColor = '#f59e0b'; // Gold/orange
+    const glowColor = '#fbbf24';
+
+    // Phase 1: Flash (0-0.15) - Screen flash effect
+    if (progress < 0.15) {
+      const flashProgress = progress / 0.15;
+      const flashAlpha = 0.4 * (1 - flashProgress);
+      ctx.save();
+      ctx.fillStyle = glowColor;
+      ctx.globalAlpha = flashAlpha;
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.restore();
+    }
+
+    // Phase 2: Item reveal (0.1-1.0)
+    if (progress > 0.1) {
+      const revealProgress = (progress - 0.1) / 0.9;
+
+      // Pop up animation
+      let offsetY, scale, alpha;
+      if (revealProgress < 0.2) {
+        const popProgress = revealProgress / 0.2;
+        offsetY = -30 * popProgress;
+        scale = 0.3 + popProgress * 1.0;
+        alpha = popProgress;
+      } else {
+        const floatProgress = (revealProgress - 0.2) / 0.8;
+        offsetY = -30 - 40 * floatProgress;
+        scale = 1.3 - floatProgress * 0.3;
+        alpha = 1 - floatProgress * 0.8;
+      }
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(screenX, screenY + offsetY);
+      ctx.scale(scale, scale);
+
+      // Radial glow
+      const glowRadius = 40 + Math.sin(progress * 10) * 8;
+      const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, glowRadius);
+      gradient.addColorStop(0, 'rgba(251, 191, 36, 0.6)');
+      gradient.addColorStop(0.5, 'rgba(245, 158, 11, 0.3)');
+      gradient.addColorStop(1, 'rgba(245, 158, 11, 0)');
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(0, 0, glowRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Sparkle particles
+      const sparkleCount = 8;
+      for (let i = 0; i < sparkleCount; i++) {
+        const angle = (i / sparkleCount) * Math.PI * 2 + progress * 5;
+        const distance = 20 + Math.sin(progress * 8 + i) * 10;
+        const sparkleX = Math.cos(angle) * distance;
+        const sparkleY = Math.sin(angle) * distance;
+        const sparkleSize = 2 + Math.sin(progress * 12 + i * 2) * 1.5;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(sparkleX, sparkleY, sparkleSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Inner sparkles
+      for (let i = 0; i < 4; i++) {
+        const angle = (i / 4) * Math.PI * 2 + progress * 8;
+        const distance = 8 + Math.sin(progress * 10 + i) * 4;
+        const sparkleX = Math.cos(angle) * distance;
+        const sparkleY = Math.sin(angle) * distance;
+
+        ctx.fillStyle = glowColor;
+        ctx.beginPath();
+        ctx.arc(sparkleX, sparkleY, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Item box with legendary border
+      ctx.shadowColor = legendaryColor;
+      ctx.shadowBlur = 15;
+      ctx.fillStyle = '#1f2937';
+      ctx.fillRect(-15, -15, 30, 30);
+      ctx.strokeStyle = legendaryColor;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(-15, -15, 30, 30);
+
+      // Star/gem icon inside
+      ctx.fillStyle = legendaryColor;
+      ctx.beginPath();
+      // 5-point star
+      for (let i = 0; i < 5; i++) {
+        const outerAngle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+        const innerAngle = ((i + 0.5) / 5) * Math.PI * 2 - Math.PI / 2;
+        const outerX = Math.cos(outerAngle) * 8;
+        const outerY = Math.sin(outerAngle) * 8;
+        const innerX = Math.cos(innerAngle) * 4;
+        const innerY = Math.sin(innerAngle) * 4;
+        if (i === 0) {
+          ctx.moveTo(outerX, outerY);
+        } else {
+          ctx.lineTo(outerX, outerY);
+        }
+        ctx.lineTo(innerX, innerY);
+      }
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.restore();
+
+      // Text: "LEGENDARY!" floating above
+      if (revealProgress > 0.1) {
+        const textProgress = (revealProgress - 0.1) / 0.9;
+        const textAlpha = Math.min(1, textProgress * 2) * (1 - Math.max(0, textProgress - 0.7) / 0.3);
+        const textY = screenY + offsetY - 35 - textProgress * 15;
+
+        ctx.save();
+        ctx.globalAlpha = textAlpha;
+        ctx.font = 'bold 16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        ctx.shadowColor = '#000000';
+        ctx.shadowBlur = 4;
+        ctx.fillStyle = legendaryColor;
+        ctx.fillText('LEGENDARY!', screenX, textY);
+
+        // Item name below
+        if (effect.itemName) {
+          ctx.font = 'bold 12px sans-serif';
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(effect.itemName, screenX, textY + 18);
+        }
+
+        ctx.restore();
+      }
+    }
   }
 
   // Clear all effects

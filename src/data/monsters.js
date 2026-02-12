@@ -10,12 +10,175 @@ const AI = {
   BOSS: 'boss',
 };
 
+// =====================================================
+// ELITE MOB CONFIGURATION
+// Elite mobs spawn at dungeon level 10+ with enhanced stats and abilities
+// =====================================================
+
+export const ELITE_CONFIG = {
+  // Minimum dungeon level for elites to spawn
+  minLevel: 10,
+
+  // Elite spawn count per tier (dungeon level ranges)
+  spawnRates: {
+    // Tier 2 (levels 10-14): 1 elite per dungeon
+    2: { min: 1, max: 1 },
+    // Tier 3 (levels 15-19): 1-2 elites per dungeon
+    3: { min: 1, max: 2 },
+    // Tier 4 (levels 20-24): 2 elites per dungeon
+    4: { min: 2, max: 2 },
+    // Tier 5 (levels 25-29): 2-3 elites per dungeon
+    5: { min: 2, max: 3 },
+    // Tier 6 (levels 30+): 3 elites per dungeon
+    6: { min: 3, max: 3 },
+  },
+
+  // Stat multipliers for elite mobs
+  statMultiplier: {
+    hp: 1.5,       // 1.5x HP
+    attack: 1.5,   // 1.5x attack
+    defense: 1.5,  // 1.5x defense
+    speed: 1.0,    // No speed boost (would be too punishing)
+  },
+
+  // XP and gold bonus
+  xpMultiplier: 2.0,
+  goldMultiplier: 2.0,
+
+  // Guaranteed rare+ drop
+  guaranteedMinRarity: 'rare',
+};
+
+// Elite name prefixes - add drama to elite names
+export const ELITE_PREFIXES = [
+  'Fel', 'Dread', 'Vile', 'Cursed', 'Wretched', 'Doom', 'Shadow', 'Blood',
+  'Dark', 'Grim', 'Savage', 'Brutal', 'Unholy', 'Corrupted', 'Malevolent',
+];
+
+// Elite affixes - bonus abilities for elite mobs
+export const ELITE_AFFIXES = {
+  vampiric: {
+    id: 'vampiric',
+    name: 'Vampiric',
+    description: 'Heals 15% of damage dealt',
+    effect: { lifesteal: 0.15 },
+    visual: { tint: '#8b0000', glow: '#ff0000' }, // Dark red
+  },
+  enraged: {
+    id: 'enraged',
+    name: 'Enraged',
+    description: '+30% damage, -10% defense',
+    effect: { damageMultiplier: 1.3, defenseMultiplier: 0.9 },
+    visual: { tint: '#ff4500', glow: '#ff6600' }, // Orange-red
+  },
+  thorny: {
+    id: 'thorny',
+    name: 'Thorny',
+    description: 'Reflects 20% damage back to attackers',
+    effect: { reflectDamage: 0.20 },
+    visual: { tint: '#228b22', glow: '#32cd32' }, // Green
+  },
+  arcane: {
+    id: 'arcane',
+    name: 'Arcane',
+    description: '+25% magic damage, attacks can silence',
+    effect: { damageMultiplier: 1.25, onHitStatus: { id: 'silence', chance: 0.15, duration: 1 } },
+    visual: { tint: '#8a2be2', glow: '#9400d3' }, // Purple
+  },
+  chilling: {
+    id: 'chilling',
+    name: 'Chilling',
+    description: 'Attacks slow enemies',
+    effect: { onHitStatus: { id: 'slow', chance: 0.25, duration: 2 } },
+    visual: { tint: '#00bfff', glow: '#1e90ff' }, // Ice blue
+  },
+  bolstered: {
+    id: 'bolstered',
+    name: 'Bolstered',
+    description: '+50% HP, regenerates 2% HP per turn',
+    effect: { hpMultiplier: 1.5, regenPercent: 0.02 },
+    visual: { tint: '#ffd700', glow: '#ffcc00' }, // Gold
+  },
+  shielded: {
+    id: 'shielded',
+    name: 'Shielded',
+    description: 'Starts with a 25% HP shield',
+    effect: { startingShield: 0.25 },
+    visual: { tint: '#4169e1', glow: '#6495ed' }, // Royal blue
+  },
+  explosive: {
+    id: 'explosive',
+    name: 'Explosive',
+    description: 'Explodes on death dealing 30% max HP to nearby enemies',
+    effect: { deathExplosion: { damage: 0.30, range: 2 } },
+    visual: { tint: '#ff8c00', glow: '#ff4500' }, // Dark orange
+  },
+  rallying: {
+    id: 'rallying',
+    name: 'Rallying',
+    description: 'On death, grants nearby allies +20% damage for 3 turns',
+    effect: { onDeathAllyBuff: { damageBuff: 0.20, duration: 3, range: 3 } },
+    visual: { tint: '#dc143c', glow: '#ff1493' }, // Crimson
+  },
+};
+
+// Get a random elite affix
+export const getRandomEliteAffix = () => {
+  const affixIds = Object.keys(ELITE_AFFIXES);
+  const randomId = affixIds[Math.floor(Math.random() * affixIds.length)];
+  return ELITE_AFFIXES[randomId];
+};
+
+// Get elite spawn count for a dungeon tier
+export const getEliteSpawnCount = (tier) => {
+  const config = ELITE_CONFIG.spawnRates[tier];
+  if (!config) return 0;
+  return Math.floor(Math.random() * (config.max - config.min + 1)) + config.min;
+};
+
+// Create an elite version of a monster
+export const createEliteMonster = (baseMonster) => {
+  const affix = getRandomEliteAffix();
+  const prefix = ELITE_PREFIXES[Math.floor(Math.random() * ELITE_PREFIXES.length)];
+
+  return {
+    ...baseMonster,
+    isElite: true,
+    eliteAffix: affix,
+    name: `${prefix} ${baseMonster.name}`,
+    stats: {
+      maxHp: Math.floor(baseMonster.stats.maxHp * ELITE_CONFIG.statMultiplier.hp * (affix.effect.hpMultiplier || 1)),
+      hp: Math.floor(baseMonster.stats.maxHp * ELITE_CONFIG.statMultiplier.hp * (affix.effect.hpMultiplier || 1)),
+      attack: Math.floor(baseMonster.stats.attack * ELITE_CONFIG.statMultiplier.attack * (affix.effect.damageMultiplier || 1)),
+      defense: Math.floor(baseMonster.stats.defense * ELITE_CONFIG.statMultiplier.defense * (affix.effect.defenseMultiplier || 1)),
+      speed: Math.floor(baseMonster.stats.speed * ELITE_CONFIG.statMultiplier.speed),
+    },
+    xpReward: Math.floor(baseMonster.xpReward * ELITE_CONFIG.xpMultiplier),
+    goldReward: {
+      min: Math.floor(baseMonster.goldReward.min * ELITE_CONFIG.goldMultiplier),
+      max: Math.floor(baseMonster.goldReward.max * ELITE_CONFIG.goldMultiplier),
+    },
+    // Apply affix effects
+    passive: {
+      ...(baseMonster.passive || {}),
+      ...(affix.effect.lifesteal ? { lifesteal: affix.effect.lifesteal } : {}),
+      ...(affix.effect.reflectDamage ? { reflectDamage: affix.effect.reflectDamage } : {}),
+      ...(affix.effect.regenPercent ? { regenPercent: affix.effect.regenPercent } : {}),
+    },
+    // Special affix properties
+    shield: affix.effect.startingShield ? Math.floor(baseMonster.stats.maxHp * ELITE_CONFIG.statMultiplier.hp * affix.effect.startingShield) : 0,
+    onHitStatus: affix.effect.onHitStatus || null,
+    deathExplosion: affix.effect.deathExplosion || null,
+    onDeathAllyBuff: affix.effect.onDeathAllyBuff || null,
+  };
+};
+
 export const MONSTERS = {
   // Tier 1 - Dungeon levels 1-5
   goblin: {
     id: 'goblin',
     name: 'Goblin',
-    emoji: '👺',
+    spriteId: 'goblin',
     tier: 1,
     baseStats: { maxHp: 40, attack: 6, defense: 2, speed: 7 },
     xpReward: 10,
@@ -26,7 +189,7 @@ export const MONSTERS = {
   rat: {
     id: 'rat',
     name: 'Giant Rat',
-    emoji: '🐀',
+    spriteId: 'rat',
     tier: 1,
     baseStats: { maxHp: 28, attack: 4, defense: 1, speed: 10 },
     xpReward: 5,
@@ -37,7 +200,7 @@ export const MONSTERS = {
   skeleton: {
     id: 'skeleton',
     name: 'Skeleton',
-    emoji: '💀',
+    spriteId: 'skeleton',
     tier: 1,
     baseStats: { maxHp: 45, attack: 8, defense: 3, speed: 6 },
     xpReward: 12,
@@ -48,7 +211,7 @@ export const MONSTERS = {
   slime: {
     id: 'slime',
     name: 'Slime',
-    emoji: '🟢',
+    spriteId: 'slime',
     tier: 1,
     baseStats: { maxHp: 35, attack: 3, defense: 5, speed: 6 },
     xpReward: 6,
@@ -60,7 +223,7 @@ export const MONSTERS = {
   giant_bat: {
     id: 'giant_bat',
     name: 'Giant Bat',
-    emoji: '🦇',
+    spriteId: 'giant_bat',
     tier: 1,
     baseStats: { maxHp: 25, attack: 5, defense: 1, speed: 14 },
     xpReward: 7,
@@ -74,7 +237,7 @@ export const MONSTERS = {
   orc: {
     id: 'orc',
     name: 'Orc',
-    emoji: '👹',
+    spriteId: 'orc',
     tier: 2,
     baseStats: { maxHp: 75, attack: 14, defense: 6, speed: 7 },
     xpReward: 25,
@@ -85,7 +248,7 @@ export const MONSTERS = {
   wolf: {
     id: 'wolf',
     name: 'Dire Wolf',
-    emoji: '🐺',
+    spriteId: 'wolf',
     tier: 2,
     baseStats: { maxHp: 55, attack: 12, defense: 4, speed: 12 },
     xpReward: 20,
@@ -96,7 +259,7 @@ export const MONSTERS = {
   zombie: {
     id: 'zombie',
     name: 'Zombie',
-    emoji: '🧟',
+    spriteId: 'zombie',
     tier: 2,
     baseStats: { maxHp: 100, attack: 10, defense: 8, speed: 5 },
     xpReward: 22,
@@ -108,7 +271,7 @@ export const MONSTERS = {
   giant_spider: {
     id: 'giant_spider',
     name: 'Giant Spider',
-    emoji: '🕷️',
+    spriteId: 'giant_spider',
     tier: 2,
     baseStats: { maxHp: 70, attack: 16, defense: 5, speed: 9 },
     xpReward: 28,
@@ -120,7 +283,7 @@ export const MONSTERS = {
   harpy: {
     id: 'harpy',
     name: 'Harpy',
-    emoji: '🦅',
+    spriteId: 'harpy',
     tier: 2,
     baseStats: { maxHp: 50, attack: 18, defense: 3, speed: 14 },
     xpReward: 24,
@@ -134,7 +297,7 @@ export const MONSTERS = {
   troll: {
     id: 'troll',
     name: 'Troll',
-    emoji: '🧌',
+    spriteId: 'troll',
     tier: 3,
     baseStats: { maxHp: 150, attack: 20, defense: 10, speed: 6 },
     xpReward: 50,
@@ -146,7 +309,7 @@ export const MONSTERS = {
   ghost: {
     id: 'ghost',
     name: 'Ghost',
-    emoji: '👻',
+    spriteId: 'ghost',
     tier: 3,
     baseStats: { maxHp: 75, attack: 25, defense: 2, speed: 15 },
     xpReward: 45,
@@ -158,7 +321,7 @@ export const MONSTERS = {
   dark_knight: {
     id: 'dark_knight',
     name: 'Dark Knight',
-    emoji: '🖤',
+    spriteId: 'dark_knight',
     tier: 3,
     baseStats: { maxHp: 130, attack: 22, defense: 15, speed: 7 },
     xpReward: 55,
@@ -169,7 +332,7 @@ export const MONSTERS = {
   minotaur: {
     id: 'minotaur',
     name: 'Minotaur',
-    emoji: '🐂',
+    spriteId: 'minotaur',
     tier: 3,
     baseStats: { maxHp: 175, attack: 24, defense: 12, speed: 7 },
     xpReward: 60,
@@ -180,7 +343,7 @@ export const MONSTERS = {
   vampire: {
     id: 'vampire',
     name: 'Vampire',
-    emoji: '🧛',
+    spriteId: 'vampire',
     tier: 3,
     baseStats: { maxHp: 110, attack: 28, defense: 8, speed: 12 },
     xpReward: 52,
@@ -194,7 +357,7 @@ export const MONSTERS = {
   demon: {
     id: 'demon',
     name: 'Demon',
-    emoji: '😈',
+    spriteId: 'demon',
     tier: 4,
     baseStats: { maxHp: 205, attack: 35, defense: 13, speed: 10 },
     xpReward: 80,
@@ -206,7 +369,7 @@ export const MONSTERS = {
   golem: {
     id: 'golem',
     name: 'Stone Golem',
-    emoji: '🗿',
+    spriteId: 'golem',
     tier: 4,
     baseStats: { maxHp: 250, attack: 28, defense: 14, speed: 5 },
     xpReward: 85,
@@ -218,7 +381,7 @@ export const MONSTERS = {
   wraith: {
     id: 'wraith',
     name: 'Wraith',
-    emoji: '👤',
+    spriteId: 'wraith',
     tier: 4,
     baseStats: { maxHp: 130, attack: 40, defense: 5, speed: 18 },
     xpReward: 75,
@@ -231,7 +394,7 @@ export const MONSTERS = {
   lich: {
     id: 'lich',
     name: 'Lich',
-    emoji: '🧙‍♂️',
+    spriteId: 'lich',
     tier: 4,
     baseStats: { maxHp: 190, attack: 45, defense: 10, speed: 9 },
     xpReward: 90,
@@ -243,7 +406,7 @@ export const MONSTERS = {
   titan: {
     id: 'titan',
     name: 'Titan',
-    emoji: '🗿',
+    spriteId: 'titan',
     tier: 4,
     baseStats: { maxHp: 380, attack: 32, defense: 30, speed: 5 },
     xpReward: 95,
@@ -256,7 +419,7 @@ export const MONSTERS = {
   magma_elemental: {
     id: 'magma_elemental',
     name: 'Magma Elemental',
-    emoji: '🔥',
+    spriteId: 'magma_elemental',
     tier: 5,
     baseStats: { maxHp: 280, attack: 30, defense: 16, speed: 7 },
     xpReward: 120,
@@ -268,7 +431,7 @@ export const MONSTERS = {
   fire_imp: {
     id: 'fire_imp',
     name: 'Fire Imp',
-    emoji: '👿',
+    spriteId: 'fire_imp',
     tier: 5,
     baseStats: { maxHp: 160, attack: 36, defense: 7, speed: 15 },
     xpReward: 100,
@@ -280,7 +443,7 @@ export const MONSTERS = {
   lava_serpent: {
     id: 'lava_serpent',
     name: 'Lava Serpent',
-    emoji: '🐍',
+    spriteId: 'lava_serpent',
     tier: 5,
     baseStats: { maxHp: 200, attack: 34, defense: 10, speed: 13 },
     xpReward: 110,
@@ -292,7 +455,7 @@ export const MONSTERS = {
   obsidian_golem: {
     id: 'obsidian_golem',
     name: 'Obsidian Golem',
-    emoji: '⬛',
+    spriteId: 'obsidian_golem',
     tier: 5,
     baseStats: { maxHp: 360, attack: 28, defense: 22, speed: 5 },
     xpReward: 130,
@@ -304,7 +467,7 @@ export const MONSTERS = {
   ember_wraith: {
     id: 'ember_wraith',
     name: 'Ember Wraith',
-    emoji: '🧡',
+    spriteId: 'ember_wraith',
     tier: 5,
     baseStats: { maxHp: 180, attack: 32, defense: 5, speed: 14 },
     xpReward: 105,
@@ -318,7 +481,7 @@ export const MONSTERS = {
   void_stalker: {
     id: 'void_stalker',
     name: 'Void Stalker',
-    emoji: '🟣',
+    spriteId: 'void_stalker',
     tier: 6,
     baseStats: { maxHp: 250, attack: 42, defense: 10, speed: 16 },
     xpReward: 160,
@@ -331,7 +494,7 @@ export const MONSTERS = {
   eldritch_horror: {
     id: 'eldritch_horror',
     name: 'Eldritch Horror',
-    emoji: '🐙',
+    spriteId: 'eldritch_horror',
     tier: 6,
     baseStats: { maxHp: 400, attack: 36, defense: 18, speed: 6 },
     xpReward: 180,
@@ -343,7 +506,7 @@ export const MONSTERS = {
   null_shade: {
     id: 'null_shade',
     name: 'Null Shade',
-    emoji: '👤',
+    spriteId: 'null_shade',
     tier: 6,
     baseStats: { maxHp: 220, attack: 38, defense: 7, speed: 15 },
     xpReward: 150,
@@ -355,7 +518,7 @@ export const MONSTERS = {
   reality_ripper: {
     id: 'reality_ripper',
     name: 'Reality Ripper',
-    emoji: '🌀',
+    spriteId: 'reality_ripper',
     tier: 6,
     baseStats: { maxHp: 300, attack: 40, defense: 12, speed: 11 },
     xpReward: 170,
@@ -366,7 +529,7 @@ export const MONSTERS = {
   void_spawn: {
     id: 'void_spawn',
     name: 'Void Spawn',
-    emoji: '⚫',
+    spriteId: 'void_spawn',
     tier: 6,
     baseStats: { maxHp: 180, attack: 36, defense: 8, speed: 13 },
     xpReward: 140,

@@ -1,8 +1,11 @@
 // Procedural maze dungeon generator
 // Uses BSP (Binary Space Partitioning) for room placement with corridor connections
 
-import { getMonstersByTier, getBossByTier } from '../data/monsters';
-import { getThemeForLevel } from '../data/dungeonThemes';
+import { getMonstersByTier, getBossByTier, ELITE_CONFIG, createEliteMonster, getEliteSpawnCount } from '../data/monsters';
+import { getThemeForLevel, getThemeForRaid } from '../data/dungeonThemes';
+import { isWorldBossLevel, getWorldBossForLevel } from '../data/worldBosses';
+import { createWorldBossInstance, initBossState } from './bossEngine';
+import { RAIDS } from '../data/raids';
 
 // Tile types for the dungeon grid
 export const TILE = {
@@ -66,6 +69,8 @@ export const MAZE_ROOM_TYPES = {
   COMBAT: 'combat',
   TREASURE: 'treasure',
   BOSS: 'boss',
+  WING_BOSS: 'wing_boss',      // Raid wing boss room
+  FINAL_BOSS: 'final_boss',    // Raid final boss room (locked until wing bosses dead)
 };
 
 // Get room size based on dungeon level
@@ -501,9 +506,296 @@ export function generateMazeDungeon(level) {
   };
 }
 
+// Generate a raid dungeon with multiple boss rooms
+// Returns a dungeon with wing boss rooms and a final boss room
+export function generateRaidDungeon(raidId) {
+  const raid = RAIDS[raidId];
+  if (!raid) return null;
+
+  const level = raid.requiredLevel;
+  const wingBossCount = raid.wingBosses.length;
+  const totalBossRooms = wingBossCount + 1; // Wing bosses + final boss
+
+  // Raids are larger to accommodate multiple boss rooms
+  // Base size + extra for each boss
+  const baseWidth = 80;
+  const baseHeight = 60;
+  const bonusPerBoss = 15;
+
+  const width = baseWidth + (totalBossRooms * bonusPerBoss);
+  const height = baseHeight + Math.floor(totalBossRooms * bonusPerBoss * 0.6);
+
+  // More rooms for raids
+  const roomCount = 8 + (wingBossCount * 2); // 8 base + 2 per wing boss
+
+  // Initialize grid with walls
+  const grid = Array(height).fill(null).map(() => Array(width).fill(TILE.WALL));
+
+  const rooms = [];
+  const maxAttempts = 150;
+
+  // Generate rooms - entrance, combat rooms, wing boss rooms, final boss room
+  // Room order: entrance (0), combat rooms (1 to N-totalBossRooms-1), wing boss rooms, final boss room (last)
+
+  for (let i = 0; i < roomCount && rooms.length < roomCount; i++) {
+    // Determine if this should be a boss room
+    const roomsRemaining = roomCount - rooms.length;
+    const isWingBossRoom = roomsRemaining <= totalBossRooms && roomsRemaining > 1;
+    const isFinalBossRoom = roomsRemaining === 1;
+    const isBossRoom = isWingBossRoom || isFinalBossRoom;
+
+    const sizeConfig = isBossRoom ? ROOM_SIZES.boss : getRoomSizeConfig(level, false);
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const roomWidth = randInt(sizeConfig.minW, sizeConfig.maxW);
+      const roomHeight = randInt(sizeConfig.minH, sizeConfig.maxH);
+
+      const x = randInt(2, width - roomWidth - 2);
+      const y = randInt(2, height - roomHeight - 2);
+
+      const newRoom = {
+        x, y,
+        width: roomWidth,
+        height: roomHeight,
+        type: MAZE_ROOM_TYPES.COMBAT,
+        cleared: false,
+        index: rooms.length,
+      };
+
+      // Boss rooms should be spread out and near edges
+      if (isBossRoom && rooms.length > 0) {
+        const entranceCenter = getRoomCenter(rooms[0]);
+        const roomCenterX = x + roomWidth / 2;
+        const roomCenterY = y + roomHeight / 2;
+
+        // Check distance from all existing boss rooms
+        const existingBossRooms = rooms.filter(r =>
+          r.type === MAZE_ROOM_TYPES.WING_BOSS ||
+          r.type === MAZE_ROOM_TYPES.FINAL_BOSS ||
+          r.type === MAZE_ROOM_TYPES.BOSS
+        );
+
+        // Boss rooms should be far from each other
+        let tooCloseToOtherBoss = false;
+        for (const br of existingBossRooms) {
+          const brCenter = getRoomCenter(br);
+          const dist = Math.abs(roomCenterX - brCenter.x) + Math.abs(roomCenterY - brCenter.y);
+          if (dist < width / 4) {
+            tooCloseToOtherBoss = true;
+            break;
+          }
+        }
+        if (tooCloseToOtherBoss && attempt < maxAttempts * 0.8) continue;
+
+        // Final boss should be in a corner, far from entrance
+        if (isFinalBossRoom) {
+          const distFromEntrance = Math.abs(roomCenterX - entranceCenter.x) + Math.abs(roomCenterY - entranceCenter.y);
+          if (distFromEntrance < width / 2 && attempt < maxAttempts * 0.7) continue;
+
+          // Prefer corner placement
+          const distFromLeftEdge = x;
+          const distFromRightEdge = width - (x + roomWidth);
+          const distFromTopEdge = y;
+          const distFromBottomEdge = height - (y + roomHeight);
+          const nearLeftOrRight = distFromLeftEdge <= 5 || distFromRightEdge <= 5;
+          const nearTopOrBottom = distFromTopEdge <= 5 || distFromBottomEdge <= 5;
+
+          if (!(nearLeftOrRight && nearTopOrBottom) && attempt < maxAttempts * 0.6) continue;
+        }
+      }
+
+      if (!roomOverlaps(rooms, newRoom)) {
+        rooms.push(newRoom);
+        carveRoom(grid, newRoom);
+        break;
+      }
+    }
+  }
+
+  // Assign room types
+  if (rooms.length > 0) {
+    rooms[0].type = MAZE_ROOM_TYPES.ENTRANCE;
+    grid[Math.floor(rooms[0].y + rooms[0].height / 2)][rooms[0].x] = TILE.ENTRANCE;
+  }
+
+  // Assign boss room types from the end
+  const wingBossRooms = [];
+  let finalBossRoomData = null;
+
+  if (rooms.length > totalBossRooms) {
+    // Final boss room is the last room
+    const finalBossRoom = rooms[rooms.length - 1];
+    finalBossRoom.type = MAZE_ROOM_TYPES.FINAL_BOSS;
+    finalBossRoom.bossId = raid.finalBoss.id;
+    finalBossRoom.bossData = raid.finalBoss;
+    finalBossRoomData = {
+      x: finalBossRoom.x,
+      y: finalBossRoom.y,
+      width: finalBossRoom.width,
+      height: finalBossRoom.height,
+      bossId: raid.finalBoss.id,
+    };
+
+    // Wing boss rooms are the ones before final boss
+    for (let i = 0; i < wingBossCount; i++) {
+      const roomIndex = rooms.length - 2 - i; // Work backwards from final boss
+      if (roomIndex > 0) { // Don't use entrance
+        const wingBossRoom = rooms[roomIndex];
+        wingBossRoom.type = MAZE_ROOM_TYPES.WING_BOSS;
+        wingBossRoom.bossId = raid.wingBosses[wingBossCount - 1 - i].id;
+        wingBossRoom.bossData = raid.wingBosses[wingBossCount - 1 - i];
+        wingBossRooms.push({
+          x: wingBossRoom.x,
+          y: wingBossRoom.y,
+          width: wingBossRoom.width,
+          height: wingBossRoom.height,
+          bossId: wingBossRoom.bossId,
+        });
+      }
+    }
+
+    // Add some treasure rooms in the remaining combat rooms
+    const combatRooms = rooms.filter(r => r.type === MAZE_ROOM_TYPES.COMBAT);
+    const treasureCount = Math.min(3, Math.floor(combatRooms.length / 3));
+    for (let i = 0; i < treasureCount && i < combatRooms.length; i++) {
+      const idx = randInt(0, combatRooms.length - 1);
+      if (combatRooms[idx].type === MAZE_ROOM_TYPES.COMBAT) {
+        combatRooms[idx].type = MAZE_ROOM_TYPES.TREASURE;
+      }
+    }
+  }
+
+  // Connect rooms using minimum spanning tree approach
+  // Connect non-boss rooms first, then wing bosses, then final boss last
+  const finalBossIndex = rooms.length - 1;
+  const wingBossIndices = [];
+  for (let i = 0; i < wingBossCount && rooms.length - 2 - i > 0; i++) {
+    wingBossIndices.push(rooms.length - 2 - i);
+  }
+
+  const connected = new Set([0]);
+  const regularRoomIndices = new Set(
+    rooms.map((_, i) => i).filter(i =>
+      i !== 0 &&
+      i !== finalBossIndex &&
+      !wingBossIndices.includes(i)
+    )
+  );
+
+  // Connect regular rooms first
+  while (regularRoomIndices.size > 0) {
+    let bestDist = Infinity;
+    let bestPair = null;
+
+    for (const connIdx of connected) {
+      for (const unconnIdx of regularRoomIndices) {
+        const center1 = getRoomCenter(rooms[connIdx]);
+        const center2 = getRoomCenter(rooms[unconnIdx]);
+        const dist = Math.abs(center1.x - center2.x) + Math.abs(center1.y - center2.y);
+
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestPair = [connIdx, unconnIdx];
+        }
+      }
+    }
+
+    if (bestPair) {
+      connectRooms(grid, rooms[bestPair[0]], rooms[bestPair[1]]);
+      connected.add(bestPair[1]);
+      regularRoomIndices.delete(bestPair[1]);
+    } else {
+      break;
+    }
+  }
+
+  // Connect wing boss rooms to the network
+  for (const wingIdx of wingBossIndices) {
+    let bestDist = Infinity;
+    let bestConnIdx = 0;
+
+    for (const connIdx of connected) {
+      const center1 = getRoomCenter(rooms[connIdx]);
+      const center2 = getRoomCenter(rooms[wingIdx]);
+      const dist = Math.abs(center1.x - center2.x) + Math.abs(center1.y - center2.y);
+
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestConnIdx = connIdx;
+      }
+    }
+
+    connectRooms(grid, rooms[bestConnIdx], rooms[wingIdx]);
+    connected.add(wingIdx);
+  }
+
+  // Connect final boss room to the deepest point
+  if (rooms.length > 1) {
+    // Find the room furthest from entrance that's already connected
+    const entranceCenter = getRoomCenter(rooms[0]);
+    let deepestRoom = 0;
+    let maxDist = 0;
+
+    for (const connIdx of connected) {
+      if (connIdx === finalBossIndex) continue;
+      const center = getRoomCenter(rooms[connIdx]);
+      const dist = Math.abs(center.x - entranceCenter.x) + Math.abs(center.y - entranceCenter.y);
+      if (dist > maxDist) {
+        maxDist = dist;
+        deepestRoom = connIdx;
+      }
+    }
+
+    connectRooms(grid, rooms[deepestRoom], rooms[finalBossIndex]);
+  }
+
+  // Add some extra connections for variety (excluding final boss)
+  const extraConnections = Math.floor(rooms.length / 4);
+  for (let i = 0; i < extraConnections; i++) {
+    const idx1 = randInt(0, rooms.length - 2);
+    const idx2 = randInt(0, rooms.length - 2);
+    if (idx1 !== idx2) {
+      connectRooms(grid, rooms[idx1], rooms[idx2]);
+    }
+  }
+
+  // Add dead ends with treasure
+  addDeadEnds(grid, rooms, level);
+
+  // Find entrance position
+  const entranceRoom = rooms[0];
+  const entrance = {
+    x: Math.floor(entranceRoom.x + entranceRoom.width / 2),
+    y: Math.floor(entranceRoom.y + entranceRoom.height / 2),
+  };
+
+  // Generate decorations with raid-specific theme
+  const decorations = generateDecorations(grid, rooms, level, raidId);
+
+  return {
+    grid,
+    width,
+    height,
+    rooms,
+    entrance,
+    bossRoom: finalBossRoomData, // Final boss room (for compatibility)
+    wingBossRooms, // Wing boss room locations
+    explored: [`${entrance.x},${entrance.y}`],
+    level,
+    decorations,
+    isRaid: true,
+    raidId,
+    raidData: raid,
+    wingBossIds: raid.wingBosses.map(wb => wb.id),
+    finalBossId: raid.finalBoss.id,
+    defeatedBosses: [], // Track which bosses have been killed
+  };
+}
+
 // Generate decorations for rooms based on theme
-function generateDecorations(grid, rooms, level) {
-  const theme = getThemeForLevel(level);
+function generateDecorations(grid, rooms, level, raidId = null) {
+  // Use raid theme for raid dungeons
+  const theme = raidId ? getThemeForRaid(raidId) : getThemeForLevel(level);
   const decorations = [];
   const usedPositions = new Set();
 
@@ -589,6 +881,8 @@ function getMonsterCount(roomType, roomSize, dungeonLevel) {
     case MAZE_ROOM_TYPES.TREASURE:
       return Math.max(1, baseCount + 1 + earlyGameReduction);
     case MAZE_ROOM_TYPES.BOSS:
+    case MAZE_ROOM_TYPES.WING_BOSS:
+    case MAZE_ROOM_TYPES.FINAL_BOSS:
       return 1; // Just the boss
     default:
       return Math.max(1, Math.min(6, baseCount + levelBonus + 1 + earlyGameReduction));
@@ -665,7 +959,72 @@ export function placeMonsters(dungeon, level, options = {}) {
     const monsterCount = getMonsterCount(room.type, roomSize, level);
 
     if (room.type === MAZE_ROOM_TYPES.BOSS) {
-      // Place boss with unique generated name
+      // Check if this is a raid - use raid boss (wing boss or final boss)
+      if (options.raidId && options.wingBossId) {
+        const raid = RAIDS[options.raidId];
+        // Find the boss data - either a wing boss or the final boss
+        let raidBoss = null;
+        if (options.isFinalBoss) {
+          raidBoss = raid?.finalBoss;
+        } else {
+          raidBoss = raid?.wingBosses?.find(wb => wb.id === options.wingBossId);
+        }
+        if (raidBoss) {
+          const center = getRoomCenter(room);
+          const bossMonster = {
+            id: `raid_boss_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+            templateId: raidBoss.id,
+            name: raidBoss.name,
+            spriteId: raidBoss.spriteId,
+            isBoss: true,
+            isRaidBoss: true,
+            isWingBoss: !options.isFinalBoss,
+            isFinalBoss: !!options.isFinalBoss,
+            wingBossId: !options.isFinalBoss ? options.wingBossId : null,
+            finalBossId: options.isFinalBoss ? raid?.finalBoss?.id : null,
+            position: { x: center.x, y: center.y },
+            roomIndex: room.index,
+            stats: {
+              maxHp: Math.floor(raidBoss.baseStats.maxHp * scaleFactor * typeMultiplier),
+              hp: Math.floor(raidBoss.baseStats.maxHp * scaleFactor * typeMultiplier),
+              attack: Math.floor(raidBoss.baseStats.attack * scaleFactor * typeMultiplier),
+              defense: Math.floor(raidBoss.baseStats.defense * scaleFactor * typeMultiplier),
+              speed: Math.floor(raidBoss.baseStats.speed * speedScaleFactor),
+            },
+            abilities: raidBoss.abilities || [],
+            aiType: raidBoss.aiType || 'boss',
+            passive: raidBoss.passive || null,
+            phases: raidBoss.phases || null,
+            attackRange: raidBoss.attackRange || 1,
+            xpReward: Math.floor(200 * scaleFactor * typeMultiplier),
+            goldReward: {
+              min: Math.floor(raidBoss.rewards?.gold * 0.8 || 500 * scaleFactor),
+              max: Math.floor(raidBoss.rewards?.gold || 1000 * scaleFactor),
+            },
+            dropTable: raidBoss.dropTable || [],
+          };
+          // Initialize boss state for phase tracking
+          if (bossMonster.phases) {
+            initBossState(bossMonster);
+          }
+          monsters.push(applyAffixes(bossMonster));
+          continue;
+        }
+      }
+
+      // Check if this level has a world boss
+      if (isWorldBossLevel(level)) {
+        const worldBoss = createWorldBossInstance(level, scaleFactor * typeMultiplier);
+        if (worldBoss) {
+          const center = getRoomCenter(room);
+          worldBoss.position = { x: center.x, y: center.y };
+          worldBoss.roomIndex = room.index;
+          monsters.push(applyAffixes(worldBoss));
+          continue;
+        }
+      }
+
+      // Place regular boss with unique generated name
       const boss = getBossByTier(tier);
       if (boss) {
         const center = getRoomCenter(room);
@@ -698,6 +1057,90 @@ export function placeMonsters(dungeon, level, options = {}) {
         };
         monsters.push(applyAffixes(baseMonster));
       }
+      continue;
+    }
+
+    // Handle WING_BOSS room type (raid wing bosses)
+    if (room.type === MAZE_ROOM_TYPES.WING_BOSS && room.bossData) {
+      const raidBoss = room.bossData;
+      const center = getRoomCenter(room);
+      const bossMonster = {
+        id: `wing_boss_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        templateId: raidBoss.id,
+        name: raidBoss.name,
+        spriteId: raidBoss.spriteId,
+        isBoss: true,
+        isRaidBoss: true,
+        isWingBoss: true,
+        wingBossId: raidBoss.id,
+        position: { x: center.x, y: center.y },
+        roomIndex: room.index,
+        stats: {
+          maxHp: Math.floor(raidBoss.baseStats.maxHp * scaleFactor * typeMultiplier),
+          hp: Math.floor(raidBoss.baseStats.maxHp * scaleFactor * typeMultiplier),
+          attack: Math.floor(raidBoss.baseStats.attack * scaleFactor * typeMultiplier),
+          defense: Math.floor(raidBoss.baseStats.defense * scaleFactor * typeMultiplier),
+          speed: Math.floor(raidBoss.baseStats.speed * speedScaleFactor),
+        },
+        abilities: raidBoss.abilities || [],
+        aiType: raidBoss.aiType || 'boss',
+        passive: raidBoss.passive || null,
+        phases: raidBoss.phases || null,
+        attackRange: raidBoss.attackRange || 1,
+        xpReward: Math.floor(200 * scaleFactor * typeMultiplier),
+        goldReward: {
+          min: Math.floor(raidBoss.rewards?.gold * 0.8 || 500 * scaleFactor),
+          max: Math.floor(raidBoss.rewards?.gold || 1000 * scaleFactor),
+        },
+        dropTable: raidBoss.dropTable || [],
+        lore: raidBoss.lore || null,
+      };
+      if (bossMonster.phases) {
+        initBossState(bossMonster);
+      }
+      monsters.push(applyAffixes(bossMonster));
+      continue;
+    }
+
+    // Handle FINAL_BOSS room type (raid final boss)
+    if (room.type === MAZE_ROOM_TYPES.FINAL_BOSS && room.bossData) {
+      const raidBoss = room.bossData;
+      const center = getRoomCenter(room);
+      const bossMonster = {
+        id: `final_boss_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        templateId: raidBoss.id,
+        name: raidBoss.name,
+        spriteId: raidBoss.spriteId,
+        isBoss: true,
+        isRaidBoss: true,
+        isFinalBoss: true,
+        finalBossId: raidBoss.id,
+        position: { x: center.x, y: center.y },
+        roomIndex: room.index,
+        stats: {
+          maxHp: Math.floor(raidBoss.baseStats.maxHp * scaleFactor * typeMultiplier),
+          hp: Math.floor(raidBoss.baseStats.maxHp * scaleFactor * typeMultiplier),
+          attack: Math.floor(raidBoss.baseStats.attack * scaleFactor * typeMultiplier),
+          defense: Math.floor(raidBoss.baseStats.defense * scaleFactor * typeMultiplier),
+          speed: Math.floor(raidBoss.baseStats.speed * speedScaleFactor),
+        },
+        abilities: raidBoss.abilities || [],
+        aiType: raidBoss.aiType || 'boss',
+        passive: raidBoss.passive || null,
+        phases: raidBoss.phases || null,
+        attackRange: raidBoss.attackRange || 1,
+        xpReward: Math.floor(400 * scaleFactor * typeMultiplier),
+        goldReward: {
+          min: Math.floor(raidBoss.rewards?.gold * 0.8 || 1000 * scaleFactor),
+          max: Math.floor(raidBoss.rewards?.gold || 2000 * scaleFactor),
+        },
+        dropTable: raidBoss.dropTable || [],
+        lore: raidBoss.lore || null,
+      };
+      if (bossMonster.phases) {
+        initBossState(bossMonster);
+      }
+      monsters.push(applyAffixes(bossMonster));
       continue;
     }
 
@@ -803,6 +1246,40 @@ export function placeMonsters(dungeon, level, options = {}) {
         },
       };
       monsters.push(applyAffixes(baseMonster));
+    }
+  }
+
+  // Spawn elite mobs at level 10+ (or in raids regardless of level)
+  const isRaidDungeon = options.dungeonType === 'raid' || dungeon.isRaid;
+  const shouldSpawnElites = level >= ELITE_CONFIG.minLevel || isRaidDungeon;
+
+  if (shouldSpawnElites) {
+    // Raids get 2-3x more elites
+    let eliteCount = getEliteSpawnCount(tier);
+    if (isRaidDungeon) {
+      eliteCount = Math.max(4, Math.floor(eliteCount * 2.5)); // At least 4 elites in raids, 2.5x normal rate
+    }
+
+    // Get all non-boss monsters that could become elites (exclude wing/final bosses)
+    const eligibleMonsters = monsters.filter(m =>
+      !m.isBoss && !m.isWorldBoss && !m.isElite && !m.isWingBoss && !m.isFinalBoss
+    );
+
+    // Randomly select monsters to make elite
+    const shuffled = [...eligibleMonsters];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    const toMakeElite = shuffled.slice(0, Math.min(eliteCount, shuffled.length));
+
+    for (const monster of toMakeElite) {
+      // Find and replace in monsters array
+      const idx = monsters.indexOf(monster);
+      if (idx !== -1) {
+        monsters[idx] = createEliteMonster(monster);
+      }
     }
   }
 

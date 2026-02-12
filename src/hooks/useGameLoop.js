@@ -117,22 +117,33 @@ export const useGameLoop = ({
       if (tick >= 3) {
         clearEffects();
         resetLastProcessedTurn();
-        const nextLevel = Math.min(dungeon.level + 1, maxDungeonLevel);
-        const shouldAutoAdvance = dungeonSettings?.autoAdvance === true;
-        const atTargetLevel = dungeonSettings?.targetLevel && dungeon.level >= dungeonSettings.targetLevel;
 
-        endDungeon(true);
-        clearRoomCombat();
+        // Check if this is a raid dungeon completion
+        if (dungeon.isRaid) {
+          const { completeRaid } = useGameStore.getState();
+          // Raid dungeon is complete when final boss is killed
+          // The dungeon only reaches COMPLETE phase when all bosses (including final) are dead
+          completeRaid();
+          clearRoomCombat();
+        } else {
+          // Normal dungeon completion
+          const nextLevel = Math.min(dungeon.level + 1, maxDungeonLevel);
+          const shouldAutoAdvance = dungeonSettings?.autoAdvance === true;
+          const atTargetLevel = dungeonSettings?.targetLevel && dungeon.level >= dungeonSettings.targetLevel;
 
-        // Auto-start next dungeon with player's settings
-        if (shouldAutoAdvance && !atTargetLevel && nextLevel <= maxDungeonLevel) {
-          const options = { type: dungeonSettings?.type || 'normal' };
-          // Cancel any pending auto-start to prevent pile-up
-          if (autoStartTimeoutRef.current) clearTimeout(autoStartTimeoutRef.current);
-          autoStartTimeoutRef.current = setTimeout(() => {
-            autoStartTimeoutRef.current = null;
-            startDungeon(nextLevel, options);
-          }, 500);
+          endDungeon(true);
+          clearRoomCombat();
+
+          // Auto-start next dungeon with player's settings
+          if (shouldAutoAdvance && !atTargetLevel && nextLevel <= maxDungeonLevel) {
+            const options = { type: dungeonSettings?.type || 'normal' };
+            // Cancel any pending auto-start to prevent pile-up
+            if (autoStartTimeoutRef.current) clearTimeout(autoStartTimeoutRef.current);
+            autoStartTimeoutRef.current = setTimeout(() => {
+              autoStartTimeoutRef.current = null;
+              startDungeon(nextLevel, options);
+            }, 500);
+          }
         }
       } else {
         updateRoomCombat({ tick: tick + 1 });
@@ -146,20 +157,29 @@ export const useGameLoop = ({
         clearEffects();
         resetLastProcessedTurn();
         incrementStat('totalDeaths');
-        const retryLevel = dungeon.level;
 
-        endDungeon(false);
-        clearRoomCombat();
+        // Check if this is a raid - abandon on defeat
+        if (dungeon.isRaid) {
+          const { abandonRaid } = useGameStore.getState();
+          abandonRaid();
+          clearRoomCombat();
+        } else {
+          // Normal dungeon defeat
+          const retryLevel = dungeon.level;
 
-        // Auto-retry with player's settings
-        if (dungeonSettings?.autoAdvance === true) {
-          const options = { type: dungeonSettings?.type || 'normal' };
-          // Cancel any pending auto-start to prevent pile-up
-          if (autoStartTimeoutRef.current) clearTimeout(autoStartTimeoutRef.current);
-          autoStartTimeoutRef.current = setTimeout(() => {
-            autoStartTimeoutRef.current = null;
-            startDungeon(retryLevel, options);
-          }, 500);
+          endDungeon(false);
+          clearRoomCombat();
+
+          // Auto-retry with player's settings
+          if (dungeonSettings?.autoAdvance === true) {
+            const options = { type: dungeonSettings?.type || 'normal' };
+            // Cancel any pending auto-start to prevent pile-up
+            if (autoStartTimeoutRef.current) clearTimeout(autoStartTimeoutRef.current);
+            autoStartTimeoutRef.current = setTimeout(() => {
+              autoStartTimeoutRef.current = null;
+              startDungeon(retryLevel, options);
+            }, 500);
+          }
         }
       } else {
         updateRoomCombat({ tick: tick + 1 });

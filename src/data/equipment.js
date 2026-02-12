@@ -7,6 +7,7 @@ export const RARITY = {
   rare: { name: 'Rare', color: '#3b82f6', multiplier: 1.6 },
   epic: { name: 'Epic', color: '#a855f7', multiplier: 2.0 },
   legendary: { name: 'Legendary', color: '#f59e0b', multiplier: 2.5 },
+  unique: { name: 'Unique', color: '#06b6d4', multiplier: 3.0 }, // Cyan - distinct from all others
 };
 
 export const EQUIPMENT_SLOTS = ['weapon', 'armor', 'accessory'];

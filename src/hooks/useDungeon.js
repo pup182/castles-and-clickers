@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useGameStore, calculateHeroStats } from '../store/gameStore';
 import {
   generateMazeDungeon,
+  generateRaidDungeon,
   placeMonsters,
   findExplorationTarget,
   markExplored,
@@ -9,6 +10,7 @@ import {
   getHeroStartPositions,
   findPath,
   TILE,
+  MAZE_ROOM_TYPES,
 } from '../game/mazeGenerator';
 import { CLASSES } from '../data/classes';
 import {
@@ -20,6 +22,8 @@ import {
   VIEWPORT_HEIGHT,
   createTurnOrder,
 } from '../game/constants';
+import { resetUniqueStates } from '../game/uniqueEngine';
+import { resetBossStates } from '../game/bossEngine';
 
 /**
  * Hook for dungeon setup and exploration phase logic
@@ -43,8 +47,23 @@ export const useDungeon = ({ addEffect }) => {
 
     if (!dungeon) return;
 
-    // Generate maze dungeon
-    const mazeDungeon = generateMazeDungeon(dungeon.level);
+    // Reset unique item and boss states for new dungeon
+    resetUniqueStates();
+    resetBossStates();
+
+    // Generate maze dungeon - use raid dungeon generator for raids
+    let mazeDungeon;
+    const isRaid = dungeon.isRaid && dungeon.raidId;
+
+    if (isRaid) {
+      mazeDungeon = generateRaidDungeon(dungeon.raidId);
+      if (!mazeDungeon) {
+        console.error('Failed to generate raid dungeon for:', dungeon.raidId);
+        return;
+      }
+    } else {
+      mazeDungeon = generateMazeDungeon(dungeon.level);
+    }
 
     // Raid multiplier for raid dungeons
     const dungeonType = dungeonProgress?.currentType || 'normal';
@@ -103,8 +122,13 @@ export const useDungeon = ({ addEffect }) => {
       skillCooldowns[hero.id] = {};
     }
 
-    addCombatLog({ type: 'system', message: `Dungeon Level ${dungeon.level}` });
-    addCombatLog({ type: 'system', message: `${mazeDungeon.rooms.length} rooms to explore` });
+    if (isRaid && mazeDungeon.raidData) {
+      addCombatLog({ type: 'system', message: `Raid: ${mazeDungeon.raidData.name}` });
+      addCombatLog({ type: 'system', message: `${mazeDungeon.wingBossIds?.length || 0} wing bosses + final boss` });
+    } else {
+      addCombatLog({ type: 'system', message: `Dungeon Level ${dungeon.level}` });
+      addCombatLog({ type: 'system', message: `${mazeDungeon.rooms.length} rooms to explore` });
+    }
 
     // Set initial state
     setRoomCombat({
@@ -149,6 +173,34 @@ export const useDungeon = ({ addEffect }) => {
       round: 1,
     });
   }, [addCombatLog, updateRoomCombat]);
+
+  // Maximum distance a follower can be from leader before teleporting
+  const MAX_FOLLOWER_DISTANCE = 6;
+
+  // Find a valid position adjacent to the target for teleporting stragglers
+  const findTeleportPosition = (target, taken, grid) => {
+    // Try positions in expanding rings around target
+    const offsets = [
+      // Adjacent (distance 1)
+      { x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 },
+      { x: 1, y: 1 }, { x: -1, y: 1 }, { x: 1, y: -1 }, { x: -1, y: -1 },
+      // Distance 2
+      { x: 2, y: 0 }, { x: -2, y: 0 }, { x: 0, y: 2 }, { x: 0, y: -2 },
+      { x: 2, y: 1 }, { x: 2, y: -1 }, { x: -2, y: 1 }, { x: -2, y: -1 },
+      { x: 1, y: 2 }, { x: -1, y: 2 }, { x: 1, y: -2 }, { x: -1, y: -2 },
+    ];
+
+    for (const offset of offsets) {
+      const pos = { x: target.x + offset.x, y: target.y + offset.y };
+      const key = `${pos.x},${pos.y}`;
+      const tile = grid[pos.y]?.[pos.x];
+      const isWalkable = tile === TILE.FLOOR || tile === TILE.CORRIDOR || tile === TILE.DOOR || tile === TILE.ENTRANCE || tile === TILE.TREASURE;
+      if (!taken.has(key) && isWalkable) {
+        return pos;
+      }
+    }
+    return null;
+  };
 
   // OPTIMIZATION: Simple greedy movement for followers (avoids expensive A* pathfinding)
   // Improved to try all 4 directions as fallback to avoid getting stuck on corners
@@ -259,10 +311,12 @@ export const useDungeon = ({ addEffect }) => {
     // Check for nearby monsters to fight
     // IMPORTANT: Exclude boss until bossUnlocked AND heroes are very close
     // This prevents the boss from auto-aggroing across the dungeon when unlocked
+    // Wing bosses can be fought at any time (they unlock the final boss)
     const nearbyMonsters = findMonstersInRange(monsters, partyPosition, DETECTION_RANGE)
       .filter(m => {
         if (!m.isBoss) return true; // Regular monsters use normal detection range
-        if (!roomCombat.bossUnlocked) return false; // Boss locked until all others dead
+        if (m.isWingBoss) return true; // Wing bosses can be fought without unlock
+        if (!roomCombat.bossUnlocked) return false; // Final/main boss locked until all others dead
         // Boss requires heroes to be very close before engaging
         const dist = Math.abs(m.position.x - partyPosition.x) + Math.abs(m.position.y - partyPosition.y);
         return dist <= BOSS_ENGAGE_RANGE;
@@ -318,11 +372,25 @@ export const useDungeon = ({ addEffect }) => {
           return h;
         });
 
+        // Teleport stragglers who got too far from leader
+        const finalHeroes = newHeroes.map(h => {
+          if (h.id === leadHero.id) return h;
+          const dist = Math.abs(h.position.x - newLeadPosition.x) + Math.abs(h.position.y - newLeadPosition.y);
+          if (dist > MAX_FOLLOWER_DISTANCE) {
+            const teleportPos = findTeleportPosition(newLeadPosition, takenPositions, mazeDungeon.grid);
+            if (teleportPos) {
+              takenPositions.add(`${teleportPos.x},${teleportPos.y}`);
+              return { ...h, position: teleportPos };
+            }
+          }
+          return h;
+        });
+
         const newExplored = markExplored(mazeDungeon.explored, newLeadPosition, VISION_RANGE);
 
         // Check for treasure pickup at new position
         let updatedGrid = mazeDungeon.grid;
-        for (const hero of newHeroes) {
+        for (const hero of finalHeroes) {
           const { x, y } = hero.position;
           if (updatedGrid[y] && updatedGrid[y][x] === TILE.TREASURE) {
             const treasureGold = 50 + dungeon.level * 25 + Math.floor(Math.random() * 50);
@@ -336,32 +404,82 @@ export const useDungeon = ({ addEffect }) => {
 
         updateRoomCombat({
           partyPosition: newLeadPosition,
-          heroes: newHeroes,
+          heroes: finalHeroes,
           dungeon: { ...mazeDungeon, grid: updatedGrid, explored: newExplored },
         });
         return true;
       }
     }
 
-    // Find next target: non-boss monsters first, then boss when all others dead
+    // For raids: separate wing bosses from the final boss
+    const isRaidDungeon = mazeDungeon.isRaid;
+
+    // Categorize monsters for targeting
+    const aliveWingBosses = aliveMonsters.filter(m => m.isWingBoss);
+    const aliveFinalBoss = aliveMonsters.find(m => m.isFinalBoss);
+    const aliveRegularMonsters = aliveMonsters.filter(m => !m.isBoss && !m.isWingBoss && !m.isFinalBoss);
+
+    // Check if final boss is unlocked (all wing bosses dead)
+    // Use direct check of alive wing bosses - more reliable than state tracking
+    let finalBossUnlocked = false;
+    if (isRaidDungeon) {
+      // Final boss unlocks when no wing bosses remain alive in the dungeon
+      finalBossUnlocked = aliveWingBosses.length === 0;
+    }
+
+    // Find next target based on dungeon type
     let targetMonster = null;
 
-    if (aliveNonBoss.length > 0) {
-      let minDist = Infinity;
-      for (const m of aliveNonBoss) {
-        const dist = Math.abs(m.position.x - partyPosition.x) + Math.abs(m.position.y - partyPosition.y);
-        if (dist < minDist) {
-          minDist = dist;
-          targetMonster = m;
+    if (isRaidDungeon) {
+      // Raid dungeon targeting:
+      // Target nearest enemy (regular monsters AND wing bosses can be fought as encountered)
+      // Final boss only when all wing bosses are dead
+
+      // Combine regular monsters and wing bosses - fight whatever is nearest
+      const targetableMonsters = [...aliveRegularMonsters, ...aliveWingBosses];
+
+      if (targetableMonsters.length > 0) {
+        let minDist = Infinity;
+        for (const m of targetableMonsters) {
+          const dist = Math.abs(m.position.x - partyPosition.x) + Math.abs(m.position.y - partyPosition.y);
+          if (dist < minDist) {
+            minDist = dist;
+            targetMonster = m;
+          }
         }
+      } else if (aliveFinalBoss) {
+        if (!finalBossUnlocked) {
+          // Still waiting for wing bosses to be defeated
+          addCombatLog({ type: 'system', message: 'Final boss locked - defeat all wing bosses first!' });
+          return true;
+        }
+        if (!roomCombat.bossUnlocked) {
+          addCombatLog({ type: 'system', message: 'Final boss door unlocked!' });
+          updateRoomCombat({ bossUnlocked: true });
+        }
+        targetMonster = aliveFinalBoss;
       }
-    } else if (aliveBoss) {
-      if (!roomCombat.bossUnlocked) {
-        addCombatLog({ type: 'system', message: 'Boss door unlocked!' });
-        updateRoomCombat({ bossUnlocked: true });
-      }
-      targetMonster = aliveBoss;
     } else {
+      // Normal dungeon targeting
+      if (aliveNonBoss.length > 0) {
+        let minDist = Infinity;
+        for (const m of aliveNonBoss) {
+          const dist = Math.abs(m.position.x - partyPosition.x) + Math.abs(m.position.y - partyPosition.y);
+          if (dist < minDist) {
+            minDist = dist;
+            targetMonster = m;
+          }
+        }
+      } else if (aliveBoss) {
+        if (!roomCombat.bossUnlocked) {
+          addCombatLog({ type: 'system', message: 'Boss door unlocked!' });
+          updateRoomCombat({ bossUnlocked: true });
+        }
+        targetMonster = aliveBoss;
+      }
+    }
+
+    if (!targetMonster) {
       // All monsters dead including boss - transition to CLEARING phase
       // The actual dungeon completion (gold, stats) is handled in useGameLoop CLEARING phase
       // to ensure goldMultiplier bonuses are applied correctly
@@ -420,12 +538,26 @@ export const useDungeon = ({ addEffect }) => {
         return h;
       });
 
+      // Teleport stragglers who got too far from leader
+      const finalHeroes = newHeroes.map(h => {
+        if (h.id === leadHero.id) return h;
+        const dist = Math.abs(h.position.x - newLeadPosition.x) + Math.abs(h.position.y - newLeadPosition.y);
+        if (dist > MAX_FOLLOWER_DISTANCE) {
+          const teleportPos = findTeleportPosition(newLeadPosition, takenPositions, mazeDungeon.grid);
+          if (teleportPos) {
+            takenPositions.add(`${teleportPos.x},${teleportPos.y}`);
+            return { ...h, position: teleportPos };
+          }
+        }
+        return h;
+      });
+
       const leadPos = newLeadPosition;
       const newExplored = markExplored(mazeDungeon.explored, leadPos, VISION_RANGE);
 
       // Check for treasure pickup - any hero stepping on a treasure tile collects it
       let updatedGrid = mazeDungeon.grid;
-      for (const hero of newHeroes) {
+      for (const hero of finalHeroes) {
         const { x, y } = hero.position;
         if (updatedGrid[y] && updatedGrid[y][x] === TILE.TREASURE) {
           // Award gold based on dungeon level
@@ -465,7 +597,7 @@ export const useDungeon = ({ addEffect }) => {
 
       updateRoomCombat({
         partyPosition: leadPos,
-        heroes: newHeroes,
+        heroes: finalHeroes,
         dungeon: { ...mazeDungeon, grid: updatedGrid, explored: newExplored },
         viewport: newViewport,
         lastLeadPosition: leadPos,

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useGameStore, calculateSkillPoints, calculateUsedSkillPoints } from '../store/gameStore';
+import { useGameStore } from '../store/gameStore';
 import { PHASES } from '../game/constants';
 import { PARTY_SLOTS } from '../data/classes';
 
@@ -23,9 +23,16 @@ import ShopScreen from './ShopScreen';
 import DungeonMap from './DungeonMap';
 import CurrentZoneIndicator from './CurrentZoneIndicator';
 import WelcomeBackModal from './WelcomeBackModal';
+import GameHUD from './GameHUD';
 import { DUNGEON_TIERS } from '../data/milestones';
+import { getWorldBossForLevel, getZoneWorldBoss } from '../data/worldBosses';
+import { RAIDS } from '../data/raids';
 import LootNotifications from './LootNotifications';
-import { PartyIcon, TreeIcon, BagIcon, HomeIcon, CastleIcon, GoldIcon, TrophyIcon, SkullIcon, ChestIcon, ChartIcon, GemIcon, FireIcon, GhostIcon } from './icons/ui';
+import { CheckIcon } from './icons/ui';
+import UniqueDropCelebration from './UniqueDropCelebration';
+import RaidRecapScreen from './RaidRecapScreen';
+import { PartyIcon, TreeIcon, BagIcon, HomeIcon, CastleIcon, GoldIcon, TrophyIcon, SkullIcon, ChestIcon, ChartIcon, GemIcon, FireIcon, GhostIcon, CrownIcon, HeartIcon, SwordIcon, ShieldIcon } from './icons/ui';
+import { WorldBossIcon } from './icons/worldBosses';
 
 // Theme visuals for zone header - pixel art icons
 const TIER_THEME_ICONS = {
@@ -47,6 +54,8 @@ const TIER_THEME_COLORS = {
 };
 import StatsScreen from './StatsScreen';
 import BestiaryScreen from './BestiaryScreen';
+import RaidSelectorModal from './RaidSelectorModal';
+import UniqueCollectionScreen from './UniqueCollectionScreen';
 
 // OPTIMIZATION: Stable default values to prevent re-renders
 const EMPTY_OBJECT = {};
@@ -77,56 +86,8 @@ function useEnemyCount() {
   return counts;
 }
 
-// Throttled header stats hook - updates every 500ms to avoid re-renders on every kill
-function useThrottledHeaderStats() {
-  const [headerStats, setHeaderStats] = useState(() => {
-    const state = useGameStore.getState();
-    return {
-      gold: state.gold || 0,
-      totalDungeonsCleared: state.stats?.totalDungeonsCleared || 0,
-      totalMonstersKilled: state.stats?.totalMonstersKilled || 0,
-      inventoryCount: state.inventory?.length || 0,
-      maxInventory: state.maxInventory || 20,
-    };
-  });
-
-  const lastRef = useRef({ gold: 0, clears: 0, kills: 0, inv: 0 });
-
-  useEffect(() => {
-    const update = () => {
-      const state = useGameStore.getState();
-      const gold = state.gold || 0;
-      const clears = state.stats?.totalDungeonsCleared || 0;
-      const kills = state.stats?.totalMonstersKilled || 0;
-      const inv = state.inventory?.length || 0;
-      const last = lastRef.current;
-
-      // Only update if values actually changed
-      if (gold !== last.gold || clears !== last.clears || kills !== last.kills || inv !== last.inv) {
-        lastRef.current = { gold, clears, kills, inv };
-        setHeaderStats({
-          gold,
-          totalDungeonsCleared: clears,
-          totalMonstersKilled: kills,
-          inventoryCount: inv,
-          maxInventory: state.maxInventory || 20,
-        });
-      }
-    };
-    // Offset from other intervals to prevent batching (523ms instead of 500ms)
-    const id = setInterval(update, 523);
-    return () => clearInterval(id);
-  }, []);
-
-  return headerStats;
-}
-
 const GameLayout = () => {
-  // OPTIMIZATION: Use throttled header stats for display values that change frequently
-  const headerStats = useThrottledHeaderStats();
-
   // OPTIMIZATION: Use individual selectors to avoid re-renders on unrelated state changes
-  const gold = useGameStore(state => state.gold);
   const heroes = useGameStore(state => state.heroes);
   const dungeon = useGameStore(state => state.dungeon);
   const startDungeon = useGameStore(state => state.startDungeon);
@@ -139,15 +100,14 @@ const GameLayout = () => {
   const resetGame = useGameStore(state => state.resetGame);
   const featureUnlocks = useGameStore(state => state.featureUnlocks);
   const markFeatureSeen = useGameStore(state => state.markFeatureSeen);
+  const markAllUniquesRead = useGameStore(state => state.markAllUniquesRead);
   const dungeonSettings = useGameStore(state => state.dungeonSettings);
   const setDungeonSettings = useGameStore(state => state.setDungeonSettings);
-  // OPTIMIZATION: Use throttled header stats instead of direct subscription for display
-  // This prevents re-renders every time a monster dies
   const highestDungeonCleared = useGameStore(state => state.highestDungeonCleared);
   const maxDungeonLevel = useGameStore(state => state.maxDungeonLevel);
-  const maxPartySize = useGameStore(state => state.maxPartySize);
-  const maxInventory = useGameStore(state => state.maxInventory);
   const lastDungeonSuccess = useGameStore(state => state.lastDungeonSuccess);
+  const unreadUniques = useGameStore(state => state.unreadUniques || []);
+  const raidState = useGameStore(state => state.raidState);
 
   // OPTIMIZATION: Throttled display state - renders at ~15 FPS instead of every tick
   const displayRoomCombat = useThrottledDisplay();
@@ -249,47 +209,6 @@ const GameLayout = () => {
   const mazeDungeonState = displayRoomCombat?.dungeon || null;
 
 
-  // Calculate total available skill points
-  const totalAvailableSkillPoints = useMemo(() => {
-    return heroes.filter(Boolean).reduce((sum, hero) => {
-      const total = calculateSkillPoints(hero.level);
-      const used = calculateUsedSkillPoints(hero);
-      return sum + (total - used);
-    }, 0);
-  }, [heroes]);
-
-  // Get usedSlotDiscounts for recruitment cost calculation
-  const usedSlotDiscounts = useGameStore(state => state.usedSlotDiscounts);
-
-  // Base costs for re-recruitment (when discount is used)
-  const BASE_RECRUIT_COSTS = { tank: 100, healer: 150, dps: 200 };
-
-  // Check if a hero slot is available for recruitment
-  const canRecruitHero = useMemo(() => {
-    // Find first empty slot
-    let emptySlotIndex = -1;
-    for (let i = 0; i < PARTY_SLOTS.length; i++) {
-      if (!heroes[i]) {
-        emptySlotIndex = i;
-        break;
-      }
-    }
-    if (emptySlotIndex === -1 || emptySlotIndex >= maxPartySize) return false;
-    const slot = PARTY_SLOTS[emptySlotIndex];
-    if (!slot) return false;
-
-    // Check dungeon requirement
-    if (highestDungeonCleared < slot.dungeonRequired) return false;
-
-    // Calculate actual cost (discount or base)
-    const discountUsed = usedSlotDiscounts.includes(emptySlotIndex);
-    const recruitCost = discountUsed
-      ? BASE_RECRUIT_COSTS[slot.role] || 150
-      : slot.cost;
-
-    return gold >= recruitCost;
-  }, [heroes, maxPartySize, highestDungeonCleared, gold, usedSlotDiscounts]);
-
   const handleStartDungeon = useCallback((level, options = {}) => {
     setActiveModal(null);
     startDungeon(level, options);
@@ -350,141 +269,36 @@ const GameLayout = () => {
     if (modalId === 'homestead' && !featureUnlocks?.homesteadSeen) {
       markFeatureSeen('homesteadSeen');
     }
+    // Update raids seen level when opening raids (tracks for new raid unlock notifications)
+    if (modalId === 'raids') {
+      markFeatureSeen('lastSeenRaidsAt');
+    }
+    // Clear unread uniques when opening equipment
+    if (modalId === 'equipment' && unreadUniques.length > 0) {
+      markAllUniquesRead();
+    }
   };
 
   // OPTIMIZATION: Memoize callback to prevent re-renders
   const memoizedRemoveEffect = useCallback((id) => removeEffect(id), [removeEffect]);
 
-  // Check if homestead is newly available (unlocked but not yet seen)
-  const homesteadNewlyAvailable = highestDungeonCleared >= 3 && !featureUnlocks?.homesteadSeen;
-
-  const navButtons = [
-    { id: 'heroes', Icon: PartyIcon, label: 'Heroes', badge: canRecruitHero ? '!' : null },
-    { id: 'skills', Icon: TreeIcon, label: 'Skills', badge: totalAvailableSkillPoints > 0 ? totalAvailableSkillPoints : null },
-    { id: 'equipment', Icon: BagIcon, label: 'Gear', badge: null },
-    { id: 'shop', Icon: ChestIcon, label: 'Shop', badge: null, unlockAt: 5 },
-    { id: 'homestead', Icon: HomeIcon, label: 'Home', badge: homesteadNewlyAvailable ? 'NEW' : null, unlockAt: 3 },
-    { id: 'bestiary', Icon: SkullIcon, label: 'Bestiary', badge: null },
-    { id: 'stats', Icon: ChartIcon, label: 'Stats', badge: null },
-  ];
-
   return (
     <div className="h-screen flex flex-col overflow-hidden" style={{ background: 'var(--color-bg)' }}>
       {/* Header */}
-      <header className="pixel-panel-dark px-4 py-2 flex items-center justify-between" style={{ borderRadius: 0, boxShadow: '0 4px 0 rgba(0,0,0,0.5)' }}>
-        {/* Left: Title and Stats */}
-        <div className="flex items-center gap-6">
-          <h1 className="pixel-title text-lg">Castles & Clickers <span className="text-xs text-gray-500 font-normal">v0.0.11</span></h1>
-          <div className="flex items-center gap-3 text-sm">
-            <span className="pixel-stat pixel-stat-gold">
-              <GoldIcon size={16} /> {Math.floor(headerStats.gold).toLocaleString()}
-            </span>
-            <span className="pixel-stat pixel-stat-green">
-              <TrophyIcon size={16} /> {headerStats.totalDungeonsCleared}
-            </span>
-            <span className="pixel-stat pixel-stat-red">
-              <SkullIcon size={16} /> {headerStats.totalMonstersKilled}
-            </span>
-            <span className={`pixel-stat ${headerStats.inventoryCount >= headerStats.maxInventory ? 'pixel-stat-red' : 'pixel-stat-blue'}`}>
-              <BagIcon size={16} /> {headerStats.inventoryCount}/{headerStats.maxInventory}
-            </span>
-          </div>
-        </div>
-
-        {/* Center: Navigation */}
-        <nav className="flex gap-2">
-          {navButtons.map(btn => {
-            const isLocked = btn.unlockAt && highestDungeonCleared < btn.unlockAt;
-            return (
-              <button
-                key={btn.id}
-                onClick={() => !isLocked && openModal(btn.id)}
-                disabled={isLocked}
-                className={`pixel-btn relative flex items-center gap-1 ${
-                  activeModal === btn.id
-                    ? 'pixel-btn-primary'
-                    : ''
-                } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-                title={isLocked ? `Unlocks at Dungeon ${btn.unlockAt}` : undefined}
-              >
-                <btn.Icon size={18} /> {btn.label}
-                {btn.badge && (
-                  <span className="pixel-badge absolute -top-2 -right-2 animate-pixel-blink">
-                    {btn.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Right: Game Controls */}
-        <div className="flex items-center gap-2">
-          {/* Auto-advance toggle - always visible, disabled when locked */}
-          <div className="relative">
-            <button
-              onClick={() => {
-                if (featureUnlocks?.autoAdvance) {
-                  setDungeonSettings({ autoAdvance: !dungeonSettings?.autoAdvance });
-                  if (!featureUnlocks?.autoAdvanceSeen) {
-                    markFeatureSeen('autoAdvanceSeen');
-                  }
-                }
-              }}
-              className={`pixel-btn text-xs ${
-                !featureUnlocks?.autoAdvance
-                  ? 'opacity-50 cursor-not-allowed'
-                  : dungeonSettings?.autoAdvance
-                    ? 'pixel-btn-success'
-                    : ''
-              }`}
-              title={featureUnlocks?.autoAdvance
-                ? "Auto-advance to next dungeon after completion"
-                : "Clear Dungeon 5 to unlock"}
-              disabled={!featureUnlocks?.autoAdvance}
-            >
-              AUTO {dungeonSettings?.autoAdvance ? 'ON' : 'OFF'}
-            </button>
-            {featureUnlocks?.autoAdvance && !featureUnlocks?.autoAdvanceSeen && (
-              <span className="pixel-badge absolute -top-2 -right-2 animate-pixel-blink">
-                NEW
-              </span>
-            )}
-          </div>
-
-          {/* Speed control */}
-          <div className="flex">
-            {[1, 2, 3].map(speed => (
-              <button
-                key={speed}
-                onClick={() => setGameSpeed(speed)}
-                className={`pixel-speed-btn ${gameSpeed === speed ? 'active' : ''}`}
-              >
-                {speed}x
-              </button>
-            ))}
-          </div>
-
-          {/* Pause/Play */}
-          {dungeon && (
-            <button
-              onClick={toggleRunning}
-              className={`pixel-btn ${isRunning ? '' : 'pixel-btn-success'}`}
-            >
-              {isRunning ? 'PAUSE' : 'PLAY'}
-            </button>
-          )}
-
-          {/* Reset */}
-          <button
-            onClick={() => setShowResetConfirm(true)}
-            className="pixel-btn text-[var(--color-text-dim)] hover:border-[var(--color-red)]"
-            title="Reset Game"
-          >
-            RESET
-          </button>
-        </div>
-      </header>
+      <GameHUD
+        activeModal={activeModal}
+        onOpenModal={openModal}
+        gameSpeed={gameSpeed}
+        setGameSpeed={setGameSpeed}
+        isRunning={isRunning}
+        toggleRunning={toggleRunning}
+        hasDungeon={!!dungeon}
+        dungeonSettings={dungeonSettings}
+        setDungeonSettings={setDungeonSettings}
+        featureUnlocks={featureUnlocks}
+        markFeatureSeen={markFeatureSeen}
+        onReset={() => setShowResetConfirm(true)}
+      />
 
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden">
@@ -531,44 +345,91 @@ const GameLayout = () => {
               };
               const phaseInfo = getPhaseDisplay();
 
+              // Check if this is a raid dungeon
+              const isRaidDungeon = dungeon.isRaid && dungeon.raidId;
+              const raidData = isRaidDungeon ? RAIDS[dungeon.raidId] : null;
+
+              // Get zone's world boss for mascot display (only for non-raids)
+              const zoneBoss = !isRaidDungeon ? getZoneWorldBoss(dungeon.level) : null;
+              const zoneBossDefeated = zoneBoss && highestDungeonCleared >= zoneBoss.level;
+
+              // Get raid wing boss status
+              const defeatedWingBosses = raidState?.defeatedWingBosses || [];
+
               return (
                 <>
-                  {/* Zone Header - Pixel Art Style */}
-                  <div className="pixel-panel mb-3">
+                  {/* Zone/Raid Header - Pixel Art Style */}
+                  <div className="pixel-panel mb-3" style={isRaidDungeon ? { borderColor: '#f59e0b' } : {}}>
                     <div className="flex items-center gap-4 px-3 py-2">
-                      {/* Zone icon and name */}
-                      <div className="flex items-center gap-2">
-                        <div style={{ color: tierColor }}>
-                          <TierIcon size={24} />
-                        </div>
-                        <div>
-                          <div className="pixel-text font-bold" style={{ color: tierColor }}>
-                            {currentTier.name}
+                      {/* Zone World Boss Mascot (not shown for raids - sidebar handles it) */}
+                      {!isRaidDungeon && zoneBoss && (
+                        <div className={`flex items-center gap-2 px-2 py-1 rounded border ${
+                          zoneBossDefeated
+                            ? 'border-green-500/40 bg-green-900/20'
+                            : 'border-amber-500/40 bg-amber-900/20'
+                        }`}>
+                          <WorldBossIcon bossId={zoneBoss.id} size={28} />
+                          <div className="text-[10px] leading-tight">
+                            <div className="text-gray-500">World Boss:</div>
+                            <div className={zoneBossDefeated ? 'text-green-400' : 'text-amber-400'}>
+                              {zoneBoss.name}
+                            </div>
+                            <div className="text-gray-500">
+                              {zoneBossDefeated ? 'Defeated' : `Lv ${zoneBoss.level}`}
+                            </div>
                           </div>
-                          <div className="pixel-label">
-                            Level {dungeon.level}
-                          </div>
                         </div>
-                      </div>
+                      )}
 
-                      {/* Tier progress mini-bar */}
-                      <div className="flex gap-1">
-                        {Array.from({ length: tierSize }, (_, i) => {
-                          const level = currentTier.minLevel + i;
-                          const isCurrent = level === dungeon.level;
-                          const isCleared = level < dungeon.level || (level === dungeon.level && phase === PHASES.COMPLETE);
-                          return (
-                            <div
-                              key={level}
-                              className="w-4 h-2 border border-[var(--color-border)]"
-                              style={{
-                                background: isCleared ? tierColor : isCurrent ? `${tierColor}60` : 'var(--color-panel-dark)',
-                              }}
-                              title={`Level ${level}${isCleared ? ' (Cleared)' : isCurrent ? ' (Current)' : ''}`}
-                            />
-                          );
-                        })}
-                      </div>
+                      {/* Raid name OR Zone icon and name */}
+                      {isRaidDungeon && raidData ? (
+                        <div className="flex items-center gap-2">
+                          <CrownIcon size={24} className="text-amber-400" />
+                          <div>
+                            <div className="pixel-text font-bold text-amber-400">
+                              {raidData.name}
+                            </div>
+                            <div className="pixel-label">
+                              Raid - Level {dungeon.level}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <div style={{ color: tierColor }}>
+                            <TierIcon size={24} />
+                          </div>
+                          <div>
+                            <div className="pixel-text font-bold" style={{ color: tierColor }}>
+                              {currentTier.name}
+                            </div>
+                            <div className="pixel-label">
+                              Level {dungeon.level}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tier progress mini-bar (only for non-raids) */}
+                      {!isRaidDungeon && (
+                        <div className="flex gap-1">
+                          {Array.from({ length: tierSize }, (_, i) => {
+                            const level = currentTier.minLevel + i;
+                            const isCurrent = level === dungeon.level;
+                            const isCleared = level < dungeon.level || (level === dungeon.level && phase === PHASES.COMPLETE);
+                            return (
+                              <div
+                                key={level}
+                                className="w-4 h-2 border border-[var(--color-border)]"
+                                style={{
+                                  background: isCleared ? tierColor : isCurrent ? `${tierColor}60` : 'var(--color-panel-dark)',
+                                }}
+                                title={`Level ${level}${isCleared ? ' (Cleared)' : isCurrent ? ' (Current)' : ''}`}
+                              />
+                            );
+                          })}
+                        </div>
+                      )}
 
                       {/* Phase indicator */}
                       <div className={`pixel-label ${phaseInfo.color}`}>
@@ -588,15 +449,33 @@ const GameLayout = () => {
                         </div>
                       </div>
 
-                      {/* Boss indicator */}
-                      {boss && (
-                        <div className={`flex items-center gap-1 ${bossUnlocked ? 'text-red-400' : 'text-gray-500'}`}>
-                          <SkullIcon size={16} />
-                          <span className="pixel-label">
-                            {bossAlive ? (bossUnlocked ? 'Boss Ready' : 'Locked') : 'Slain!'}
-                          </span>
-                        </div>
-                      )}
+                      {/* Boss indicator - show world boss info if applicable (non-raid) */}
+                      {!isRaidDungeon && boss && (() => {
+                        const worldBoss = getWorldBossForLevel(dungeon.level);
+                        const isWorldBoss = boss.isWorldBoss || worldBoss;
+
+                        return (
+                          <div className={`flex items-center gap-1.5 ${
+                            bossUnlocked
+                              ? isWorldBoss ? 'text-amber-400' : 'text-red-400'
+                              : 'text-gray-500'
+                          }`}>
+                            {isWorldBoss ? (
+                              <CrownIcon size={16} />
+                            ) : (
+                              <SkullIcon size={16} />
+                            )}
+                            <span className="pixel-label">
+                              {bossAlive
+                                ? (bossUnlocked
+                                    ? (isWorldBoss ? worldBoss?.name || 'World Boss' : 'Boss Ready')
+                                    : 'Locked')
+                                : (isWorldBoss ? `${worldBoss?.name || 'World Boss'} Slain!` : 'Slain!')
+                              }
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -615,6 +494,14 @@ const GameLayout = () => {
           ) : dungeonTransition ? (
             // Show empty space during transition (transition overlay handles the display)
             <div className="flex-1" />
+          ) : raidState?.active && !displayRoomCombat ? (
+            // Raid dungeon is loading/setting up
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center pixel-panel p-8">
+                <h2 className="pixel-title text-2xl mb-2">Entering Raid...</h2>
+                <p className="text-[var(--color-text-dim)]">Preparing the dungeon...</p>
+              </div>
+            </div>
           ) : (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center pixel-panel p-8">
@@ -656,6 +543,48 @@ const GameLayout = () => {
                     </ul>
                   </div>
                 )}
+                {/* World Boss Preview */}
+                {heroes.length > 0 && (() => {
+                  const nextLevel = lastDungeonSuccess == null ? 1 : highestDungeonCleared + 1;
+                  const worldBoss = getWorldBossForLevel(nextLevel);
+                  if (!worldBoss) return null;
+
+                  return (
+                    <div className="mb-4 pixel-panel p-4 border-amber-500/50 bg-amber-900/20 max-w-md mx-auto">
+                      <div className="flex items-center gap-2 mb-2 justify-center">
+                        <CrownIcon size={18} className="text-amber-400" />
+                        <span className="text-amber-400 font-bold text-sm">WORLD BOSS AWAITS</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <WorldBossIcon bossId={worldBoss.id} size={64} />
+                        <div className="flex-1 text-left">
+                          <div className="text-[10px] text-gray-500 uppercase">World Boss:</div>
+                          <div className="text-amber-300 font-bold">{worldBoss.name}</div>
+                          <div className="text-xs text-amber-400/70 italic mb-2">"{worldBoss.title}"</div>
+                          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                            <div className="flex items-center gap-1 text-red-400">
+                              <SwordIcon size={12} /> {worldBoss.baseStats.attack}
+                            </div>
+                            <div className="flex items-center gap-1 text-blue-400">
+                              <ShieldIcon size={12} /> {worldBoss.baseStats.defense}
+                            </div>
+                            <div className="flex items-center gap-1 text-green-400">
+                              <HeartIcon size={12} /> {worldBoss.baseStats.maxHp}
+                            </div>
+                            <div className="flex items-center gap-1 text-amber-400">
+                              <GoldIcon size={12} /> {worldBoss.goldReward.min}-{worldBoss.goldReward.max}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      {worldBoss.guaranteedRarity && (
+                        <div className="mt-2 text-xs text-center text-purple-400">
+                          Guaranteed {worldBoss.guaranteedRarity}+ gear drop
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
                 {heroes.length === 0 ? (
                   <button
                     onClick={() => setActiveModal('heroes')}
@@ -686,6 +615,15 @@ const GameLayout = () => {
                     >
                       Select Dungeon
                     </button>
+                    {highestDungeonCleared >= 12 && (
+                      <button
+                        onClick={() => openModal('raids')}
+                        className="pixel-btn pixel-btn-secondary flex items-center justify-center gap-2"
+                      >
+                        <CrownIcon size={16} className="text-amber-400" />
+                        <span>Raids</span>
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -727,6 +665,14 @@ const GameLayout = () => {
         <DungeonMap onStart={handleStartDungeon} onClose={closeModal} />
       </ModalOverlay>
 
+      <ModalOverlay isOpen={activeModal === 'raids'} onClose={closeModal} title="Raids" size="lg">
+        <RaidSelectorModal onClose={closeModal} />
+      </ModalOverlay>
+
+      <ModalOverlay isOpen={activeModal === 'collection'} onClose={closeModal} title="Unique Collection" size="xl">
+        <UniqueCollectionScreen />
+      </ModalOverlay>
+
       {/* Dungeon Transition Screen */}
       {dungeonTransition && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[60]">
@@ -759,6 +705,8 @@ const GameLayout = () => {
             <h2 className="pixel-title text-2xl mb-2 text-white">
               {dungeonTransition.isComplete
                 ? (lastDungeonSuccess ? 'Victory!' : 'Defeat')
+                : raidState?.active
+                ? 'Entering'
                 : dungeonTransition.isRetry
                 ? 'Retrying'
                 : 'Travelling to'}
@@ -766,6 +714,8 @@ const GameLayout = () => {
             <p className="text-3xl font-bold text-[var(--color-gold)] mb-4">
               {dungeonTransition.isComplete
                 ? (lastDungeonSuccess ? 'Preparing next adventure...' : 'The party has fallen...')
+                : raidState?.active && RAIDS[raidState.raidId]
+                ? RAIDS[raidState.raidId].name
                 : `Dungeon Level ${dungeonTransition.level}`}
             </p>
             <div className="flex justify-center gap-1">
@@ -784,6 +734,8 @@ const GameLayout = () => {
       {/* Other modals */}
       <WelcomeBackModal progress={offlineProgress} onClose={() => setOfflineProgress(null)} />
       <LootNotifications />
+      <UniqueDropCelebration />
+      <RaidRecapScreen />
 
       {/* Reset Confirmation */}
       {showResetConfirm && (

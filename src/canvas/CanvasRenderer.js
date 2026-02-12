@@ -8,7 +8,7 @@ import { TerrainLayer } from './layers/TerrainLayer';
 import { UnitLayer } from './layers/UnitLayer';
 import { UILayer } from './layers/UILayer';
 import { EffectsLayer } from './layers/EffectsLayer';
-import { getThemeForLevel } from '../data/dungeonThemes';
+import { getThemeForLevel, getThemeForRaid } from '../data/dungeonThemes';
 
 // Rendering constants
 export const TILE_SIZE = 36;
@@ -132,7 +132,10 @@ export class CanvasRenderer {
     const dungeonId = dungeon.id || `${dungeon.level}-${dungeon.seed}`;
     const gridChanged = dungeon.grid !== this.lastGrid;
     if (dungeonId !== this.lastDungeonId || dungeon.level !== this.lastLevel || gridChanged) {
-      const theme = getThemeForLevel(dungeon.level);
+      // Use raid theme for raid dungeons, otherwise use level-based theme
+      const theme = dungeon.isRaid && dungeon.raidId
+        ? getThemeForRaid(dungeon.raidId)
+        : getThemeForLevel(dungeon.level);
       this.terrainLayer.buildCache(dungeon, theme);
       this.unitLayer.clearPositionCache(); // Clear stale position data
       this.lastDungeonId = dungeonId;

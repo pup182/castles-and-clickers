@@ -258,6 +258,8 @@ const Sidebar = memo(({
   onOpenSelector,
   onAbandon,
 }) => {
+  const raidState = useGameStore(state => state.raidState);
+  const isInRaid = raidState?.active;
   // Use sidebar-specific throttled state (500ms updates)
   const {
     displayHeroes,
@@ -328,19 +330,22 @@ const Sidebar = memo(({
       </div>
       {/* Actions - Fixed at bottom, always visible */}
       <div className="p-3 border-t-3 border-[var(--color-border)] space-y-2 flex-shrink-0">
-        <button
-          onClick={onOpenSelector}
-          className="w-full pixel-btn pixel-btn-primary text-sm"
-        >
-          {dungeon ? 'Change Dungeon' : 'Select Dungeon'}
-        </button>
+        {/* Hide change dungeon button when in a raid */}
+        {!isInRaid && (
+          <button
+            onClick={onOpenSelector}
+            className="w-full pixel-btn pixel-btn-primary text-sm"
+          >
+            {dungeon ? 'Change Dungeon' : 'Select Dungeon'}
+          </button>
+        )}
 
         {dungeon && (
           <button
             onClick={onAbandon}
             className="w-full pixel-btn pixel-btn-danger text-sm"
           >
-            Exit Dungeon
+            {isInRaid ? 'Exit Raid' : 'Exit Dungeon'}
           </button>
         )}
       </div>

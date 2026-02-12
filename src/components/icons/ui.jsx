@@ -445,15 +445,15 @@ export const ClockIcon = ({ size }) => (
   </IconWrapper>
 );
 
-export const CheckIcon = ({ size }) => (
-  <IconWrapper size={size}>
-    {/* Checkmark */}
-    <P x={2} y={8} w={2} h={2} c="#22c55e" />
-    <P x={4} y={10} w={2} h={2} c="#22c55e" />
-    <P x={6} y={8} w={2} h={2} c="#22c55e" />
-    <P x={8} y={6} w={2} h={2} c="#22c55e" />
-    <P x={10} y={4} w={2} h={2} c="#22c55e" />
-    <P x={12} y={2} w={2} h={2} c="#22c55e" />
+export const CheckIcon = ({ size, className = '' }) => (
+  <IconWrapper size={size} className={className}>
+    {/* Checkmark - uses currentColor for flexibility */}
+    <P x={2} y={8} w={2} h={2} c="currentColor" />
+    <P x={4} y={10} w={2} h={2} c="currentColor" />
+    <P x={6} y={8} w={2} h={2} c="currentColor" />
+    <P x={8} y={6} w={2} h={2} c="currentColor" />
+    <P x={10} y={4} w={2} h={2} c="currentColor" />
+    <P x={12} y={2} w={2} h={2} c="currentColor" />
   </IconWrapper>
 );
 
@@ -720,6 +720,19 @@ export const ArrowDownIcon = ({ size }) => (
   </IconWrapper>
 );
 
+export const ChevronIcon = ({ size, className = '' }) => (
+  <IconWrapper size={size} className={className}>
+    {/* Simple chevron pointing up (rotate via CSS for other directions) */}
+    <P x={7} y={4} w={2} h={2} c="#fbbf24" />
+    <P x={5} y={6} w={2} h={2} c="#fbbf24" />
+    <P x={9} y={6} w={2} h={2} c="#fbbf24" />
+    <P x={3} y={8} w={2} h={2} c="#fbbf24" />
+    <P x={11} y={8} w={2} h={2} c="#fbbf24" />
+    {/* Highlight */}
+    <P x={7} y={5} w={2} h={1} c="#fde68a" />
+  </IconWrapper>
+);
+
 export const ShieldBuffIcon = ({ size }) => (
   <IconWrapper size={size}>
     {/* Shield with + */}
@@ -969,6 +982,26 @@ export const ChartIcon = ({ size }) => (
     <P x={7} y={6} w={2} h={1} c="#fbbf24" />
     <P x={9} y={4} w={2} h={1} c="#fbbf24" />
     <P x={11} y={3} w={2} h={1} c="#fbbf24" />
+  </IconWrapper>
+);
+
+export const SettingsIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Gear shape */}
+    <P x={6} y={1} w={4} h={2} c="#9ca3af" />
+    <P x={6} y={13} w={4} h={2} c="#9ca3af" />
+    <P x={1} y={6} w={2} h={4} c="#9ca3af" />
+    <P x={13} y={6} w={2} h={4} c="#9ca3af" />
+    {/* Diagonal teeth */}
+    <P x={2} y={2} w={3} h={3} c="#9ca3af" />
+    <P x={11} y={2} w={3} h={3} c="#9ca3af" />
+    <P x={2} y={11} w={3} h={3} c="#9ca3af" />
+    <P x={11} y={11} w={3} h={3} c="#9ca3af" />
+    {/* Center circle */}
+    <P x={5} y={5} w={6} h={6} c="#6b7280" />
+    <P x={6} y={6} w={4} h={4} c="#4b5563" />
+    {/* Inner hole */}
+    <P x={7} y={7} w={2} h={2} c="#1f2937" />
   </IconWrapper>
 );
 

@@ -6,7 +6,8 @@ import { HeartIcon, SwordIcon, ShieldIcon, SpeedIcon } from './icons/ui';
 
 const HeroCard = ({ hero, onSelect, isSelected, showEquipment = true }) => {
   const classData = CLASSES[hero.classId];
-  const stats = calculateHeroStats(hero);
+  const heroes = useGameStore(state => state.heroes);
+  const stats = calculateHeroStats(hero, heroes);
   const xpNeeded = xpForLevel(hero.level);
   const xpPercent = (hero.xp / xpNeeded) * 100;
 

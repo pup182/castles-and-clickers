@@ -182,7 +182,7 @@ export const chooseMonsterAbility = (monster, heroes, allies, cooldowns = {}, co
 
     // Filter to phase-specific abilities
     const phaseAbilities = readyAbilities.filter(a =>
-      currentPhase.abilities?.includes(a.id)
+      a && currentPhase.abilities?.includes(a.id)
     );
 
     if (phaseAbilities.length > 0) {

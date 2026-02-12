@@ -863,6 +863,663 @@ MONSTER_SPRITE_DATA.the_nameless_one = [
 MONSTER_SPRITE_DATA.bat = MONSTER_SPRITE_DATA.giant_bat;
 MONSTER_SPRITE_DATA.spider = MONSTER_SPRITE_DATA.giant_spider;
 
+// ========================================
+// WORLD BOSS SPRITES (32x32 scaled to 16x16)
+// ========================================
+
+// Crystal Guardian - Level 5
+MONSTER_SPRITE_DATA.crystal_guardian = [
+  // Crystal body core
+  [5, 4, 6, 8, '#06b6d4'],
+  [6, 3, 4, 1, '#22d3ee'],
+  [7, 2, 2, 1, '#67e8f9'],
+  // Crystal facets - left
+  [3, 5, 2, 6, '#0891b2'],
+  [2, 6, 1, 4, '#0e7490'],
+  // Crystal facets - right
+  [11, 5, 2, 6, '#0891b2'],
+  [13, 6, 1, 4, '#0e7490'],
+  // Eyes - glowing
+  [6, 5, 2, 2, '#fef3c7'],
+  [8, 5, 2, 2, '#fef3c7'],
+  [7, 6, 1, 1, '#06b6d4'],
+  [9, 6, 1, 1, '#06b6d4'],
+  // Inner glow
+  [7, 7, 2, 3, '#a5f3fc'],
+  // Crystal arms
+  [1, 7, 2, 3, '#0891b2'],
+  [13, 7, 2, 3, '#0891b2'],
+  // Base/legs
+  [5, 12, 2, 3, '#0e7490'],
+  [9, 12, 2, 3, '#0e7490'],
+];
+
+// Crypt Lord - Level 10
+MONSTER_SPRITE_DATA.crypt_lord = [
+  // Robes
+  [4, 6, 8, 9, '#1e1b4b'],
+  [3, 8, 2, 6, '#1e1b4b'],
+  [11, 8, 2, 6, '#1e1b4b'],
+  // Skull
+  [5, 2, 6, 5, '#e5e7eb'],
+  [6, 3, 4, 3, '#d1d5db'],
+  // Eye sockets
+  [6, 3, 2, 2, '#1f2937'],
+  [8, 3, 2, 2, '#1f2937'],
+  // Eye glow
+  [6, 4, 1, 1, '#22d3ee'],
+  [9, 4, 1, 1, '#22d3ee'],
+  // Crown
+  [5, 0, 6, 2, '#fbbf24'],
+  [6, 0, 1, 1, '#f59e0b'],
+  [8, 0, 1, 1, '#f59e0b'],
+  // Staff
+  [2, 4, 1, 10, '#78350f'],
+  [1, 3, 3, 2, '#a855f7'],
+];
+
+// Forest Ancient - Level 15
+MONSTER_SPRITE_DATA.forest_ancient = [
+  // Tree trunk body
+  [5, 4, 6, 10, '#78350f'],
+  [4, 6, 2, 6, '#92400e'],
+  [10, 6, 2, 6, '#92400e'],
+  // Bark texture
+  [6, 5, 1, 8, '#451a03'],
+  [9, 5, 1, 8, '#451a03'],
+  // Canopy/head
+  [3, 0, 10, 5, '#15803d'],
+  [2, 1, 2, 3, '#166534'],
+  [12, 1, 2, 3, '#166534'],
+  [5, 0, 6, 2, '#22c55e'],
+  // Eyes
+  [5, 5, 2, 2, '#84cc16'],
+  [9, 5, 2, 2, '#84cc16'],
+  [6, 6, 1, 1, '#fef3c7'],
+  [10, 6, 1, 1, '#fef3c7'],
+  // Roots
+  [3, 13, 3, 2, '#78350f'],
+  [10, 13, 3, 2, '#78350f'],
+];
+
+// Fallen King - Level 20
+MONSTER_SPRITE_DATA.fallen_king = [
+  // Armor body
+  [4, 5, 8, 8, '#374151'],
+  [3, 7, 2, 5, '#4b5563'],
+  [11, 7, 2, 5, '#4b5563'],
+  // Cape
+  [3, 6, 2, 8, '#991b1b'],
+  [11, 6, 2, 8, '#991b1b'],
+  // Helmet
+  [5, 2, 6, 4, '#6b7280'],
+  [6, 1, 4, 1, '#9ca3af'],
+  // Visor
+  [6, 3, 4, 2, '#1f2937'],
+  // Crown
+  [5, 0, 6, 2, '#fbbf24'],
+  // Eye glow
+  [7, 4, 1, 1, '#ef4444'],
+  [8, 4, 1, 1, '#ef4444'],
+  // Sword
+  [13, 3, 2, 10, '#9ca3af'],
+  [13, 2, 2, 2, '#fbbf24'],
+  // Legs
+  [5, 13, 2, 2, '#374151'],
+  [9, 13, 2, 2, '#374151'],
+];
+
+// Inferno Lord - Level 25
+MONSTER_SPRITE_DATA.inferno_lord = [
+  // Lava body
+  [4, 4, 8, 9, '#dc2626'],
+  [3, 6, 2, 6, '#f97316'],
+  [11, 6, 2, 6, '#f97316'],
+  // Core glow
+  [6, 6, 4, 4, '#fbbf24'],
+  [7, 7, 2, 2, '#fef3c7'],
+  // Head
+  [5, 1, 6, 4, '#dc2626'],
+  // Horns
+  [4, 0, 2, 3, '#1f2937'],
+  [10, 0, 2, 3, '#1f2937'],
+  // Eyes
+  [6, 2, 2, 2, '#fef3c7'],
+  [8, 2, 2, 2, '#fef3c7'],
+  // Flames
+  [2, 3, 2, 4, '#f97316'],
+  [12, 3, 2, 4, '#f97316'],
+  [1, 5, 1, 2, '#fbbf24'],
+  [14, 5, 1, 2, '#fbbf24'],
+  // Legs
+  [5, 12, 2, 3, '#991b1b'],
+  [9, 12, 2, 3, '#991b1b'],
+];
+
+// Void Emperor - Level 30
+MONSTER_SPRITE_DATA.void_emperor = [
+  // Ethereal body
+  [4, 4, 8, 10, '#3b0764'],
+  [3, 6, 2, 6, '#581c87'],
+  [11, 6, 2, 6, '#581c87'],
+  // Cosmic cloak
+  [2, 5, 2, 8, '#1e1b4b'],
+  [12, 5, 2, 8, '#1e1b4b'],
+  // Head
+  [5, 1, 6, 4, '#581c87'],
+  // Crown of void
+  [4, 0, 2, 2, '#a855f7'],
+  [7, 0, 2, 1, '#c084fc'],
+  [10, 0, 2, 2, '#a855f7'],
+  // Eyes
+  [6, 2, 2, 2, '#c084fc'],
+  [8, 2, 2, 2, '#c084fc'],
+  [7, 3, 1, 1, '#fef3c7'],
+  [9, 3, 1, 1, '#fef3c7'],
+  // Void energy
+  [7, 6, 2, 3, '#c084fc'],
+  [8, 7, 1, 1, '#e9d5ff'],
+  // Floating particles
+  [1, 2, 1, 1, '#a855f7'],
+  [14, 3, 1, 1, '#a855f7'],
+  [2, 12, 1, 1, '#c084fc'],
+  [13, 11, 1, 1, '#c084fc'],
+];
+
+// ========================================
+// RAID BOSS SPRITES (16x16 versions)
+// ========================================
+
+// Sunken Temple Bosses
+MONSTER_SPRITE_DATA.boss_corrupted_priest = [
+  // Robes - dark waterlogged
+  [5, 4, 6, 9, '#1e3a5f'],
+  [4, 6, 8, 7, '#1e3a5f'],
+  // Hood
+  [5, 1, 6, 4, '#0c2538'],
+  // Face - corrupted green
+  [6, 3, 4, 3, '#4a7c59'],
+  // Glowing eyes
+  [6, 4, 2, 1, '#22d3ee'],
+  [8, 4, 2, 1, '#22d3ee'],
+  // Staff
+  [2, 3, 1, 11, '#78350f'],
+  [1, 2, 3, 2, '#7c3aed'],
+  // Water drips
+  [3, 7, 1, 2, '#06b6d4'],
+  [12, 8, 1, 2, '#06b6d4'],
+  // Seaweed
+  [4, 11, 1, 2, '#166534'],
+  [11, 10, 1, 2, '#166534'],
+];
+
+MONSTER_SPRITE_DATA.boss_naga_queen = [
+  // Serpent tail
+  [2, 10, 12, 3, '#15803d'],
+  [1, 11, 3, 3, '#166534'],
+  [12, 12, 3, 2, '#166534'],
+  // Humanoid torso
+  [5, 5, 6, 5, '#4ade80'],
+  [4, 6, 8, 3, '#22c55e'],
+  // Head
+  [5, 1, 5, 4, '#86efac'],
+  // Crown
+  [5, 0, 6, 2, '#fbbf24'],
+  [6, 0, 1, 1, '#f59e0b'],
+  [9, 0, 1, 1, '#f59e0b'],
+  // Eyes
+  [6, 2, 1, 1, '#fef08a'],
+  [8, 2, 1, 1, '#fef08a'],
+  // Trident
+  [13, 2, 1, 8, '#fbbf24'],
+  [12, 1, 1, 2, '#f59e0b'],
+  [14, 1, 1, 2, '#f59e0b'],
+];
+
+MONSTER_SPRITE_DATA.boss_sea_serpent = [
+  // Coiled body
+  [2, 7, 4, 5, '#0891b2'],
+  [5, 9, 6, 4, '#06b6d4'],
+  [10, 7, 4, 5, '#0891b2'],
+  // Head
+  [5, 1, 6, 7, '#0e7490'],
+  [4, 3, 8, 4, '#0891b2'],
+  // Crest fins
+  [4, 0, 2, 3, '#164e63'],
+  [10, 0, 2, 3, '#164e63'],
+  // Glowing eyes
+  [5, 3, 2, 2, '#fef08a'],
+  [9, 3, 2, 2, '#fef08a'],
+  [6, 4, 1, 1, '#dc2626'],
+  [10, 4, 1, 1, '#dc2626'],
+  // Fangs
+  [5, 6, 1, 2, '#f8fafc'],
+  [9, 6, 1, 2, '#f8fafc'],
+];
+
+// Cursed Manor Bosses
+MONSTER_SPRITE_DATA.boss_phantom_butler = [
+  // Ghostly body
+  [5, 4, 6, 8, '#a78bfa'],
+  [4, 6, 8, 5, '#8b5cf6'],
+  // Wispy bottom
+  [4, 11, 2, 2, '#7c3aed'],
+  [7, 12, 2, 2, '#7c3aed'],
+  [10, 11, 2, 2, '#7c3aed'],
+  // Head with top hat
+  [5, 1, 5, 4, '#c4b5fd'],
+  [5, 0, 6, 2, '#1c1917'],
+  [4, 1, 8, 1, '#292524'],
+  // Hollow eyes
+  [6, 2, 1, 2, '#1e1b4b'],
+  [8, 2, 1, 2, '#1e1b4b'],
+  // Bow tie
+  [7, 5, 2, 1, '#1c1917'],
+  // Tray
+  [1, 7, 5, 1, '#9ca3af'],
+];
+
+MONSTER_SPRITE_DATA.boss_banshee = [
+  // Flowing dress
+  [4, 5, 8, 7, '#c4b5fd'],
+  [3, 7, 10, 5, '#a78bfa'],
+  [2, 10, 3, 4, '#8b5cf6'],
+  [11, 10, 3, 4, '#8b5cf6'],
+  // Floating hair
+  [3, 1, 10, 5, '#e9d5ff'],
+  [2, 2, 3, 4, '#d8b4fe'],
+  [11, 2, 3, 4, '#d8b4fe'],
+  // Face
+  [5, 3, 5, 4, '#f5f5f4'],
+  // Dark hollow eyes
+  [6, 4, 1, 2, '#0c0a09'],
+  [8, 4, 1, 2, '#0c0a09'],
+  // Screaming mouth
+  [7, 6, 2, 1, '#0c0a09'],
+];
+
+// Also add an alias for the Queen variant
+MONSTER_SPRITE_DATA.boss_banshee_queen = MONSTER_SPRITE_DATA.boss_banshee;
+
+MONSTER_SPRITE_DATA.boss_vampire_lord = [
+  // Cape spread
+  [1, 4, 14, 10, '#7f1d1d'],
+  [2, 5, 12, 8, '#991b1b'],
+  // Inner cape red lining
+  [4, 6, 8, 7, '#dc2626'],
+  // Body - aristocratic suit
+  [5, 5, 6, 8, '#1c1917'],
+  [7, 6, 2, 2, '#f8fafc'], // Shirt
+  // Head
+  [5, 1, 5, 5, '#fafaf9'],
+  // Slicked hair
+  [5, 0, 6, 2, '#0c0a09'],
+  [4, 1, 2, 2, '#1c1917'],
+  [10, 1, 2, 2, '#1c1917'],
+  // Red eyes
+  [6, 2, 1, 1, '#ef4444'],
+  [9, 2, 1, 1, '#ef4444'],
+  // Fangs
+  [6, 4, 1, 1, '#f8fafc'],
+  [8, 4, 1, 1, '#f8fafc'],
+  // Blood
+  [7, 5, 1, 1, '#dc2626'],
+];
+
+MONSTER_SPRITE_DATA.boss_flesh_golem = [
+  // Massive body
+  [3, 4, 10, 9, '#6b7280'],
+  [2, 6, 12, 6, '#4b5563'],
+  // Head
+  [5, 1, 6, 4, '#78716c'],
+  // Stitches
+  [7, 2, 2, 2, '#374151'],
+  [5, 7, 6, 1, '#374151'],
+  // Eyes - different sizes (misshapen)
+  [5, 2, 2, 2, '#dc2626'],
+  [9, 3, 2, 1, '#dc2626'],
+  // Arms - thick
+  [0, 5, 3, 6, '#6b7280'],
+  [13, 5, 3, 6, '#6b7280'],
+  // Legs
+  [4, 13, 3, 2, '#4b5563'],
+  [9, 13, 3, 2, '#4b5563'],
+];
+
+// Sky Fortress Bosses
+MONSTER_SPRITE_DATA.boss_storm_wizard = [
+  // Robes billowing
+  [4, 5, 8, 9, '#3b82f6'],
+  [3, 7, 10, 6, '#2563eb'],
+  // Wizard hat
+  [5, 0, 6, 2, '#1e40af'],
+  [6, 1, 4, 2, '#1d4ed8'],
+  [7, 2, 2, 2, '#2563eb'],
+  [4, 3, 8, 1, '#1e40af'],
+  // Face
+  [5, 3, 5, 3, '#fde68a'],
+  // Lightning eyes
+  [6, 4, 1, 1, '#fef08a'],
+  [9, 4, 1, 1, '#fef08a'],
+  // Beard
+  [6, 6, 4, 3, '#e5e7eb'],
+  // Staff
+  [13, 2, 1, 12, '#78350f'],
+  [12, 0, 3, 3, '#fbbf24'],
+  // Lightning
+  [11, 1, 1, 1, '#fde047'],
+];
+
+MONSTER_SPRITE_DATA.boss_wind_elemental = [
+  // Swirling wind form
+  [4, 3, 8, 8, '#d1d5db'],
+  [3, 5, 10, 4, '#e5e7eb'],
+  [5, 2, 6, 2, '#f3f4f6'],
+  // Core
+  [6, 5, 4, 4, '#ffffff'],
+  // Wind swirls
+  [1, 4, 3, 1, '#9ca3af'],
+  [12, 5, 3, 1, '#9ca3af'],
+  [2, 8, 2, 1, '#9ca3af'],
+  // Eyes
+  [5, 5, 2, 2, '#0891b2'],
+  [9, 5, 2, 2, '#0891b2'],
+  // Trailing wisps
+  [3, 11, 3, 2, '#d1d5db'],
+  [10, 11, 3, 2, '#d1d5db'],
+];
+
+MONSTER_SPRITE_DATA.boss_lightning_golem = [
+  // Body - crackling with energy
+  [4, 4, 8, 8, '#fde047'],
+  [3, 6, 10, 4, '#facc15'],
+  // Core glow
+  [6, 6, 4, 4, '#ffffff'],
+  // Head
+  [5, 1, 6, 4, '#fbbf24'],
+  // Eyes
+  [6, 2, 2, 2, '#0ea5e9'],
+  [8, 2, 2, 2, '#0ea5e9'],
+  // Lightning bolts
+  [2, 5, 2, 1, '#38bdf8'],
+  [12, 5, 2, 1, '#38bdf8'],
+  [1, 7, 2, 1, '#67e8f9'],
+  [13, 7, 2, 1, '#67e8f9'],
+  // Arms
+  [1, 5, 3, 5, '#f59e0b'],
+  [12, 5, 3, 5, '#f59e0b'],
+  // Legs
+  [5, 12, 2, 3, '#eab308'],
+  [9, 12, 2, 3, '#eab308'],
+];
+
+MONSTER_SPRITE_DATA.boss_storm_hawk = [
+  // Body
+  [6, 4, 4, 5, '#3f3f46'],
+  [7, 3, 2, 2, '#52525b'],
+  // Wings spread
+  [0, 5, 6, 3, '#52525b'],
+  [10, 5, 6, 3, '#52525b'],
+  [1, 4, 3, 1, '#71717a'],
+  [12, 4, 3, 1, '#71717a'],
+  // Tail feathers
+  [6, 9, 4, 3, '#3f3f46'],
+  [7, 11, 2, 2, '#27272a'],
+  // Beak
+  [7, 2, 2, 1, '#fbbf24'],
+  // Eyes - electric
+  [6, 4, 1, 1, '#38bdf8'],
+  [9, 4, 1, 1, '#38bdf8'],
+  // Lightning on wings
+  [1, 6, 1, 1, '#fde047'],
+  [14, 6, 1, 1, '#fde047'],
+];
+
+MONSTER_SPRITE_DATA.boss_thunderbird = MONSTER_SPRITE_DATA.boss_storm_hawk;
+
+MONSTER_SPRITE_DATA.boss_storm_lord = [
+  // Massive cloud body
+  [2, 5, 12, 9, '#d1d5db'],
+  [1, 7, 14, 6, '#e5e7eb'],
+  [3, 4, 10, 3, '#f3f4f6'],
+  // Head forming from clouds
+  [5, 1, 6, 5, '#f3f4f6'],
+  [4, 2, 8, 3, '#e5e7eb'],
+  // Lightning eyes
+  [5, 2, 2, 2, '#0ea5e9'],
+  [9, 2, 2, 2, '#0ea5e9'],
+  [6, 3, 1, 1, '#fef08a'],
+  [10, 3, 1, 1, '#fef08a'],
+  // Storm mouth
+  [6, 4, 4, 1, '#6b7280'],
+  // Lightning in body
+  [4, 7, 1, 2, '#fde047'],
+  [11, 8, 1, 2, '#fde047'],
+  [7, 10, 1, 2, '#fbbf24'],
+  // Arms from clouds
+  [0, 7, 3, 4, '#d1d5db'],
+  [13, 7, 3, 4, '#d1d5db'],
+];
+
+MONSTER_SPRITE_DATA.boss_sky_titan = MONSTER_SPRITE_DATA.boss_storm_lord;
+
+// The Abyss Bosses
+MONSTER_SPRITE_DATA.boss_abyssal_horror = [
+  // Massive dark body
+  [2, 4, 12, 10, '#0f172a'],
+  [1, 6, 14, 7, '#1e293b'],
+  [3, 3, 10, 4, '#0f172a'],
+  // Multiple eyes
+  [3, 5, 2, 2, '#ef4444'],
+  [6, 4, 2, 2, '#dc2626'],
+  [10, 4, 2, 2, '#ef4444'],
+  [4, 7, 1, 1, '#f87171'],
+  [10, 6, 2, 2, '#f87171'],
+  // Main eye
+  [6, 6, 3, 3, '#fef08a'],
+  [7, 7, 1, 1, '#0c0a09'],
+  // Massive jaws
+  [4, 10, 8, 4, '#0c0a09'],
+  // Teeth
+  [4, 10, 1, 2, '#f8fafc'],
+  [6, 10, 1, 2, '#f8fafc'],
+  [8, 10, 1, 2, '#f8fafc'],
+  [10, 10, 1, 2, '#f8fafc'],
+  // Tentacles
+  [0, 7, 2, 5, '#1e293b'],
+  [14, 7, 2, 5, '#1e293b'],
+];
+
+MONSTER_SPRITE_DATA.boss_kraken = [
+  // Central head
+  [5, 2, 6, 7, '#581c87'],
+  [4, 4, 8, 4, '#7c3aed'],
+  // Eyes
+  [5, 4, 2, 2, '#fef08a'],
+  [9, 4, 2, 2, '#fef08a'],
+  [6, 4, 1, 1, '#0c0a09'],
+  [9, 4, 1, 1, '#0c0a09'],
+  // Beak
+  [7, 7, 2, 2, '#1c1917'],
+  // Tentacles spreading
+  [0, 9, 4, 2, '#8b5cf6'],
+  [12, 9, 4, 2, '#8b5cf6'],
+  [1, 11, 3, 3, '#7c3aed'],
+  [12, 11, 3, 3, '#7c3aed'],
+  [3, 8, 2, 5, '#a78bfa'],
+  [11, 8, 2, 5, '#a78bfa'],
+  [5, 9, 2, 6, '#8b5cf6'],
+  [9, 9, 2, 6, '#8b5cf6'],
+  // Suckers
+  [3, 10, 1, 1, '#c4b5fd'],
+  [12, 10, 1, 1, '#c4b5fd'],
+];
+
+MONSTER_SPRITE_DATA.boss_deep_one_prophet = [
+  // Robed body
+  [4, 5, 8, 9, '#134e4a'],
+  [3, 7, 10, 6, '#0f766e'],
+  // Fishlike head
+  [5, 1, 6, 5, '#0d9488'],
+  // Fins
+  [3, 1, 2, 3, '#115e59'],
+  [11, 1, 2, 3, '#115e59'],
+  // Large bulging eyes
+  [5, 2, 2, 2, '#fef08a'],
+  [9, 2, 2, 2, '#fef08a'],
+  [6, 2, 1, 1, '#1e1b4b'],
+  [9, 2, 1, 1, '#1e1b4b'],
+  // Staff
+  [13, 3, 1, 10, '#78350f'],
+  [12, 1, 3, 3, '#7c3aed'],
+  // Void glow
+  [13, 2, 1, 1, '#c084fc'],
+];
+
+MONSTER_SPRITE_DATA.boss_leviathan = [
+  // Massive serpentine body
+  [0, 7, 16, 4, '#0c4a6e'],
+  [2, 6, 12, 2, '#0369a1'],
+  [4, 5, 8, 2, '#0284c7'],
+  // Head rising
+  [1, 1, 7, 7, '#0369a1'],
+  [2, 2, 5, 5, '#0284c7'],
+  // Crest fins
+  [2, 0, 2, 2, '#075985'],
+  [5, 0, 2, 2, '#075985'],
+  // Eyes
+  [2, 3, 2, 2, '#fef08a'],
+  [5, 3, 2, 2, '#fef08a'],
+  [3, 3, 1, 1, '#dc2626'],
+  [6, 3, 1, 1, '#dc2626'],
+  // Jaws with teeth
+  [2, 6, 5, 2, '#0c4a6e'],
+  [2, 6, 1, 1, '#f8fafc'],
+  [4, 7, 1, 1, '#f8fafc'],
+  // Body coils
+  [9, 2, 5, 5, '#0369a1'],
+  // Scale highlights
+  [3, 7, 1, 1, '#38bdf8'],
+  [7, 8, 1, 1, '#38bdf8'],
+  [11, 7, 1, 1, '#38bdf8'],
+];
+
+// Void Throne Bosses
+MONSTER_SPRITE_DATA.boss_void_sentinel = [
+  // Armored void being
+  [4, 3, 8, 10, '#1e1b4b'],
+  [3, 5, 10, 7, '#312e81'],
+  // Helmet
+  [5, 1, 6, 4, '#3730a3'],
+  [4, 2, 8, 2, '#4338ca'],
+  // Visor glow
+  [5, 2, 5, 1, '#c084fc'],
+  // Shoulders
+  [1, 5, 3, 3, '#4338ca'],
+  [12, 5, 3, 3, '#4338ca'],
+  // Void sword
+  [14, 2, 2, 10, '#6366f1'],
+  [14, 1, 1, 2, '#818cf8'],
+  // Void energy core
+  [7, 7, 2, 2, '#7c3aed'],
+  [7, 8, 1, 1, '#a855f7'],
+  // Legs
+  [5, 12, 2, 3, '#312e81'],
+  [9, 12, 2, 3, '#312e81'],
+];
+
+MONSTER_SPRITE_DATA.boss_void_stalker_prime = MONSTER_SPRITE_DATA.boss_void_sentinel;
+
+MONSTER_SPRITE_DATA.boss_reality_ripper = [
+  // Fragmented body
+  [4, 3, 4, 5, '#7c3aed'],
+  [8, 4, 4, 4, '#8b5cf6'],
+  [3, 7, 5, 4, '#6d28d9'],
+  [8, 8, 5, 4, '#5b21b6'],
+  // Floating head
+  [5, 0, 6, 4, '#a78bfa'],
+  [6, 1, 4, 2, '#c4b5fd'],
+  // Eyes - different sizes
+  [6, 1, 1, 1, '#fef08a'],
+  [8, 1, 2, 2, '#fef08a'],
+  // Reality tears
+  [2, 4, 1, 3, '#f0abfc'],
+  [13, 5, 1, 4, '#e879f9'],
+  [7, 2, 1, 2, '#f5d0fe'],
+  // Floating fragments
+  [0, 6, 2, 2, '#7c3aed'],
+  [14, 7, 2, 2, '#8b5cf6'],
+];
+
+MONSTER_SPRITE_DATA.boss_reality_ripper_alpha = MONSTER_SPRITE_DATA.boss_reality_ripper;
+
+MONSTER_SPRITE_DATA.boss_null_shade = [
+  // Pure void form
+  [4, 2, 8, 10, '#09090b'],
+  [3, 4, 10, 6, '#0c0a09'],
+  // Outline glow
+  [3, 2, 1, 10, '#4c1d95'],
+  [12, 2, 1, 10, '#4c1d95'],
+  [4, 1, 8, 1, '#4c1d95'],
+  [4, 12, 8, 1, '#4c1d95'],
+  // Void eyes
+  [5, 5, 2, 2, '#18181b'],
+  [9, 5, 2, 2, '#18181b'],
+  // Anti-light core
+  [7, 7, 2, 2, '#18181b'],
+  // Wispy edges
+  [2, 6, 1, 3, '#3b0764'],
+  [13, 5, 1, 4, '#3b0764'],
+];
+
+MONSTER_SPRITE_DATA.boss_null_shade_omega = MONSTER_SPRITE_DATA.boss_null_shade;
+
+MONSTER_SPRITE_DATA.boss_entropy_avatar = [
+  // Decaying form
+  [4, 3, 8, 10, '#581c87'],
+  [3, 5, 10, 6, '#6d28d9'],
+  // Head - crumbling
+  [5, 1, 6, 4, '#7c3aed'],
+  // Eyes - time-warped
+  [6, 2, 2, 2, '#c084fc'],
+  [9, 2, 2, 2, '#c084fc'],
+  // Decay particles
+  [2, 4, 1, 1, '#a855f7'],
+  [13, 5, 1, 1, '#a855f7'],
+  [3, 9, 1, 1, '#8b5cf6'],
+  [12, 10, 1, 1, '#8b5cf6'],
+  // Fading edges
+  [3, 11, 2, 2, '#4c1d95'],
+  [11, 11, 2, 2, '#4c1d95'],
+];
+
+MONSTER_SPRITE_DATA.boss_void_god = [
+  // Massive void entity
+  [2, 3, 12, 11, '#0c0a09'],
+  [1, 5, 14, 8, '#18181b'],
+  // Crown of void energy
+  [4, 0, 8, 3, '#4c1d95'],
+  [5, 0, 2, 2, '#7c3aed'],
+  [9, 0, 2, 2, '#7c3aed'],
+  [7, 0, 2, 1, '#a855f7'],
+  // Multiple void eyes
+  [4, 5, 2, 2, '#c084fc'],
+  [9, 5, 2, 2, '#c084fc'],
+  [7, 6, 2, 2, '#a855f7'],
+  // Void pupils
+  [5, 5, 1, 1, '#0c0a09'],
+  [10, 5, 1, 1, '#0c0a09'],
+  [7, 6, 1, 1, '#0c0a09'],
+  // Void tendrils
+  [0, 7, 2, 5, '#1e1b4b'],
+  [14, 7, 2, 5, '#1e1b4b'],
+  // Reality dissolving
+  [1, 4, 1, 1, '#6366f1'],
+  [14, 5, 1, 1, '#6366f1'],
+];
+
+MONSTER_SPRITE_DATA.boss_void_emperor = MONSTER_SPRITE_DATA.boss_void_god;
+
 // Sprite cache for pre-rendered sprites
 const spriteCache = new Map();
 

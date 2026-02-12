@@ -162,7 +162,7 @@ const HeroManagement = () => {
 
                     {/* Stats */}
                     {(() => {
-                      const stats = calculateHeroStats(hero);
+                      const stats = calculateHeroStats(hero, heroes);
                       return (
                         <div className="grid grid-cols-4 gap-1 text-xs mb-3 bg-gray-900 rounded p-2">
                           <div className="text-center">
