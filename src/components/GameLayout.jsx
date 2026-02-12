@@ -374,7 +374,7 @@ const GameLayout = () => {
       <header className="pixel-panel-dark px-4 py-2 flex items-center justify-between" style={{ borderRadius: 0, boxShadow: '0 4px 0 rgba(0,0,0,0.5)' }}>
         {/* Left: Title and Stats */}
         <div className="flex items-center gap-6">
-          <h1 className="pixel-title text-lg">Castles & Clickers <span className="text-xs text-gray-500 font-normal">v0.0.10</span></h1>
+          <h1 className="pixel-title text-lg">Castles & Clickers <span className="text-xs text-gray-500 font-normal">v0.0.11</span></h1>
           <div className="flex items-center gap-3 text-sm">
             <span className="pixel-stat pixel-stat-gold">
               <GoldIcon size={16} /> {Math.floor(headerStats.gold).toLocaleString()}

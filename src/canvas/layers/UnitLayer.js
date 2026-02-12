@@ -334,11 +334,19 @@ export class UnitLayer {
       return;
     }
 
-    // Get current equipment from store (not snapshot) so sprites update when gear changes
-    const equipment = this.getHeroEquipment(hero.id);
+    // Check if this is a shadow clone
+    const isClone = hero.isClone || hero.id.startsWith('clone_');
 
-    // Draw dead hero (grayed out) with equipment
-    drawHeroSprite(ctx, hero.classId, screenX, screenY, size, true, equipment);
+    if (isClone) {
+      // Dead clone: darker purple silhouette, more transparent
+      const equipment = this.getHeroEquipment(hero.id);
+      this.renderSilhouette(ctx, hero.classId, screenX, screenY, size, '#4c1d95', 0.35, equipment);
+    } else {
+      // Get current equipment from store (not snapshot) so sprites update when gear changes
+      const equipment = this.getHeroEquipment(hero.id);
+      // Draw dead hero (grayed out) with equipment
+      drawHeroSprite(ctx, hero.classId, screenX, screenY, size, true, equipment);
+    }
   }
 
   // Clear position cache (call when dungeon changes)
