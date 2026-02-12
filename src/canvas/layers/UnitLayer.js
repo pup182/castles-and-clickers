@@ -285,109 +285,26 @@ export class UnitLayer {
     const isClone = hero.isClone || hero.id.startsWith('clone_');
     const isUndead = hero.isUndead || hero.id.startsWith('undead_');
     const isPet = hero.id.startsWith('pet_');
+    const isSummon = isClone || isUndead || isPet;
 
-    // Draw summon aura effect
-    if (isClone) {
-      this.renderCloneAura(ctx, screenX, screenY, size);
-    } else if (isUndead) {
-      this.renderUndeadAura(ctx, screenX, screenY, size);
-    } else if (isPet) {
-      this.renderPetAura(ctx, screenX, screenY, size);
-    }
-
-    // Draw the hero sprite with equipment (clones are semi-transparent)
-    if (isClone) {
+    // Summons: draw semi-transparent with offset "shadow" effect
+    if (isSummon) {
       ctx.save();
+      ctx.globalAlpha = 0.55;
+      // Draw offset shadow copy first
+      ctx.globalAlpha = 0.2;
+      drawHeroSprite(ctx, hero.classId, screenX + 2, screenY + 2, size, false, equipment);
+      // Draw main sprite
       ctx.globalAlpha = 0.6;
     }
+
     drawHeroSprite(ctx, hero.classId, screenX, screenY, size, false, equipment);
-    if (isClone) {
+
+    if (isSummon) {
       ctx.restore();
     }
 
     return pos;
-  }
-
-  // Render shadow clone aura - purple/shadow effect
-  renderCloneAura(ctx, screenX, screenY, size) {
-    const centerX = screenX + size / 2;
-    const centerY = screenY + size / 2;
-    const pulsePhase = Math.sin(this.animTime * 4) * 0.5 + 0.5;
-
-    ctx.save();
-
-    // Shadow aura gradient
-    const gradient = ctx.createRadialGradient(
-      centerX, centerY, size / 4,
-      centerX, centerY, size / 2 + 4
-    );
-    gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-    gradient.addColorStop(0.6, 'rgba(139, 92, 246, 0.2)'); // Purple
-    gradient.addColorStop(1, 'rgba(88, 28, 135, 0.4)');    // Dark purple
-
-    ctx.globalAlpha = 0.5 + pulsePhase * 0.2;
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, size / 2 + 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Outer ring
-    ctx.strokeStyle = '#a855f7';
-    ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.4 + pulsePhase * 0.3;
-    ctx.stroke();
-
-    ctx.restore();
-  }
-
-  // Render undead aura - green necromantic glow
-  renderUndeadAura(ctx, screenX, screenY, size) {
-    const centerX = screenX + size / 2;
-    const centerY = screenY + size / 2;
-    const pulsePhase = Math.sin(this.animTime * 3) * 0.5 + 0.5;
-
-    ctx.save();
-
-    const gradient = ctx.createRadialGradient(
-      centerX, centerY, size / 4,
-      centerX, centerY, size / 2 + 4
-    );
-    gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-    gradient.addColorStop(0.6, 'rgba(34, 197, 94, 0.2)');  // Green
-    gradient.addColorStop(1, 'rgba(22, 101, 52, 0.4)');    // Dark green
-
-    ctx.globalAlpha = 0.5 + pulsePhase * 0.2;
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, size / 2 + 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
-  }
-
-  // Render pet aura - blue spirit glow
-  renderPetAura(ctx, screenX, screenY, size) {
-    const centerX = screenX + size / 2;
-    const centerY = screenY + size / 2;
-    const pulsePhase = Math.sin(this.animTime * 2.5) * 0.5 + 0.5;
-
-    ctx.save();
-
-    const gradient = ctx.createRadialGradient(
-      centerX, centerY, size / 4,
-      centerX, centerY, size / 2 + 4
-    );
-    gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-    gradient.addColorStop(0.6, 'rgba(59, 130, 246, 0.15)'); // Blue
-    gradient.addColorStop(1, 'rgba(37, 99, 235, 0.3)');     // Dark blue
-
-    ctx.globalAlpha = 0.4 + pulsePhase * 0.2;
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, size / 2 + 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
   }
 
   // Render a dead hero
