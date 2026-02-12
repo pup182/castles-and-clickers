@@ -15,7 +15,7 @@ const GameHeader = () => {
         <span className="text-3xl">🏰</span>
         <div>
           <h1 className="text-xl font-bold text-white">Castles & Clickers</h1>
-          <p className="text-gray-400 text-sm">Idle Dungeon Crawler <span className="text-gray-500">v0.0.4</span></p>
+          <p className="text-gray-400 text-sm">Idle Dungeon Crawler <span className="text-gray-500">v0.0.5</span></p>
         </div>
       </div>
 
