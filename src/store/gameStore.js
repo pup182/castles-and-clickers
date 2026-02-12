@@ -1138,12 +1138,22 @@ export const useGameStore = create(
           if (!canClassUseEquipment(hero.classId, item)) return state;
 
           const oldItem = hero.equipment[item.slot];
-          const newInventory = state.inventory.filter(i => i.id !== item.id);
+          let newInventory = state.inventory.filter(i => i.id !== item.id);
 
-          // Auto-sell old item if there was one equipped
+          // Handle old item - never sell uniques
           let goldGain = 0;
           if (oldItem) {
-            goldGain = calculateSellValue(oldItem);
+            if (oldItem.isUnique) {
+              // Unique items go to inventory instead of being sold
+              if (newInventory.length >= state.maxInventory) {
+                // Can't swap - inventory full and unique can't be sold
+                return state;
+              }
+              newInventory = [...newInventory, oldItem];
+            } else {
+              // Auto-sell non-unique old items
+              goldGain = calculateSellValue(oldItem);
+            }
           }
 
           // OPTIMIZATION: Invalidate stat cache when equipment changes
@@ -2148,7 +2158,7 @@ export const useGameStore = create(
 
         // Collect loot info from combat log
         const lootDrops = combatLog
-          .filter(log => log.type === 'system' && (log.message?.includes('LEGENDARY DROP') || log.message?.includes('Loot:')))
+          .filter(log => log.type === 'system' && (log.message?.includes('UNIQUE DROP') || log.message?.includes('Loot:')))
           .map(log => log.message);
 
         set(state => ({
