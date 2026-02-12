@@ -12,6 +12,8 @@ export const PHASES = {
 
 // Detection range for monsters (how far away they engage from)
 export const DETECTION_RANGE = 7;
+// Boss only engages when heroes are very close (prevents auto-aggro across dungeon)
+export const BOSS_ENGAGE_RANGE = 3;
 // Vision range for fog of war
 export const VISION_RANGE = 4;
 // Viewport dimensions
@@ -26,12 +28,12 @@ export const rollInitiative = (unit) => {
 
 // Speed mechanics calculations
 export const calculateDodgeChance = (defenderSpeed, attackerSpeed) => {
-  // Speed threshold system - slow classes don't dodge, fast classes are evasive
-  // Threshold of 6 means tanks/casters don't dodge, rogues/rangers do
-  // Base: 5% per point above threshold
-  // Bonus: 4% per point of speed advantage
-  // Cap: 60%
-  const SPEED_THRESHOLD = 6;
+  // Speed threshold system - slow tanks don't dodge, faster classes are evasive
+  // Threshold of 4 means tanks don't dodge, but DPS classes can
+  // Base: 6% per point above threshold
+  // Bonus: 5% per point of speed advantage
+  // Cap: 70%
+  const SPEED_THRESHOLD = 4;
 
   // Guard against undefined/NaN values
   const dSpeed = defenderSpeed || 0;
@@ -39,10 +41,10 @@ export const calculateDodgeChance = (defenderSpeed, attackerSpeed) => {
 
   if (dSpeed <= SPEED_THRESHOLD) return 0;
 
-  const baseDodge = (dSpeed - SPEED_THRESHOLD) * 0.05;
+  const baseDodge = (dSpeed - SPEED_THRESHOLD) * 0.06;
   const speedDiff = dSpeed - aSpeed;
-  const speedBonus = Math.max(0, speedDiff * 0.04);
-  return Math.min(0.60, baseDodge + speedBonus);
+  const speedBonus = Math.max(0, speedDiff * 0.05);
+  return Math.min(0.70, baseDodge + speedBonus);
 };
 
 export const calculateDoubleAttackChance = (attackerSpeed, defenderSpeed) => {
