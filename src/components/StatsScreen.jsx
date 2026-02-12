@@ -8,14 +8,20 @@ import { TrophyIcon, SkullIcon, GoldIcon, HeartIcon, SwordIcon, ShieldIcon, Crow
 const JOURNEY_MILESTONES = [
   { id: 'slot1', name: 'First Hero', description: 'Recruit your first Tank', dungeonRequired: 0, type: 'hero' },
   { id: 'slot2', name: 'Healer Unlocked', description: 'Recruit a Healer (Slot 2)', dungeonRequired: 1, type: 'hero' },
-  { id: 'homestead', name: 'Homestead', description: 'Unlock base upgrades', dungeonRequired: 3, type: 'feature' },
+  // Homestead hidden for now
+  // { id: 'homestead', name: 'Homestead', description: 'Unlock base upgrades', dungeonRequired: 3, type: 'feature' },
   { id: 'slot3', name: 'DPS Unlocked', description: 'Recruit a DPS (Slot 3)', dungeonRequired: 3, type: 'hero' },
-  { id: 'shop', name: 'Item Shop', description: 'Buy equipment', dungeonRequired: 5, type: 'feature' },
   { id: 'slot4', name: 'Full Party', description: 'Recruit 4th hero (Slot 4)', dungeonRequired: 4, type: 'hero' },
+  { id: 'shop', name: 'Item Shop', description: 'Buy equipment', dungeonRequired: 5, type: 'feature' },
   { id: 'autorun', name: 'Auto-Run', description: 'Unlock automatic dungeon runs', dungeonRequired: 5, type: 'feature' },
   { id: 'd10', name: 'Dungeon 10', description: 'Reach the deep dungeons', dungeonRequired: 10, type: 'progress' },
+  { id: 'raid1', name: 'Sunken Temple', description: 'First raid unlocked', dungeonRequired: 12, type: 'raid' },
+  { id: 'raid2', name: 'Cursed Manor', description: 'Second raid unlocked', dungeonRequired: 18, type: 'raid' },
   { id: 'd20', name: 'Dungeon 20', description: 'Master the depths', dungeonRequired: 20, type: 'progress' },
+  { id: 'raid3', name: 'Sky Fortress', description: 'Third raid unlocked', dungeonRequired: 24, type: 'raid' },
+  { id: 'raid4', name: 'The Abyss', description: 'Fourth raid unlocked', dungeonRequired: 30, type: 'raid' },
   { id: 'd30', name: 'Dungeon 30', description: 'Conquer the final dungeon', dungeonRequired: 30, type: 'progress' },
+  { id: 'raid5', name: 'Void Throne', description: 'Final raid unlocked', dungeonRequired: 35, type: 'raid' },
 ];
 
 // Format large numbers with K/M suffixes
@@ -363,9 +369,11 @@ const StatsScreen = () => {
                       ? 'bg-[var(--color-blue)]/20 text-[var(--color-blue)]'
                       : milestone.type === 'feature'
                       ? 'bg-[var(--color-purple)]/20 text-[var(--color-purple)]'
+                      : milestone.type === 'raid'
+                      ? 'bg-red-500/20 text-red-400'
                       : 'bg-[var(--color-gold)]/20 text-[var(--color-gold)]'
                   }`}>
-                    {milestone.type === 'hero' ? 'Hero' : milestone.type === 'feature' ? 'Feature' : 'Goal'}
+                    {milestone.type === 'hero' ? 'Hero' : milestone.type === 'feature' ? 'Feature' : milestone.type === 'raid' ? 'Raid' : 'Goal'}
                   </div>
                 </div>
               );

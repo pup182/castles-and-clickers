@@ -110,13 +110,14 @@ const NavBar = ({ activeModal, onOpenModal }) => {
       badge: null,
       unlockAt: 5,
     },
-    {
-      id: 'homestead',
-      Icon: HomeIcon,
-      label: 'Home',
-      badge: homesteadNewlyAvailable ? 'NEW' : null,
-      unlockAt: 3,
-    },
+    // Homestead hidden for now
+    // {
+    //   id: 'homestead',
+    //   Icon: HomeIcon,
+    //   label: 'Home',
+    //   badge: homesteadNewlyAvailable ? 'NEW' : null,
+    //   unlockAt: 3,
+    // },
     {
       id: 'raids',
       Icon: CrownIcon,

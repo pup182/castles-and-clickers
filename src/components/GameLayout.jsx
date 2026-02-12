@@ -237,8 +237,7 @@ const GameLayout = () => {
         name: `Hero Slot ${i + 2}`,
         dungeonRequired: slot.dungeonRequired,
       })),
-      // Features
-      { type: 'feature', name: 'Homestead', dungeonRequired: 3 },
+      // Features (Homestead hidden for now)
       { type: 'feature', name: 'Item Shop', dungeonRequired: 5 },
       { type: 'feature', name: 'Auto-Run', dungeonRequired: 5 },
     ];
