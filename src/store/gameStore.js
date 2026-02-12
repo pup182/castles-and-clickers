@@ -9,6 +9,19 @@ const validateState = (state) => {
 
   // Check heroes array - no undefined gaps in middle
   if (state.heroes) {
+    const maxPartySize = state.maxPartySize || 4;
+
+    // Check heroes don't exceed max party size
+    if (state.heroes.length > maxPartySize) {
+      errors.push(`Heroes array length (${state.heroes.length}) exceeds maxPartySize (${maxPartySize})`);
+    }
+
+    // Check for actual heroes beyond max party size
+    const heroCount = state.heroes.filter(Boolean).length;
+    if (heroCount > maxPartySize) {
+      errors.push(`Too many heroes (${heroCount}) for maxPartySize (${maxPartySize})`);
+    }
+
     const lastValidIndex = state.heroes.reduce((last, h, i) => h ? i : last, -1);
     state.heroes.forEach((h, i) => {
       if (!h && i < lastValidIndex) {
@@ -2470,9 +2483,35 @@ export const useGameStore = create(
         heroHp: state.dungeon ? state.heroHp : {},
       }),
       // Ensure stats has all new fields even if old save doesn't
-      merge: (persistedState, currentState) => ({
+      merge: (persistedState, currentState) => {
+        // Sanitize heroes array - ensure it doesn't exceed maxPartySize
+        const maxPartySize = persistedState?.maxPartySize || currentState.maxPartySize || 4;
+        let heroes = persistedState?.heroes || [];
+
+        // If heroes array is too long, truncate it
+        if (heroes.length > maxPartySize) {
+          console.warn(`[GameState] Heroes array (${heroes.length}) exceeded maxPartySize (${maxPartySize}), truncating`);
+          heroes = heroes.slice(0, maxPartySize);
+        }
+
+        // If there are more actual heroes than slots, keep only the first maxPartySize
+        const actualHeroes = heroes.filter(Boolean);
+        if (actualHeroes.length > maxPartySize) {
+          console.warn(`[GameState] Too many heroes (${actualHeroes.length}), keeping first ${maxPartySize}`);
+          let kept = 0;
+          heroes = heroes.map(h => {
+            if (h && kept < maxPartySize) {
+              kept++;
+              return h;
+            }
+            return h ? null : h; // Convert excess heroes to null, keep existing nulls
+          }).slice(0, maxPartySize);
+        }
+
+        return {
         ...currentState,
         ...persistedState,
+        heroes, // Use sanitized heroes
         stats: {
           totalGoldEarned: 0,
           totalGoldSpent: 0,
@@ -2492,7 +2531,8 @@ export const useGameStore = create(
           heroStats: {},
           ...persistedState?.stats,
         },
-      }),
+      };
+      },
     }
   ))
 );
