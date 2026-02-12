@@ -295,13 +295,15 @@ export const useCombat = ({ addEffect }) => {
     }
 
     // Check for dead summons that can respawn (pets and clones only)
-    for (let i = 0; i < newHeroes.length; i++) {
-      const summon = newHeroes[i];
-      if ((summon.isPet || summon.isClone) && summon.stats.hp <= 0 && summon.respawnTimer !== undefined) {
-        // Decrement respawn timer
-        newHeroes[i].respawnTimer -= 1;
+    // Only check at the start of each round to avoid decrementing every tick
+    if (roomCombat.currentTurnIndex === 0) {
+      for (let i = 0; i < newHeroes.length; i++) {
+        const summon = newHeroes[i];
+        if ((summon.isPet || summon.isClone) && summon.stats.hp <= 0 && summon.respawnTimer !== undefined) {
+          // Decrement respawn timer once per round
+          newHeroes[i].respawnTimer -= 1;
 
-        if (newHeroes[i].respawnTimer <= 0) {
+          if (newHeroes[i].respawnTimer <= 0) {
           // Find the owner to get respawn position
           const owner = newHeroes.find(h => h.id === summon.ownerId && h.stats.hp > 0);
           if (owner) {
@@ -325,12 +327,12 @@ export const useCombat = ({ addEffect }) => {
               newTurnOrder.push(summon.id);
             }
 
-            const summonType = summon.isPet ? 'companion' : 'shadow';
             addCombatLog({ type: 'system', message: `${summon.name} returns to battle!` });
             addEffect({ type: 'healBurst', position: respawnPosition });
           }
         }
       }
+    }
     }
 
     // OPTIMIZATION: O(1) lookup helpers using maps
