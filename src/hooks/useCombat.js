@@ -291,32 +291,19 @@ export const useCombat = ({ addEffect }) => {
           }
         }
       }
-      summonsSpawned = true;
-    }
-
-    // Check for dead summons that can respawn (pets and clones only)
-    // Only check at the start of each round to avoid decrementing every tick
-    if (roomCombat.currentTurnIndex === 0) {
+      // Also respawn dead pets/clones at room start (if owner is alive)
       for (let i = 0; i < newHeroes.length; i++) {
         const summon = newHeroes[i];
-        if ((summon.isPet || summon.isClone) && summon.stats.hp <= 0 && summon.respawnTimer !== undefined) {
-          // Decrement respawn timer once per round
-          newHeroes[i].respawnTimer -= 1;
-
-          if (newHeroes[i].respawnTimer <= 0) {
-          // Find the owner to get respawn position
+        if ((summon.isPet || summon.isClone) && summon.stats.hp <= 0) {
           const owner = newHeroes.find(h => h.id === summon.ownerId && h.stats.hp > 0);
           if (owner) {
-            // Respawn at owner's position (offset slightly)
             const respawnPosition = {
               x: owner.position.x + (Math.random() < 0.5 ? -1 : 1),
               y: owner.position.y + (Math.random() < 0.5 ? -1 : 1),
             };
 
-            // Restore to full HP
             newHeroes[i].stats.hp = newHeroes[i].stats.maxHp;
             newHeroes[i].position = respawnPosition;
-            delete newHeroes[i].respawnTimer;
 
             // Clear ghost debuff
             newBuffs[summon.id] = {};
@@ -332,7 +319,8 @@ export const useCombat = ({ addEffect }) => {
           }
         }
       }
-    }
+
+      summonsSpawned = true;
     }
 
     // OPTIMIZATION: O(1) lookup helpers using maps
@@ -345,15 +333,6 @@ export const useCombat = ({ addEffect }) => {
       // Clear all buffs and status effects, replace with ghost debuff
       newBuffs[unitId] = { ghost: true };
       newStatusEffects[unitId] = [];
-
-      // Set respawn timer for pets and clones (not undead - they're temporary)
-      const deadSummon = newHeroes.find(h => h.id === unitId && (h.isPet || h.isClone));
-      if (deadSummon) {
-        const summonIdx = newHeroes.findIndex(h => h.id === unitId);
-        if (summonIdx !== -1) {
-          newHeroes[summonIdx].respawnTimer = 4; // Respawn after 4 turns
-        }
-      }
 
       // Handle death explosion affix (Explosive dungeon affix)
       if (monster && monster.deathExplosion && monster.deathExplosion > 0) {
