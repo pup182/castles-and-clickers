@@ -117,7 +117,7 @@ const SPEED_SCALE_FACTOR = 0.25;
 // Create monsters for a simulated encounter
 function createMonsters(dungeonLevel, count = 3) {
   const tier = Math.min(6, Math.ceil(dungeonLevel / 5));
-  const scaleFactor = Math.pow(1.10, dungeonLevel - 1);
+  const scaleFactor = Math.pow(1.08, dungeonLevel - 1);
   const speedScaleFactor = 1 + (scaleFactor - 1) * SPEED_SCALE_FACTOR; // Partial speed scaling
   const possibleMonsters = getMonstersByTier(tier);
 
@@ -149,7 +149,7 @@ function createMonsters(dungeonLevel, count = 3) {
 // Create a boss monster
 function createBoss(dungeonLevel) {
   const tier = Math.min(6, Math.ceil(dungeonLevel / 5));
-  const scaleFactor = Math.pow(1.10, dungeonLevel - 1);
+  const scaleFactor = Math.pow(1.08, dungeonLevel - 1);
   const speedScaleFactor = 1 + (scaleFactor - 1) * SPEED_SCALE_FACTOR;
   const boss = getBossByTier(tier);
 
@@ -894,7 +894,7 @@ function createMonstersOfType(monsterId, dungeonLevel, count = 3) {
   const template = MONSTERS[monsterId];
   if (!template) return [];
 
-  const scaleFactor = Math.pow(1.10, dungeonLevel - 1);
+  const scaleFactor = Math.pow(1.08, dungeonLevel - 1);
   const speedScaleFactor = 1 + (scaleFactor - 1) * SPEED_SCALE_FACTOR;
   const monsters = [];
 
@@ -1258,7 +1258,7 @@ export function runMonsterSimulations(config = {}) {
   console.log(`${'='.repeat(80)}\n`);
 
   const results = {};
-  const scaleFactor = Math.pow(1.10, cfg.dungeonLevel - 1);
+  const scaleFactor = Math.pow(1.08, cfg.dungeonLevel - 1);
 
   // Test each regular monster type
   for (const monster of regularMonsters) {
@@ -1492,7 +1492,7 @@ export function runTierBalanceTest(config = {}) {
     const dungeonLevel = tierLevels[tier];
     const heroLevel = dungeonLevel;
     const tierMonsters = allMonsters.filter(m => m.tier === tier);
-    const scaleFactor = Math.pow(1.10, dungeonLevel - 1);
+    const scaleFactor = Math.pow(1.08, dungeonLevel - 1);
 
     console.log(`\n${'─'.repeat(90)}`);
     console.log(`TIER ${tier} - Testing at Dungeon Level ${dungeonLevel} (Hero Level ${heroLevel})`);
