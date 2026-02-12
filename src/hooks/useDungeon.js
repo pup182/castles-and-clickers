@@ -147,7 +147,6 @@ export const useDungeon = ({ addEffect }) => {
       turnOrder,
       currentTurnIndex: 0,
       round: 1,
-      summonsSpawned: false, // Reset so pets/clones respawn at start of each room's combat
     });
   }, [addCombatLog, updateRoomCombat]);
 

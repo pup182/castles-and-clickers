@@ -261,10 +261,21 @@ export const useCombat = ({ addEffect }) => {
     const newTurnOrder = [...roomCombat.turnOrder];
     const newCombatMonsters = [...combatMonsterIds];
     const newUsedPhoenixRevives = { ...(roomCombat.usedPhoenixRevives || {}) };
-    let summonsSpawned = roomCombat.summonsSpawned || false;
+    let lastSummonRoomIndex = roomCombat.lastSummonRoomIndex ?? -1;
 
-    // Spawn pets and clones at combat start, or respawn dead ones at new room
-    if (!summonsSpawned && roomCombat.round <= 1 && roomCombat.currentTurnIndex === 0) {
+    // Find current room index based on party position
+    let currentRoomIndex = -1;
+    if (mazeDungeon && roomCombat.partyPosition) {
+      const currentRoom = mazeDungeon.rooms.find(r =>
+        roomCombat.partyPosition.x >= r.x && roomCombat.partyPosition.x < r.x + r.width &&
+        roomCombat.partyPosition.y >= r.y && roomCombat.partyPosition.y < r.y + r.height
+      );
+      if (currentRoom) currentRoomIndex = currentRoom.index;
+    }
+
+    // Spawn pets/clones on first combat, or respawn dead ones when entering a NEW room
+    const isNewRoom = currentRoomIndex !== lastSummonRoomIndex;
+    if (isNewRoom && roomCombat.round <= 1 && roomCombat.currentTurnIndex === 0) {
       // First, respawn any dead pets/clones (if owner is alive)
       for (let i = 0; i < newHeroes.length; i++) {
         const summon = newHeroes[i];
@@ -329,7 +340,7 @@ export const useCombat = ({ addEffect }) => {
         }
       }
 
-      summonsSpawned = true;
+      lastSummonRoomIndex = currentRoomIndex;
     }
 
     // OPTIMIZATION: O(1) lookup helpers using maps
@@ -2307,7 +2318,7 @@ export const useCombat = ({ addEffect }) => {
       turnOrder: newTurnOrder,
       combatMonsters: newCombatMonsters,
       usedPhoenixRevives: newUsedPhoenixRevives,
-      summonsSpawned,
+      lastSummonRoomIndex,
       viewport: newViewport,
       ...(nextTurnState || {}),
     });
