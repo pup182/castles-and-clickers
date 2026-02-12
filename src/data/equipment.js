@@ -801,7 +801,7 @@ export const CONSUMABLE_TEMPLATES = {
 };
 
 // Generate a consumable drop (rare chance)
-export const generateConsumableDrop = (dungeonLevel, hasDeadPartyMember = false) => {
+export const generateConsumableDrop = (dungeonLevel, hasDeadPartyMember = false, isRaid = false) => {
   // Only resurrection scroll for now, can expand later
   const template = CONSUMABLE_TEMPLATES.resurrectionScroll;
 
@@ -810,7 +810,11 @@ export const generateConsumableDrop = (dungeonLevel, hasDeadPartyMember = false)
 
   // Base drop chance: 2% at level 5, scaling up to 5% at level 30
   // Boosted to 15% if party has a dead member
+  // Raids have 3x higher base drop chance
   let dropChance = 0.02 + (dungeonLevel - 5) * 0.0012;
+  if (isRaid) {
+    dropChance *= 3;
+  }
   if (hasDeadPartyMember) {
     dropChance = Math.max(dropChance, 0.15);
   }

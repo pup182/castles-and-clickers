@@ -120,6 +120,33 @@ export const useCombat = ({ addEffect }) => {
   const addXpToHero = useCallback((heroId, xp) => useGameStore.getState().addXpToHero(heroId, xp), []);
   const processLootDrop = useCallback((item) => useGameStore.getState().processLootDrop(item), []);
   const processUniqueDrop = useCallback((item) => useGameStore.getState().processUniqueDrop(item), []);
+
+  // Helper for processing unique item drops - consolidates duplicate logic
+  const handleUniqueDrop = useCallback((uniqueItemId, position) => {
+    const uniqueTemplate = getUniqueItem(uniqueItemId);
+    if (!uniqueTemplate) return null;
+
+    const uniqueInstance = createUniqueItemInstance(uniqueItemId);
+    if (!uniqueInstance) return null;
+
+    const result = useGameStore.getState().processUniqueDrop(uniqueInstance);
+
+    if (result.action === 'duplicate') {
+      useGameStore.getState().addCombatLog({
+        type: 'system',
+        message: `UNIQUE DROP: ${uniqueTemplate.name} (duplicate - converted to ${result.gold}g)`
+      });
+    } else {
+      addEffect({ type: 'legendaryDrop', position, itemName: uniqueTemplate.name });
+      useGameStore.getState().addCombatLog({
+        type: 'system',
+        message: `UNIQUE DROP: ${uniqueTemplate.name}!`
+      });
+    }
+
+    return result;
+  }, [addEffect]);
+
   const incrementStat = useCallback((stat, amount = 1, options = {}) => useGameStore.getState().incrementStat(stat, amount, options), []);
   const addCombatLog = useCallback((log) => useGameStore.getState().addCombatLog(log), []);
   const updateRoomCombat = useCallback((updates) => useGameStore.getState().updateRoomCombat(updates), []);
@@ -831,6 +858,28 @@ export const useCombat = ({ addEffect }) => {
               setTimeout(() => completeRaid(), 2000);
             }
 
+            // Handle raid boss drops from DOT death
+            const isRaidDungeonDot = dungeonProgress?.currentType === 'raid';
+            if (isRaidDungeonDot && actor.isBoss) {
+              const targetBossIdDot = actor.wingBossId || actor.finalBossId;
+              const raidBossDot = getWingBoss(dungeonProgress.currentRaidId, targetBossIdDot);
+              const ownedUniquesDot = useGameStore.getState().ownedUniques || [];
+              const raidDropDot = rollRaidDrop(raidBossDot?.dropTable, ownedUniquesDot);
+
+              if (raidDropDot?.type === 'unique') {
+                handleUniqueDrop(raidDropDot.itemId, actor.position);
+              } else if (raidDropDot) {
+                const item = generateEquipment(dungeon.level, { guaranteedRarity: raidDropDot.rarity || 'epic' });
+                const lootResult = processLootDrop(item);
+                addEffect({ type: 'lootDrop', position: actor.position, slot: item.slot, rarityColor: item.rarityColor || '#9ca3af' });
+                if (lootResult.action === 'sold') {
+                  addCombatLog({ type: 'system', message: `Sold: ${item.name} (+${lootResult.gold}g)` });
+                } else if (lootResult.action === 'looted') {
+                  addCombatLog({ type: 'system', message: `Loot: ${item.name}` });
+                }
+              }
+            }
+
             // OPTIMIZATION: Single batched update including turn advance
             const nextTurn = getNextTurnState(roomCombat, newHeroes, newMonsters);
             updateRoomCombat({
@@ -1045,25 +1094,7 @@ export const useCombat = ({ addEffect }) => {
 
                   // Handle unique drops from world bosses
                   if (m.isWorldBoss && m.uniqueDrop) {
-                    const uniqueItem = createUniqueItemInstance(m.uniqueDrop, dungeon.level);
-                    if (uniqueItem) {
-                      const lootResult = processUniqueDrop(uniqueItem);
-
-                      // Legendary drop celebration
-                      addEffect({
-                        type: 'legendaryDrop',
-                        position: m.position,
-                        slot: uniqueItem.slot,
-                        rarityColor: '#f59e0b',
-                        itemName: uniqueItem.name,
-                      });
-
-                      if (lootResult.action === 'unique-looted') {
-                        addCombatLog({ type: 'legendary', message: `LEGENDARY DROP: ${uniqueItem.name}!` });
-                      } else if (lootResult.action === 'duplicate') {
-                        addCombatLog({ type: 'system', message: `${uniqueItem.name} (duplicate - +${lootResult.gold}g)` });
-                      }
-                    }
+                    handleUniqueDrop(m.uniqueDrop, m.position);
                   }
 
                   // Handle raid boss drops
@@ -1075,21 +1106,7 @@ export const useCombat = ({ addEffect }) => {
                     const raidDrop = rollRaidDrop(raidBoss?.dropTable, ownedUniques);
 
                     if (raidDrop?.type === 'unique') {
-                      const uniqueTemplate = getUniqueItem(raidDrop.itemId);
-                      if (uniqueTemplate) {
-                        const uniqueInstance = createUniqueItemInstance(raidDrop.itemId);
-                        const result = processUniqueDrop(uniqueInstance);
-
-                        addEffect({ type: 'legendaryDrop', position: m.position, itemName: uniqueTemplate.name });
-
-                        if (result.action === 'duplicate') {
-                          addCombatLog({ type: 'system', message: `LEGENDARY DROP: ${uniqueTemplate.name} (duplicate - converted to ${result.gold}g)` });
-                        } else if (result.action === 'looted') {
-                          addCombatLog({ type: 'system', message: `LEGENDARY DROP: ${uniqueTemplate.name}!` });
-                        } else {
-                          addCombatLog({ type: 'system', message: `LEGENDARY DROP: ${uniqueTemplate.name} (inventory full!)` });
-                        }
-                      }
+                      handleUniqueDrop(raidDrop.itemId, m.position);
                     } else if (raidDrop) {
                       // Random gear drop with guaranteed rarity from raid
                       const item = generateEquipment(dungeon.level, { guaranteedRarity: raidDrop.rarity || 'epic' });
@@ -1148,9 +1165,9 @@ export const useCombat = ({ addEffect }) => {
                     }
                   }
 
-                  // Chance to drop resurrection scroll (rare, boosted if party has dead member)
+                  // Chance to drop resurrection scroll (rare, boosted if party has dead member, higher in raids)
                   const hasDeadPartyMember = newHeroes.some(h => h && h.stats.hp <= 0);
-                  const consumable = generateConsumableDrop(dungeon.level, hasDeadPartyMember);
+                  const consumable = generateConsumableDrop(dungeon.level, hasDeadPartyMember, dungeon.isRaid);
                   if (consumable && addConsumable(consumable)) {
                     addCombatLog({ type: 'system', message: `Found: ${consumable.name}!` });
                   }
@@ -2108,7 +2125,15 @@ export const useCombat = ({ addEffect }) => {
                 const phaseResult = checkPhaseTransition(target, currentMonsterHpAfterDmg, target.stats.maxHp);
                 if (phaseResult) {
                   addCombatLog({ type: 'system', message: phaseResult.message });
-                  addEffect({ type: 'buffAura', position: target.position, color: '#f59e0b' });
+
+                  // Dramatic phase transition canvas effect
+                  addEffect({
+                    type: 'phaseTransition',
+                    position: target.position,
+                    message: phaseResult.message,
+                    bossName: target.name,
+                    enraged: phaseResult.enraged || false,
+                  });
 
                   // Set enraged if phase triggers enrage
                   if (phaseResult.enraged) {
@@ -2484,23 +2509,7 @@ export const useCombat = ({ addEffect }) => {
                   const raidDrop = rollRaidDrop(raidBoss?.dropTable, ownedUniques);
 
                   if (raidDrop?.type === 'unique') {
-                    // Unique item drop - use unique item system
-                    const uniqueTemplate = getUniqueItem(raidDrop.itemId);
-                    if (uniqueTemplate) {
-                      const uniqueInstance = createUniqueItemInstance(raidDrop.itemId);
-                      const result = processUniqueDrop(uniqueInstance);
-
-                      // Legendary drop celebration effect
-                      addEffect({ type: 'legendaryDrop', position: target.position, itemName: uniqueTemplate.name });
-
-                      if (result.action === 'duplicate') {
-                        addCombatLog({ type: 'system', message: `LEGENDARY DROP: ${uniqueTemplate.name} (duplicate - converted to ${result.gold}g)` });
-                      } else if (result.action === 'looted') {
-                        addCombatLog({ type: 'system', message: `LEGENDARY DROP: ${uniqueTemplate.name}!` });
-                      } else {
-                        addCombatLog({ type: 'system', message: `LEGENDARY DROP: ${uniqueTemplate.name} (inventory full!)` });
-                      }
-                    }
+                    handleUniqueDrop(raidDrop.itemId, target.position);
                   } else {
                     // Random gear drop with guaranteed rarity
                     const item = generateEquipment(dungeon.level, { guaranteedRarity: raidDrop?.rarity || 'epic' });
@@ -2526,23 +2535,7 @@ export const useCombat = ({ addEffect }) => {
                   const worldBossLoot = getWorldBossLoot(target);
 
                   if (worldBossLoot.uniqueItemId) {
-                    // World boss unique drop
-                    const uniqueTemplate = getUniqueItem(worldBossLoot.uniqueItemId);
-                    if (uniqueTemplate) {
-                      const uniqueInstance = createUniqueItemInstance(worldBossLoot.uniqueItemId);
-                      const result = processUniqueDrop(uniqueInstance);
-
-                      // Legendary drop celebration effect
-                      addEffect({ type: 'legendaryDrop', position: target.position, itemName: uniqueTemplate.name });
-
-                      if (result.action === 'duplicate') {
-                        addCombatLog({ type: 'system', message: `LEGENDARY DROP: ${uniqueTemplate.name} (duplicate - converted to ${result.gold}g)` });
-                      } else if (result.action === 'looted') {
-                        addCombatLog({ type: 'system', message: `LEGENDARY DROP: ${uniqueTemplate.name}!` });
-                      } else {
-                        addCombatLog({ type: 'system', message: `LEGENDARY DROP: ${uniqueTemplate.name} (inventory full!)` });
-                      }
-                    }
+                    handleUniqueDrop(worldBossLoot.uniqueItemId, target.position);
                   }
 
                   // World boss also drops guaranteed epic+ gear
@@ -2609,9 +2602,9 @@ export const useCombat = ({ addEffect }) => {
                   }
                 }
 
-                // Chance to drop resurrection scroll (rare, boosted if party has dead member)
+                // Chance to drop resurrection scroll (rare, boosted if party has dead member, higher in raids)
                 const hasDeadPartyMember = newHeroes.some(h => h && h.stats.hp <= 0);
-                const consumable = generateConsumableDrop(dungeon.level, hasDeadPartyMember);
+                const consumable = generateConsumableDrop(dungeon.level, hasDeadPartyMember, dungeon.isRaid);
                 if (consumable && addConsumable(consumable)) {
                   addCombatLog({ type: 'system', message: `Found: ${consumable.name}!` });
                 }
@@ -2666,6 +2659,28 @@ export const useCombat = ({ addEffect }) => {
                       addCombatLog({ type: 'system', message: `FINAL BOSS DEFEATED: ${target.name}! Raid Complete!` });
                       setTimeout(() => completeRaid(), 2000);
                     }
+
+                    // Handle raid boss drops from bonus damage death
+                    const isRaidBonusDmg = dungeonProgress?.currentType === 'raid';
+                    if (isRaidBonusDmg && target.isBoss) {
+                      const targetBossIdBonus = target.wingBossId || target.finalBossId;
+                      const raidBossBonus = getWingBoss(dungeonProgress.currentRaidId, targetBossIdBonus);
+                      const ownedUniquesBonus = useGameStore.getState().ownedUniques || [];
+                      const raidDropBonus = rollRaidDrop(raidBossBonus?.dropTable, ownedUniquesBonus);
+
+                      if (raidDropBonus?.type === 'unique') {
+                        handleUniqueDrop(raidDropBonus.itemId, target.position);
+                      } else if (raidDropBonus) {
+                        const item = generateEquipment(dungeon.level, { guaranteedRarity: raidDropBonus.rarity || 'epic' });
+                        const lootResult = processLootDrop(item);
+                        addEffect({ type: 'lootDrop', position: target.position, slot: item.slot, rarityColor: item.rarityColor || '#9ca3af' });
+                        if (lootResult.action === 'sold') {
+                          addCombatLog({ type: 'system', message: `Sold: ${item.name} (+${lootResult.gold}g)` });
+                        } else if (lootResult.action === 'looted') {
+                          addCombatLog({ type: 'system', message: `Loot: ${item.name}` });
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -2704,6 +2719,28 @@ export const useCombat = ({ addEffect }) => {
                         defeatWingBoss(otherTarget.finalBossId);
                         addCombatLog({ type: 'system', message: `FINAL BOSS DEFEATED: ${otherTarget.name}! Raid Complete!` });
                         setTimeout(() => completeRaid(), 2000);
+                      }
+
+                      // Handle raid boss drops from AOE death
+                      const isRaidAoe = dungeonProgress?.currentType === 'raid';
+                      if (isRaidAoe && otherTarget.isBoss) {
+                        const targetBossIdAoe = otherTarget.wingBossId || otherTarget.finalBossId;
+                        const raidBossAoe = getWingBoss(dungeonProgress.currentRaidId, targetBossIdAoe);
+                        const ownedUniquesAoe = useGameStore.getState().ownedUniques || [];
+                        const raidDropAoe = rollRaidDrop(raidBossAoe?.dropTable, ownedUniquesAoe);
+
+                        if (raidDropAoe?.type === 'unique') {
+                          handleUniqueDrop(raidDropAoe.itemId, otherTarget.position);
+                        } else if (raidDropAoe) {
+                          const item = generateEquipment(dungeon.level, { guaranteedRarity: raidDropAoe.rarity || 'epic' });
+                          const lootResult = processLootDrop(item);
+                          addEffect({ type: 'lootDrop', position: otherTarget.position, slot: item.slot, rarityColor: item.rarityColor || '#9ca3af' });
+                          if (lootResult.action === 'sold') {
+                            addCombatLog({ type: 'system', message: `Sold: ${item.name} (+${lootResult.gold}g)` });
+                          } else if (lootResult.action === 'looted') {
+                            addCombatLog({ type: 'system', message: `Loot: ${item.name}` });
+                          }
+                        }
                       }
                     }
                   }
