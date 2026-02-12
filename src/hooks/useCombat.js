@@ -911,7 +911,7 @@ export const useCombat = ({ addEffect }) => {
                     const xpForHero = Math.floor(baseXpPerHero * catchUpBonus);
                     addXpToHero(h.id, xpForHero);
                   });
-                  incrementStat('totalMonstersKilled', 1, { heroId: actor.id, monsterId: m.templateId, isBoss: m.isBoss });
+                  incrementStat('totalMonstersKilled', 1, { heroId: actor.ownerId || actor.id, monsterId: m.templateId, isBoss: m.isBoss });
 
                   // Visual gold drop effect
                   if (gold > 0) {
@@ -1970,7 +1970,7 @@ export const useCombat = ({ addEffect }) => {
                 addGold(gold);
                 const xpPerHero = Math.floor((target.xpReward / heroes.length) * xpMultiplier);
                 heroes.forEach(h => addXpToHero(h.id, xpPerHero));
-                incrementStat('totalMonstersKilled', 1, { heroId: actor.id, monsterId: target.templateId, isBoss: target.isBoss });
+                incrementStat('totalMonstersKilled', 1, { heroId: actor.ownerId || actor.id, monsterId: target.templateId, isBoss: target.isBoss });
 
                 // Visual gold drop effect
                 if (gold > 0) {
@@ -2049,7 +2049,7 @@ export const useCombat = ({ addEffect }) => {
                     addCombatLog({ type: 'death', target: { name: target.name }, isHero: false });
                     addEffect({ type: 'death', position: target.position, isHero: false, monsterId: target.templateId });
                     handleUnitDeath(target.id, target);
-                    incrementStat('totalMonstersKilled', 1, { heroId: actor.id, monsterId: target.templateId, isBoss: target.isBoss });
+                    incrementStat('totalMonstersKilled', 1, { heroId: actor.ownerId || actor.id, monsterId: target.templateId, isBoss: target.isBoss });
                   }
                 }
               }
@@ -2075,7 +2075,7 @@ export const useCombat = ({ addEffect }) => {
                       addCombatLog({ type: 'death', target: { name: otherTarget.name }, isHero: false });
                       addEffect({ type: 'death', position: otherTarget.position, isHero: false, monsterId: otherTarget.templateId });
                       handleUnitDeath(otherTarget.id, otherTarget);
-                      incrementStat('totalMonstersKilled', 1, { heroId: actor.id, monsterId: otherTarget.templateId, isBoss: otherTarget.isBoss });
+                      incrementStat('totalMonstersKilled', 1, { heroId: actor.ownerId || actor.id, monsterId: otherTarget.templateId, isBoss: otherTarget.isBoss });
                     }
                   }
                 }
@@ -2217,9 +2217,11 @@ export const useCombat = ({ addEffect }) => {
     }
 
     // Track combat stats (damage dealt only when actor is a hero to avoid duplicate counting)
+    // For summons (pets, clones, undead), credit damage to the owner
     if (actor.isHero) {
       if (totalDamageDealtThisTurn > 0) {
-        incrementStat('totalDamageDealt', totalDamageDealtThisTurn, { heroId: actor.id });
+        const statHeroId = actor.ownerId || actor.id;
+        incrementStat('totalDamageDealt', totalDamageDealtThisTurn, { heroId: statHeroId });
       }
     }
     // Track damage taken per hero
