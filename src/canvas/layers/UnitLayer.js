@@ -281,30 +281,45 @@ export class UnitLayer {
     // Get current equipment from store (not snapshot) so sprites update when gear changes
     const equipment = this.getHeroEquipment(hero.id);
 
-    // Check if this is a shadow clone or other summon
+    // Check if this is a shadow clone
     const isClone = hero.isClone || hero.id.startsWith('clone_');
-    const isUndead = hero.isUndead || hero.id.startsWith('undead_');
-    const isPet = hero.id.startsWith('pet_');
-    const isSummon = isClone || isUndead || isPet;
 
-    // Summons: draw semi-transparent with offset "shadow" effect
-    if (isSummon) {
-      ctx.save();
-      ctx.globalAlpha = 0.55;
-      // Draw offset shadow copy first
-      ctx.globalAlpha = 0.2;
-      drawHeroSprite(ctx, hero.classId, screenX + 2, screenY + 2, size, false, equipment);
-      // Draw main sprite
-      ctx.globalAlpha = 0.6;
-    }
-
-    drawHeroSprite(ctx, hero.classId, screenX, screenY, size, false, equipment);
-
-    if (isSummon) {
-      ctx.restore();
+    if (isClone) {
+      // Draw shadow clone as solid purple silhouette
+      this.renderSilhouette(ctx, hero.classId, screenX, screenY, size, '#7c3aed', 0.7, equipment);
+    } else {
+      drawHeroSprite(ctx, hero.classId, screenX, screenY, size, false, equipment);
     }
 
     return pos;
+  }
+
+  // Render a hero as a solid color silhouette
+  renderSilhouette(ctx, classId, x, y, size, color, alpha, equipment) {
+    // Create temp canvas to draw sprite then colorize
+    if (!this.silhouetteCanvas) {
+      this.silhouetteCanvas = document.createElement('canvas');
+      this.silhouetteCtx = this.silhouetteCanvas.getContext('2d');
+    }
+
+    this.silhouetteCanvas.width = size;
+    this.silhouetteCanvas.height = size;
+    this.silhouetteCtx.clearRect(0, 0, size, size);
+
+    // Draw the sprite to temp canvas
+    drawHeroSprite(this.silhouetteCtx, classId, 0, 0, size, false, equipment);
+
+    // Colorize: draw solid color using source-in composite
+    this.silhouetteCtx.globalCompositeOperation = 'source-in';
+    this.silhouetteCtx.fillStyle = color;
+    this.silhouetteCtx.fillRect(0, 0, size, size);
+    this.silhouetteCtx.globalCompositeOperation = 'source-over';
+
+    // Draw to main canvas
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(this.silhouetteCanvas, x, y);
+    ctx.restore();
   }
 
   // Render a dead hero
