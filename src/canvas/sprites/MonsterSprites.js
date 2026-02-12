@@ -594,6 +594,271 @@ MONSTER_SPRITE_DATA.lich_king = [
   [2, 12, 1, 1, '#7c3aed'],
 ];
 
+// === TIER 5 MONSTERS - VOLCANIC ===
+
+MONSTER_SPRITE_DATA.magma_elemental = [
+  // Body - molten rock
+  [4, 4, 8, 9, '#dc2626'],
+  [5, 3, 6, 1, '#ef4444'],
+  // Lava cracks
+  [6, 5, 1, 3, '#fbbf24'],
+  [9, 6, 1, 4, '#fbbf24'],
+  [5, 9, 3, 1, '#f97316'],
+  // Eyes
+  [5, 5, 2, 2, '#fbbf24'],
+  [9, 5, 2, 2, '#fbbf24'],
+  // Rock chunks
+  [3, 6, 1, 3, '#78716c'],
+  [12, 6, 1, 3, '#78716c'],
+  // Arms
+  [2, 7, 2, 4, '#b91c1c'],
+  [12, 7, 2, 4, '#b91c1c'],
+  // Legs
+  [5, 13, 2, 2, '#991b1b'],
+  [9, 13, 2, 2, '#991b1b'],
+];
+
+MONSTER_SPRITE_DATA.fire_imp = [
+  // Body
+  [5, 6, 6, 6, '#dc2626'],
+  // Head
+  [5, 2, 6, 5, '#ef4444'],
+  // Horns
+  [4, 1, 2, 2, '#fbbf24'],
+  [10, 1, 2, 2, '#fbbf24'],
+  // Eyes - mischievous
+  [6, 4, 2, 2, '#fbbf24'],
+  [9, 4, 2, 2, '#fbbf24'],
+  [7, 5, 1, 1, '#1f2937'],
+  [10, 5, 1, 1, '#1f2937'],
+  // Grin
+  [7, 6, 3, 1, '#1f2937'],
+  // Wings - small
+  [2, 6, 3, 3, '#f97316'],
+  [11, 6, 3, 3, '#f97316'],
+  // Tail with flame
+  [3, 10, 2, 1, '#dc2626'],
+  [2, 9, 2, 1, '#fbbf24'],
+  // Legs
+  [6, 12, 2, 2, '#b91c1c'],
+  [9, 12, 2, 2, '#b91c1c'],
+];
+
+MONSTER_SPRITE_DATA.lava_serpent = [
+  // Body coils
+  [3, 8, 10, 4, '#dc2626'],
+  [5, 6, 6, 2, '#ef4444'],
+  [2, 10, 3, 3, '#b91c1c'],
+  // Lava pattern
+  [5, 9, 2, 1, '#fbbf24'],
+  [9, 10, 2, 1, '#fbbf24'],
+  // Head
+  [9, 3, 5, 4, '#ef4444'],
+  // Eyes
+  [11, 4, 2, 2, '#fbbf24'],
+  [12, 5, 1, 1, '#1f2937'],
+  // Fangs
+  [13, 6, 1, 2, '#fef3c7'],
+  // Forked tongue
+  [14, 5, 1, 1, '#f97316'],
+  // Tail flame
+  [1, 12, 2, 2, '#fbbf24'],
+];
+
+MONSTER_SPRITE_DATA.obsidian_golem = [
+  // Body - dark rock
+  [3, 4, 10, 9, '#1f2937'],
+  // Head
+  [4, 1, 8, 4, '#374151'],
+  // Lava veins
+  [6, 2, 1, 2, '#f97316'],
+  [9, 2, 1, 2, '#f97316'],
+  [5, 7, 1, 4, '#dc2626'],
+  [10, 6, 1, 5, '#dc2626'],
+  // Eyes - glowing
+  [5, 2, 2, 2, '#fbbf24'],
+  [9, 2, 2, 2, '#fbbf24'],
+  // Arms - massive
+  [1, 5, 2, 6, '#374151'],
+  [13, 5, 2, 6, '#374151'],
+  // Legs
+  [4, 13, 3, 2, '#1f2937'],
+  [9, 13, 3, 2, '#1f2937'],
+];
+
+MONSTER_SPRITE_DATA.ember_wraith = [
+  // Body - fiery ethereal
+  [4, 3, 8, 10, '#f97316'],
+  [5, 2, 6, 1, '#fbbf24'],
+  // Fade effect
+  [4, 12, 2, 2, '#dc2626'],
+  [7, 13, 2, 2, '#f97316'],
+  [10, 12, 2, 2, '#dc2626'],
+  // Hood
+  [4, 2, 8, 4, '#b91c1c'],
+  // Eyes
+  [6, 4, 1, 2, '#fef3c7'],
+  [9, 4, 1, 2, '#fef3c7'],
+  // Claws
+  [2, 7, 2, 3, '#fbbf24'],
+  [12, 7, 2, 3, '#fbbf24'],
+];
+
+MONSTER_SPRITE_DATA.inferno_titan = [
+  // Massive body
+  [2, 4, 12, 10, '#b91c1c'],
+  // Head
+  [4, 0, 8, 5, '#dc2626'],
+  // Horns - large
+  [2, 0, 2, 3, '#78716c'],
+  [12, 0, 2, 3, '#78716c'],
+  // Eyes
+  [5, 2, 2, 2, '#fbbf24'],
+  [9, 2, 2, 2, '#fbbf24'],
+  // Molten core
+  [6, 6, 4, 4, '#fbbf24'],
+  [7, 7, 2, 2, '#fef3c7'],
+  // Lava veins
+  [4, 8, 2, 1, '#f97316'],
+  [10, 8, 2, 1, '#f97316'],
+  // Arms
+  [0, 5, 2, 7, '#dc2626'],
+  [14, 5, 2, 7, '#dc2626'],
+  // Legs
+  [3, 14, 4, 2, '#991b1b'],
+  [9, 14, 4, 2, '#991b1b'],
+];
+
+// === TIER 6 MONSTERS - VOID ===
+
+MONSTER_SPRITE_DATA.void_stalker = [
+  // Body - shadowy
+  [5, 5, 6, 7, '#1f2937'],
+  // Head
+  [5, 2, 6, 4, '#374151'],
+  // Void eyes
+  [6, 3, 2, 2, '#a855f7'],
+  [9, 3, 2, 2, '#a855f7'],
+  [7, 4, 1, 1, '#e9d5ff'],
+  [10, 4, 1, 1, '#e9d5ff'],
+  // Void tendrils
+  [3, 6, 2, 1, '#7c3aed'],
+  [2, 7, 2, 1, '#6d28d9'],
+  [11, 6, 2, 1, '#7c3aed'],
+  [12, 7, 2, 1, '#6d28d9'],
+  // Claws
+  [3, 8, 2, 3, '#374151'],
+  [11, 8, 2, 3, '#374151'],
+  // Legs
+  [5, 12, 2, 3, '#1f2937'],
+  [9, 12, 2, 3, '#1f2937'],
+];
+
+MONSTER_SPRITE_DATA.eldritch_horror = [
+  // Main body - bulbous
+  [3, 4, 10, 8, '#581c87'],
+  [4, 3, 8, 1, '#6b21a8'],
+  // Eyes - many
+  [4, 5, 2, 2, '#fbbf24'],
+  [7, 4, 2, 2, '#22c55e'],
+  [10, 5, 2, 2, '#ef4444'],
+  [6, 7, 1, 1, '#a855f7'],
+  [9, 7, 1, 1, '#3b82f6'],
+  // Tentacles
+  [1, 8, 2, 4, '#7c3aed'],
+  [0, 10, 2, 3, '#6d28d9'],
+  [13, 8, 2, 4, '#7c3aed'],
+  [14, 10, 2, 3, '#6d28d9'],
+  // Lower tentacles
+  [4, 12, 2, 3, '#581c87'],
+  [7, 13, 2, 2, '#6b21a8'],
+  [10, 12, 2, 3, '#581c87'],
+];
+
+MONSTER_SPRITE_DATA.null_shade = [
+  // Body - pure void
+  [4, 3, 8, 11, '#0f0f0f'],
+  [5, 2, 6, 1, '#1f1f1f'],
+  // Hood outline
+  [3, 2, 1, 4, '#374151'],
+  [12, 2, 1, 4, '#374151'],
+  [4, 1, 8, 1, '#374151'],
+  // Eyes - hollow voids
+  [6, 4, 2, 2, '#7c3aed'],
+  [9, 4, 2, 2, '#7c3aed'],
+  // Void wisps
+  [3, 10, 2, 3, '#1f1f1f'],
+  [6, 13, 2, 2, '#0f0f0f'],
+  [11, 10, 2, 3, '#1f1f1f'],
+  // Hands
+  [2, 7, 2, 3, '#1f1f1f'],
+  [12, 7, 2, 3, '#1f1f1f'],
+];
+
+MONSTER_SPRITE_DATA.reality_ripper = [
+  // Body - distorted
+  [4, 4, 8, 8, '#4c1d95'],
+  // Rift pattern
+  [6, 5, 4, 6, '#7c3aed'],
+  [7, 6, 2, 4, '#a855f7'],
+  // Head
+  [5, 1, 6, 4, '#581c87'],
+  // Eyes - reality-warping
+  [6, 2, 2, 2, '#f472b6'],
+  [9, 2, 2, 2, '#22d3d1'],
+  // Distortion claws
+  [2, 5, 2, 5, '#7c3aed'],
+  [1, 6, 1, 3, '#a855f7'],
+  [12, 5, 2, 5, '#7c3aed'],
+  [14, 6, 1, 3, '#a855f7'],
+  // Legs
+  [5, 12, 2, 3, '#4c1d95'],
+  [9, 12, 2, 3, '#4c1d95'],
+];
+
+MONSTER_SPRITE_DATA.void_spawn = [
+  // Body - small void creature
+  [5, 6, 6, 6, '#1f1f1f'],
+  [6, 5, 4, 1, '#0f0f0f'],
+  // Head
+  [5, 3, 6, 3, '#374151'],
+  // Single large eye
+  [6, 4, 4, 2, '#7c3aed'],
+  [7, 4, 2, 2, '#a855f7'],
+  [8, 5, 1, 1, '#e9d5ff'],
+  // Tendrils
+  [3, 7, 2, 2, '#374151'],
+  [11, 7, 2, 2, '#374151'],
+  // Legs
+  [5, 12, 2, 2, '#1f1f1f'],
+  [9, 12, 2, 2, '#1f1f1f'],
+];
+
+MONSTER_SPRITE_DATA.the_nameless_one = [
+  // Massive void form
+  [2, 3, 12, 11, '#0f0f0f'],
+  [3, 2, 10, 1, '#1f1f1f'],
+  // Central eye
+  [5, 5, 6, 4, '#4c1d95'],
+  [6, 6, 4, 2, '#7c3aed'],
+  [7, 6, 2, 2, '#a855f7'],
+  [8, 7, 1, 1, '#fef3c7'],
+  // Smaller eyes
+  [3, 6, 2, 2, '#ef4444'],
+  [11, 6, 2, 2, '#22d3d1'],
+  // Void tendrils
+  [0, 6, 2, 6, '#1f1f1f'],
+  [14, 6, 2, 6, '#1f1f1f'],
+  // Crown of void
+  [4, 0, 2, 2, '#7c3aed'],
+  [7, 0, 2, 2, '#a855f7'],
+  [10, 0, 2, 2, '#7c3aed'],
+  // Lower mass
+  [3, 13, 3, 2, '#1f1f1f'],
+  [7, 14, 2, 1, '#0f0f0f'],
+  [10, 13, 3, 2, '#1f1f1f'],
+];
+
 // Fallback aliases for different monster IDs
 MONSTER_SPRITE_DATA.bat = MONSTER_SPRITE_DATA.giant_bat;
 MONSTER_SPRITE_DATA.spider = MONSTER_SPRITE_DATA.giant_spider;

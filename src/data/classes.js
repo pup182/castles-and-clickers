@@ -10,7 +10,7 @@ export const PARTY_SLOTS = [
   { slot: 1, role: ROLES.TANK, cost: 0, dungeonRequired: 0 },
   { slot: 2, role: ROLES.HEALER, cost: 75, dungeonRequired: 1 },
   { slot: 3, role: ROLES.DPS, cost: 1000, dungeonRequired: 3 },
-  { slot: 4, role: ROLES.DPS, cost: 5000, dungeonRequired: 5 },
+  { slot: 4, role: ROLES.DPS, cost: 5000, dungeonRequired: 4 },
 ];
 
 // Hero classes with base stats and abilities

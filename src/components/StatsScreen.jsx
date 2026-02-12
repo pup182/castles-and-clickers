@@ -11,7 +11,7 @@ const JOURNEY_MILESTONES = [
   { id: 'homestead', name: 'Homestead', description: 'Unlock base upgrades', dungeonRequired: 3, type: 'feature' },
   { id: 'slot3', name: 'DPS Unlocked', description: 'Recruit a DPS (Slot 3)', dungeonRequired: 3, type: 'hero' },
   { id: 'shop', name: 'Item Shop', description: 'Buy equipment', dungeonRequired: 5, type: 'feature' },
-  { id: 'slot4', name: 'Full Party', description: 'Recruit 4th hero (Slot 4)', dungeonRequired: 5, type: 'hero' },
+  { id: 'slot4', name: 'Full Party', description: 'Recruit 4th hero (Slot 4)', dungeonRequired: 4, type: 'hero' },
   { id: 'autorun', name: 'Auto-Run', description: 'Unlock automatic dungeon runs', dungeonRequired: 5, type: 'feature' },
   { id: 'd10', name: 'Dungeon 10', description: 'Reach the deep dungeons', dungeonRequired: 10, type: 'progress' },
   { id: 'd20', name: 'Dungeon 20', description: 'Master the depths', dungeonRequired: 20, type: 'progress' },

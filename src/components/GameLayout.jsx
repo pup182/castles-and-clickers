@@ -51,6 +51,32 @@ import BestiaryScreen from './BestiaryScreen';
 // OPTIMIZATION: Stable default values to prevent re-renders
 const EMPTY_OBJECT = {};
 
+// Throttled enemy count hook - polls for monster counts to update enemy progress bar
+function useEnemyCount() {
+  const [counts, setCounts] = useState({ alive: 0, total: 0 });
+  const lastRef = useRef({ alive: 0, total: 0 });
+
+  useEffect(() => {
+    const update = () => {
+      const roomCombat = useGameStore.getState().roomCombat;
+      const monsters = roomCombat?.monsters || [];
+      const alive = monsters.filter(m => m?.stats?.hp > 0 && !m.isBoss).length;
+      const total = monsters.filter(m => !m.isBoss).length;
+
+      if (alive !== lastRef.current.alive || total !== lastRef.current.total) {
+        lastRef.current = { alive, total };
+        setCounts({ alive, total });
+      }
+    };
+    // Poll at ~500ms, offset from other intervals
+    const id = setInterval(update, 487);
+    update(); // Initial update
+    return () => clearInterval(id);
+  }, []);
+
+  return counts;
+}
+
 // Throttled header stats hook - updates every 500ms to avoid re-renders on every kill
 function useThrottledHeaderStats() {
   const [headerStats, setHeaderStats] = useState(() => {
@@ -125,6 +151,9 @@ const GameLayout = () => {
 
   // OPTIMIZATION: Throttled display state - renders at ~15 FPS instead of every tick
   const displayRoomCombat = useThrottledDisplay();
+
+  // OPTIMIZATION: Separate polling for enemy counts (updates more frequently for progress bar)
+  const enemyCount = useEnemyCount();
 
   const [activeModal, setActiveModal] = useState(null); // 'heroes' | 'skills' | 'equipment' | 'homestead' | 'dungeonSelect'
   const [offlineProgress, setOfflineProgress] = useState(null);
@@ -345,7 +374,7 @@ const GameLayout = () => {
       <header className="pixel-panel-dark px-4 py-2 flex items-center justify-between" style={{ borderRadius: 0, boxShadow: '0 4px 0 rgba(0,0,0,0.5)' }}>
         {/* Left: Title and Stats */}
         <div className="flex items-center gap-6">
-          <h1 className="pixel-title text-lg">Castles & Clickers <span className="text-xs text-gray-500 font-normal">v0.0.3</span></h1>
+          <h1 className="pixel-title text-lg">Castles & Clickers <span className="text-xs text-gray-500 font-normal">v0.0.4</span></h1>
           <div className="flex items-center gap-3 text-sm">
             <span className="pixel-stat pixel-stat-gold">
               <GoldIcon size={16} /> {Math.floor(headerStats.gold).toLocaleString()}
@@ -479,15 +508,16 @@ const GameLayout = () => {
               const tierColor = TIER_THEME_COLORS[currentTier.theme];
               const tierSize = currentTier.maxLevel - currentTier.minLevel + 1;
 
-              // Get monster counts from displayRoomCombat
+              // Get monster counts from dedicated polling hook (updates in real-time)
+              const totalMonsters = enemyCount.total;
+              const killedMonsters = totalMonsters - enemyCount.alive;
+
+              // Boss info - calculate bossUnlocked from live counts (all non-boss monsters dead)
               const monsters = displayRoomCombat?.monsters || [];
-              const aliveMonsters = monsters.filter(m => m?.stats?.hp > 0 && !m.isBoss).length;
-              const totalMonsters = monsters.filter(m => !m.isBoss).length;
-              const killedMonsters = totalMonsters - aliveMonsters;
               const boss = monsters.find(m => m.isBoss);
               const bossAlive = boss && boss.stats.hp > 0;
-              const bossUnlocked = displayRoomCombat?.bossUnlocked || false;
-              const round = displayRoomCombat?.round || 1;
+              // Boss is ready when all non-boss monsters are killed
+              const bossUnlocked = enemyCount.alive === 0 && totalMonsters > 0;
 
               // Phase display
               const getPhaseDisplay = () => {
@@ -545,7 +575,7 @@ const GameLayout = () => {
                         {phaseInfo.text}
                       </div>
 
-                      {/* Enemy progress */}
+                      {/* Enemy progress - fills up as you kill enemies */}
                       <div className="flex items-center gap-2 ml-auto">
                         <span className="pixel-label">
                           Enemies: {killedMonsters}/{totalMonsters}
@@ -567,11 +597,6 @@ const GameLayout = () => {
                           </span>
                         </div>
                       )}
-
-                      {/* Round counter */}
-                      <div className="pixel-label text-gray-500">
-                        R{round}
-                      </div>
                     </div>
                   </div>
 

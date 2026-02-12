@@ -253,6 +253,67 @@ export const HERO_SPRITE_DATA = {
     [5, 12, 2, 2, '#111827'],
     [9, 12, 2, 2, '#111827'],
   ],
+
+  // === SUMMON SPRITES ===
+
+  // Raised undead - skeletal warrior with green glow
+  undead: [
+    // Skull head
+    [5, 2, 6, 4, '#d1d5db'],
+    [6, 3, 1, 2, '#1f2937'],  // Left eye socket
+    [9, 3, 1, 2, '#1f2937'],  // Right eye socket
+    [6, 3, 1, 1, '#22c55e'],  // Left eye glow
+    [9, 3, 1, 1, '#22c55e'],  // Right eye glow
+    [7, 5, 2, 1, '#1f2937'],  // Nose hole
+    // Spine/neck
+    [7, 6, 2, 1, '#9ca3af'],
+    // Ribcage
+    [4, 7, 8, 4, '#d1d5db'],
+    [5, 8, 6, 2, '#1f2937'],  // Chest cavity
+    [6, 8, 1, 2, '#9ca3af'],  // Rib
+    [9, 8, 1, 2, '#9ca3af'],  // Rib
+    // Arms (bone)
+    [2, 7, 2, 1, '#d1d5db'],
+    [1, 8, 2, 3, '#9ca3af'],
+    [12, 7, 2, 1, '#d1d5db'],
+    [13, 8, 2, 3, '#9ca3af'],
+    // Legs (bone)
+    [5, 11, 2, 4, '#9ca3af'],
+    [9, 11, 2, 4, '#9ca3af'],
+    // Green necro glow particles
+    [3, 6, 1, 1, '#22c55e'],
+    [12, 6, 1, 1, '#22c55e'],
+    [4, 10, 1, 1, '#4ade80'],
+    [11, 10, 1, 1, '#4ade80'],
+  ],
+
+  pet: [
+    // Wolf companion sprite (Spirit Wolf)
+    // Body
+    [3, 7, 10, 5, '#6b7280'],
+    [4, 6, 8, 1, '#9ca3af'],
+    // Head
+    [9, 4, 5, 4, '#9ca3af'],
+    // Snout
+    [13, 6, 2, 2, '#6b7280'],
+    // Ears
+    [10, 2, 2, 2, '#6b7280'],
+    [12, 3, 1, 1, '#6b7280'],
+    // Eye - friendly blue
+    [11, 5, 1, 1, '#3b82f6'],
+    // Nose
+    [14, 6, 1, 1, '#1f2937'],
+    // Tail - fluffy
+    [1, 6, 2, 2, '#9ca3af'],
+    [0, 5, 2, 2, '#6b7280'],
+    // Legs
+    [4, 12, 2, 3, '#6b7280'],
+    [7, 12, 2, 3, '#6b7280'],
+    [10, 12, 2, 3, '#6b7280'],
+    // Spirit glow effect
+    [2, 8, 1, 1, '#93c5fd'],
+    [12, 8, 1, 1, '#93c5fd'],
+  ],
 };
 
 // Sprite cache for pre-rendered sprites

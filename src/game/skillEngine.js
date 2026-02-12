@@ -5,7 +5,10 @@ import { getSkillById, SKILL_TYPE, TARGET_TYPE, EFFECT_TYPE } from '../data/skil
  * Returns { damage, isCrit }
  */
 export const calculateSkillDamage = (attacker, defender, multiplier, options = {}) => {
-  const baseDamage = attacker.stats.attack - defender.stats.defense * 0.5;
+  // Apply armor penetration - reduces effective defense
+  const armorPen = options.armorPen || 0;
+  const effectiveDefense = defender.stats.defense * (1 - armorPen);
+  const baseDamage = attacker.stats.attack - effectiveDefense * 0.5;
   let damage = Math.max(1, Math.floor(baseDamage * multiplier * (0.85 + Math.random() * 0.3)));
   let isCrit = false;
 
@@ -201,7 +204,7 @@ export const chooseBestSkill = (hero, enemies, allies, cooldowns = {}) => {
  * Execute an active skill ability
  * Returns { results: [], logs: [] }
  */
-export const executeSkillAbility = (actor, skill, enemies, allies, heroHp, addEffect) => {
+export const executeSkillAbility = (actor, skill, enemies, allies, heroHp, addEffect, buffs = {}) => {
   const results = [];
   const logs = [];
 
@@ -216,6 +219,19 @@ export const executeSkillAbility = (actor, skill, enemies, allies, heroHp, addEf
   // Handle different effect types
   switch (effect.type) {
     case EFFECT_TYPE.DAMAGE: {
+      // Check requiresCorpse - skill needs a dead enemy to cast
+      if (effect.requiresCorpse) {
+        const deadEnemies = enemies.filter(e => e.stats.hp <= 0);
+        if (deadEnemies.length === 0) {
+          // No corpses available, skill fizzles
+          logs.push({
+            type: 'system',
+            message: `${skill.name} requires a corpse!`,
+          });
+          return { results, logs };
+        }
+      }
+
       const targets = skill.targetType === TARGET_TYPE.ALL_ENEMIES
         ? aliveEnemies
         : skill.targetType === TARGET_TYPE.SINGLE_ENEMY
@@ -239,10 +255,19 @@ export const executeSkillAbility = (actor, skill, enemies, allies, heroHp, addEf
       for (const target of actualTargets) {
         if (!target) continue;
 
-        const { damage, isCrit } = calculateSkillDamage(actor, target, effect.multiplier, {
+        // Calculate effective multiplier - bonusIfTaunting doubles damage when actor has taunt
+        let effectiveMultiplier = effect.multiplier;
+        const actorBuffs = buffs[actor.id];
+        const hasTauntBonus = effect.bonusIfTaunting && actorBuffs?.taunt > 0;
+        if (hasTauntBonus) {
+          effectiveMultiplier *= effect.bonusIfTaunting;
+        }
+
+        const { damage, isCrit } = calculateSkillDamage(actor, target, effectiveMultiplier, {
           alwaysCrit: effect.alwaysCrit,
           executeThreshold: effect.executeThreshold,
           executeMultiplier: effect.executeMultiplier,
+          armorPen: effect.armorPen || 0,
         });
 
         results.push({
@@ -262,6 +287,7 @@ export const executeSkillAbility = (actor, skill, enemies, allies, heroHp, addEf
           skill: { name: skill.name, emoji: skill.emoji },
           damage,
           isCrit,
+          hasTauntBonus,
         });
 
         // Add visual effects
@@ -312,6 +338,36 @@ export const executeSkillAbility = (actor, skill, enemies, allies, heroHp, addEf
       if (effect.alsoDamage) {
         // This is actually Holy Nova (heal + damage combo)
         // The damage part is handled above, now handle healing
+      }
+
+      // Handle selfDamagePercent - skill costs HP to cast (e.g., Death Coil)
+      if (effect.selfDamagePercent && effect.selfDamagePercent > 0) {
+        const selfDamage = Math.floor(actor.stats.hp * effect.selfDamagePercent);
+        // Don't let it kill the caster - minimum 1 HP remains
+        const actualSelfDamage = Math.min(selfDamage, actor.stats.hp - 1);
+
+        if (actualSelfDamage > 0) {
+          results.push({
+            type: 'selfDamage',
+            targetId: actor.id,
+            damage: actualSelfDamage,
+            isHero: true,
+          });
+
+          logs.push({
+            type: 'system',
+            message: `${actor.name} sacrifices ${actualSelfDamage} HP for ${skill.name}!`,
+          });
+
+          if (addEffect) {
+            addEffect({
+              type: 'damage',
+              position: actor.position,
+              damage: actualSelfDamage,
+              isHeal: false,
+            });
+          }
+        }
       }
       break;
     }
@@ -1938,6 +1994,7 @@ export const createRaisedUndead = (monster, raiseDuration, position) => {
     emoji: '💀',
     isHero: true,
     isUndead: true,
+    classId: 'undead',  // Use undead sprite
     turnsRemaining: raiseDuration,
     originalMonsterId: monster.id,
     position,
