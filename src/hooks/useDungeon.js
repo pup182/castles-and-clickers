@@ -14,6 +14,7 @@ import { CLASSES } from '../data/classes';
 import {
   PHASES,
   DETECTION_RANGE,
+  BOSS_ENGAGE_RANGE,
   VISION_RANGE,
   VIEWPORT_WIDTH,
   VIEWPORT_HEIGHT,
@@ -146,6 +147,7 @@ export const useDungeon = ({ addEffect }) => {
       turnOrder,
       currentTurnIndex: 0,
       round: 1,
+      summonsSpawned: false, // Reset so pets/clones respawn at start of each room's combat
     });
   }, [addCombatLog, updateRoomCombat]);
 
@@ -256,9 +258,16 @@ export const useDungeon = ({ addEffect }) => {
     }
 
     // Check for nearby monsters to fight
-    // IMPORTANT: Exclude boss until bossUnlocked to prevent early engagement
+    // IMPORTANT: Exclude boss until bossUnlocked AND heroes are very close
+    // This prevents the boss from auto-aggroing across the dungeon when unlocked
     const nearbyMonsters = findMonstersInRange(monsters, partyPosition, DETECTION_RANGE)
-      .filter(m => !m.isBoss || roomCombat.bossUnlocked);
+      .filter(m => {
+        if (!m.isBoss) return true; // Regular monsters use normal detection range
+        if (!roomCombat.bossUnlocked) return false; // Boss locked until all others dead
+        // Boss requires heroes to be very close before engaging
+        const dist = Math.abs(m.position.x - partyPosition.x) + Math.abs(m.position.y - partyPosition.y);
+        return dist <= BOSS_ENGAGE_RANGE;
+      });
 
     if (nearbyMonsters.length > 0) {
       startLocalCombat(nearbyMonsters);
