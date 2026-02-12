@@ -100,10 +100,10 @@ export const generateRoom = (roomType, dungeonLevel) => {
 
 // Generate monsters for a room
 export const generateRoomMonsters = (roomType, dungeonLevel, roomNumber) => {
-  const tier = Math.min(4, Math.ceil(dungeonLevel / 5));
-  // Exponential scaling: 1.11x per level for balanced progression
-  // Level 1: 1.0x, Level 5: 1.52x, Level 10: 2.56x, Level 15: 4.31x, Level 20: 7.26x
-  const scaleFactor = Math.pow(1.11, dungeonLevel - 1);
+  const tier = Math.min(6, Math.ceil(dungeonLevel / 5));
+  // Exponential scaling: 1.10x per level for balanced progression
+  // Level 1: 1.0x, Level 5: 1.46x, Level 10: 2.36x, Level 15: 3.80x, Level 20: 6.12x
+  const scaleFactor = Math.pow(1.10, dungeonLevel - 1);
   // Speed scales at 25% of other stats - keeps monsters relevant at high levels
   const speedScaleFactor = 1 + (scaleFactor - 1) * 0.25;
 
