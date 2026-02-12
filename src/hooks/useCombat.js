@@ -1224,6 +1224,10 @@ export const useCombat = ({ addEffect }) => {
                       let abilityDodgeChance = calculateDodgeChance(targetHero.stats.speed, actor.stats.speed);
                       const targetDefenderBonuses = applyPassiveEffects(targetHero, 'on_defend', {});
                       abilityDodgeChance += targetDefenderBonuses.dodgeChance || 0;
+                      // Add bonus dodge for pets
+                      if (targetHero.bonusDodge) {
+                        abilityDodgeChance += targetHero.bonusDodge;
+                      }
 
                       if (Math.random() < abilityDodgeChance) {
                         incrementStat('totalDodges', 1, { heroId: targetHero.id });
@@ -1538,6 +1542,10 @@ export const useCombat = ({ addEffect }) => {
           if (target.isHero) {
             const targetDefenderBonuses = applyPassiveEffects(target, 'on_defend', {});
             baseDodgeChance += targetDefenderBonuses.dodgeChance || 0;
+          }
+          // Add bonus dodge for pets (they're nimble)
+          if (target.bonusDodge) {
+            baseDodgeChance += target.bonusDodge;
           }
           const dodged = Math.random() < baseDodgeChance;
 

@@ -1950,6 +1950,7 @@ export const createPetUnit = (hero, summonData, position) => {
     ownerId: hero.id,
     classId: 'pet',
     position,
+    bonusDodge: 0.25, // Pets are nimble - 25% extra dodge chance
     stats: {
       hp: Math.floor(hero.stats.maxHp * statMultiplier),
       maxHp: Math.floor(hero.stats.maxHp * statMultiplier),
