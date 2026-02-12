@@ -336,10 +336,11 @@ const calculateHeroStats = (hero, allHeroes = [], homesteadBonuses = null) => {
     }
   }
 
-  // Apply party-wide passive bonuses from allies (like Cleric's Holy Aura)
+  // Apply party-wide passive bonuses from all party members (like Cleric's Holy Aura)
+  // This includes the hero's own auras - "All allies" includes the caster
   // OPTIMIZATION: Use pre-computed party skill bonus cache
   for (const ally of allHeroes) {
-    if (!ally || ally.id === hero.id) continue; // Skip self and undefined
+    if (!ally) continue; // Skip undefined
     const partySkills = partySkillBonusCache.get(ally.id);
     if (partySkills) {
       for (const skillId of partySkills) {
@@ -2014,13 +2015,15 @@ export const useGameStore = create(
           // Update main stat
           stats[stat] = (stats[stat] || 0) + amount;
 
-          // Optional: per-hero tracking
-          if (options.heroId && stat.startsWith('total')) {
+          // Optional: per-hero tracking (skip summons - pets, clones, undead)
+          const heroId = options.heroId;
+          const isSummon = heroId && (heroId.startsWith('pet_') || heroId.startsWith('clone_') || heroId.startsWith('undead_'));
+          if (heroId && stat.startsWith('total') && !isSummon) {
             stats.heroStats = stats.heroStats || {};
-            stats.heroStats[options.heroId] = stats.heroStats[options.heroId] || {};
+            stats.heroStats[heroId] = stats.heroStats[heroId] || {};
             const heroKey = stat.replace('total', '');
-            stats.heroStats[options.heroId][heroKey] =
-              (stats.heroStats[options.heroId][heroKey] || 0) + amount;
+            stats.heroStats[heroId][heroKey] =
+              (stats.heroStats[heroId][heroKey] || 0) + amount;
           }
 
           // Optional: monster kill breakdown
@@ -2151,12 +2154,14 @@ export const useGameStore = create(
 
       // Estimate rewards per dungeon run at given level
       _estimateDungeonRewards: (level, homesteadBonuses) => {
-        const tier = Math.min(4, Math.ceil(level / 5));
+        const tier = Math.min(6, Math.ceil(level / 5));
         const tierRewards = {
           1: { gold: 10, xp: 8 },
           2: { gold: 25, xp: 24 },
           3: { gold: 50, xp: 52 },
           4: { gold: 80, xp: 85 },
+          5: { gold: 120, xp: 130 },
+          6: { gold: 180, xp: 200 },
         };
 
         const monsterCount = 12 + Math.floor(level / 3) * 2;

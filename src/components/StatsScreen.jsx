@@ -93,10 +93,18 @@ const StatsScreen = () => {
       });
   }, [stats.monsterKills]);
 
-  // Get hero stats with names
+  // Get hero stats with names (filter out orphaned/summon entries)
   const heroStatsWithNames = useMemo(() => {
     if (!stats.heroStats) return [];
     return Object.entries(stats.heroStats)
+      .filter(([heroId]) => {
+        // Skip summon IDs (pets, clones, undead)
+        if (heroId.startsWith('pet_') || heroId.startsWith('clone_') || heroId.startsWith('undead_')) {
+          return false;
+        }
+        // Only include heroes that still exist
+        return heroes.some(h => h?.id === heroId);
+      })
       .map(([heroId, heroStat]) => {
         const hero = heroes.find(h => h?.id === heroId);
         const classData = hero ? CLASSES[hero.classId] : null;

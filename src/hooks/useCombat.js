@@ -66,6 +66,8 @@ const buildHeroHpMap = (heroes) => {
   const map = {};
   for (let i = 0; i < heroes.length; i++) {
     const h = heroes[i];
+    // Skip summons (pets, clones, undead) - they don't persist between dungeons
+    if (h.isPet || h.isClone || h.isUndead) continue;
     map[h.id] = h.stats.hp;
   }
   return map;
@@ -297,10 +299,69 @@ export const useCombat = ({ addEffect }) => {
     const findMonsterIndex = (id) => monsterIndexMap.get(id) ?? -1;
 
     // Helper to handle unit death - clears buffs/debuffs and adds ghost status
-    const handleUnitDeath = (unitId) => {
+    // Also handles death explosion affix for monsters
+    const handleUnitDeath = (unitId, monster = null) => {
       // Clear all buffs and status effects, replace with ghost debuff
       newBuffs[unitId] = { ghost: true };
       newStatusEffects[unitId] = [];
+
+      // Handle death explosion affix (Explosive dungeon affix)
+      if (monster && monster.deathExplosion && monster.deathExplosion > 0) {
+        const explosionDamage = Math.floor(monster.stats.maxHp * monster.deathExplosion);
+        const explosionRange = 3; // Tiles around the dead monster
+
+        // Damage nearby heroes
+        for (const hero of newHeroes) {
+          if (hero.stats.hp <= 0) continue;
+          const dist = Math.abs(hero.position.x - monster.position.x) + Math.abs(hero.position.y - monster.position.y);
+          if (dist <= explosionRange) {
+            const heroIdx = findHeroIndex(hero.id);
+            if (heroIdx !== -1) {
+              newHeroes[heroIdx].stats.hp = Math.max(1, newHeroes[heroIdx].stats.hp - explosionDamage);
+              addCombatLog({ type: 'system', message: `${monster.name} explodes! ${hero.name} takes ${explosionDamage} damage!` });
+              addEffect({ type: 'damage', position: hero.position, damage: explosionDamage });
+            }
+          }
+        }
+
+        // Add explosion visual
+        addEffect({ type: 'aoeGround', position: monster.position, color: '#ef4444' });
+      }
+
+      // Handle Bolstering affix - surviving monsters gain attack when ally dies
+      if (monster && monster.onDeathAllyBuff) {
+        const attackBonus = monster.onDeathAllyBuff.attack || 0;
+        if (attackBonus > 0) {
+          // Buff all surviving monsters
+          for (let i = 0; i < newMonsters.length; i++) {
+            const m = newMonsters[i];
+            if (m.stats.hp > 0 && m.id !== monster.id) {
+              const bonusAmount = Math.floor(m.stats.attack * attackBonus);
+              newMonsters[i].stats.attack += bonusAmount;
+              addCombatLog({ type: 'system', message: `${m.name} is emboldened! +${bonusAmount} attack` });
+            }
+          }
+          addEffect({ type: 'buffAura', position: monster.position, color: '#f97316' });
+        }
+      }
+    };
+
+    // Helper to handle on_damage triggers for monsters (e.g., Enrage)
+    const handleMonsterDamageTriggers = (monster, monsterIdx) => {
+      if (!monster.abilities || monster.abilities.length === 0) return;
+
+      for (const abilityId of monster.abilities) {
+        const ability = MONSTER_ABILITIES[abilityId];
+        if (!ability || ability.trigger !== 'on_damage') continue;
+
+        // Apply the ability effect
+        if (ability.effect?.attackBonus) {
+          const bonusAmount = Math.floor(newMonsters[monsterIdx].stats.attack * ability.effect.attackBonus);
+          newMonsters[monsterIdx].stats.attack += bonusAmount;
+          addCombatLog({ type: 'system', message: `${monster.name} enrages! +${bonusAmount} attack` });
+          addEffect({ type: 'buffAura', position: monster.position, color: '#ef4444' });
+        }
+      }
     };
 
     // Helper to update viewport to keep combat units visible
@@ -466,6 +527,20 @@ export const useCombat = ({ addEffect }) => {
           regenHeroPosition = actor.position;
           regenHeroName = actor.name;
           // Don't update state here - will be applied at end of turn to avoid loop
+        }
+      }
+    } else {
+      // Process monster regen passive at turn start
+      if (actor.passive?.regenPercent && actor.stats.hp < actor.stats.maxHp) {
+        const regenAmount = Math.floor(actor.stats.maxHp * actor.passive.regenPercent);
+        const monsterIdx = findMonsterIndex(actor.id);
+        if (monsterIdx !== -1) {
+          const actualHeal = Math.min(regenAmount, newMonsters[monsterIdx].stats.maxHp - newMonsters[monsterIdx].stats.hp);
+          if (actualHeal > 0) {
+            newMonsters[monsterIdx].stats.hp += actualHeal;
+            addCombatLog({ type: 'system', message: `${actor.name} regenerates ${actualHeal} HP` });
+            addEffect({ type: 'damage', position: actor.position, damage: actualHeal, isHeal: true });
+          }
         }
       }
     }
@@ -649,7 +724,7 @@ export const useCombat = ({ addEffect }) => {
           if (actor.stats.hp - dotDamage <= 0) {
             addCombatLog({ type: 'death', target: { name: actor.name }, isHero: false });
             addEffect({ type: 'death', position: actor.position, isHero: false, monsterId: actor.templateId });
-            handleUnitDeath(actor.id);
+            handleUnitDeath(actor.id, actor);
             // OPTIMIZATION: Single batched update including turn advance
             const nextTurn = getNextTurnState(roomCombat, newHeroes, newMonsters);
             updateRoomCombat({
@@ -753,7 +828,8 @@ export const useCombat = ({ addEffect }) => {
             activeCombatMonsters,
             aliveHeroes,
             heroHp,
-            addEffect
+            addEffect,
+            newBuffs
           );
 
           // Log skill use
@@ -792,10 +868,28 @@ export const useCombat = ({ addEffect }) => {
                 // Track skill damage dealt
                 totalDamageDealtThisTurn += result.damage;
 
+                // Trigger on_damage abilities (Enrage) if monster survived
+                if (newHp > 0) {
+                  handleMonsterDamageTriggers(m, monsterIdx);
+                }
+
+                // Apply monster reflectDamage passive (Thorny affix) - reflects damage back to attacker
+                if (m.passive?.reflectDamage && actor.isHero && newHp > 0) {
+                  const reflectedDmg = Math.floor(result.damage * m.passive.reflectDamage);
+                  if (reflectedDmg > 0) {
+                    const attackerHeroIdx = findHeroIndex(actor.id);
+                    if (attackerHeroIdx !== -1) {
+                      newHeroes[attackerHeroIdx].stats.hp = Math.max(1, newHeroes[attackerHeroIdx].stats.hp - reflectedDmg);
+                      addCombatLog({ type: 'system', message: `${m.name}'s thorns reflect ${reflectedDmg} damage to ${actor.name}!` });
+                      addEffect({ type: 'damage', position: actor.position, damage: reflectedDmg });
+                    }
+                  }
+                }
+
                 if (newHp <= 0 && oldHp > 0) {
                   addCombatLog({ type: 'death', target: { name: m.name }, isHero: false });
                   addEffect({ type: 'death', position: m.position, isHero: false, monsterId: m.templateId });
-                  handleUnitDeath(m.id);
+                  handleUnitDeath(m.id, m);
 
                   // Handle resetOnKill - reset the skill's cooldown
                   if (result.resetOnKill && result.skillId) {
@@ -873,6 +967,12 @@ export const useCombat = ({ addEffect }) => {
                 }
               } else {
                 addCombatLog({ type: 'system', message: 'No fallen allies to resurrect!' });
+              }
+            } else if (result.type === 'selfDamage') {
+              // Handle selfDamage - caster takes damage (e.g., Death Coil HP cost)
+              const heroIdx = findHeroIndex(result.targetId);
+              if (heroIdx !== -1) {
+                newHeroes[heroIdx].stats.hp = Math.max(1, newHeroes[heroIdx].stats.hp - result.damage);
               }
             } else if (result.type === 'raiseEnemy') {
               // Handle Raise Dead active skill - raise strongest dead enemy
@@ -1189,6 +1289,7 @@ export const useCombat = ({ addEffect }) => {
                   const monsterIdx = findMonsterIndex(actionResult.targetId);
                   if (monsterIdx !== -1) {
                     const healTarget = newMonsters[monsterIdx];
+                    const actualHeal = Math.min(actionResult.amount, healTarget.stats.maxHp - healTarget.stats.hp);
                     // OPTIMIZATION: Mutate in place
                     healTarget.stats.hp = Math.min(healTarget.stats.maxHp, healTarget.stats.hp + actionResult.amount);
                     addCombatLog({
@@ -1196,18 +1297,31 @@ export const useCombat = ({ addEffect }) => {
                       actor: { name: actor.name, emoji: actor.emoji },
                       target: { name: healTarget.name, emoji: healTarget.emoji },
                       skill: { name: ability.name },
-                      amount: actionResult.amount,
+                      amount: actualHeal,
                     });
+                    // Add visual effect for monster lifesteal/heal
+                    if (actualHeal > 0) {
+                      addEffect({ type: 'damage', position: healTarget.position, damage: actualHeal, isHeal: true });
+                      addEffect({ type: 'healBurst', position: healTarget.position });
+                    }
                   }
                   break;
                 }
 
                 case 'summon': {
                   // Create summoned monsters
-                  const summonType = actionResult.summonType || actor.summonType;
+                  let summonType = actionResult.summonType || actor.summonType;
                   const summonCount = actionResult.summonCount || 1;
 
                   if (summonType) {
+                    // Handle 'tier_1_random' - pick a random tier 1 monster
+                    if (summonType === 'tier_1_random') {
+                      const tier1Monsters = Object.keys(MONSTERS).filter(
+                        key => MONSTERS[key].tier === 1 && !MONSTERS[key].isBoss
+                      );
+                      summonType = tier1Monsters[Math.floor(Math.random() * tier1Monsters.length)];
+                    }
+
                     const summonTemplate = MONSTERS[summonType];
 
                     if (summonTemplate) {
@@ -1545,6 +1659,23 @@ export const useCombat = ({ addEffect }) => {
                   delete newBuffs[target.id].livingSeed;
                   delete newBuffs[target.id].livingSeedCaster;
                 }
+
+                // Apply onHitStatus from monster (Venomous, Burning, Chilling, Cursing affixes)
+                if (!actor.isHero && actor.onHitStatus) {
+                  const statusToApply = actor.onHitStatus;
+                  if (!newStatusEffects[target.id]) newStatusEffects[target.id] = [];
+                  const existingStatus = newStatusEffects[target.id].find(s => s.id === statusToApply.id);
+                  if (existingStatus) {
+                    existingStatus.duration = Math.max(existingStatus.duration, statusToApply.duration);
+                  } else {
+                    newStatusEffects[target.id].push({
+                      ...statusToApply,
+                      appliedBy: actor.id,
+                    });
+                  }
+                  addCombatLog({ type: 'system', message: `${target.name} is afflicted with ${statusToApply.id}!` });
+                  addEffect({ type: 'status', position: target.position, statusId: statusToApply.id });
+                }
               }
 
               // Apply thorns damage reflection
@@ -1652,9 +1783,42 @@ export const useCombat = ({ addEffect }) => {
               if (targetMonsterIdx !== -1) {
                 newMonsters[targetMonsterIdx].stats.hp = Math.max(0, oldMonsterHp - finalDmg);
               }
+              const currentMonsterHpAfterDmg = targetMonsterIdx !== -1 ? newMonsters[targetMonsterIdx].stats.hp : 0;
+
+              // Trigger on_damage abilities (Enrage) if monster survived
+              if (currentMonsterHpAfterDmg > 0 && targetMonsterIdx !== -1) {
+                handleMonsterDamageTriggers(newMonsters[targetMonsterIdx], targetMonsterIdx);
+              }
+
+              // Apply monster reflectDamage passive (Thorny affix) - reflects damage back to attacker
+              if (target.passive?.reflectDamage && actor.isHero) {
+                const reflectedDmg = Math.floor(finalDmg * target.passive.reflectDamage);
+                if (reflectedDmg > 0) {
+                  const attackerHeroIdx = findHeroIndex(actor.id);
+                  if (attackerHeroIdx !== -1) {
+                    newHeroes[attackerHeroIdx].stats.hp = Math.max(1, newHeroes[attackerHeroIdx].stats.hp - reflectedDmg);
+                    addCombatLog({ type: 'system', message: `${target.name}'s thorns reflect ${reflectedDmg} damage to ${actor.name}!` });
+                    addEffect({ type: 'damage', position: actor.position, damage: reflectedDmg });
+                  }
+                }
+              }
 
               // Track damage dealt for damage_heals effect
               totalDamageDealtThisTurn += finalDmg;
+
+              // Apply hpCostPerAttack (Life Tap passive) - costs HP to deal bonus damage
+              if (actor.isHero && passiveBonuses.hpCostPerAttack > 0) {
+                const actorHeroIdx = findHeroIndex(actor.id);
+                if (actorHeroIdx !== -1) {
+                  const hpCost = Math.floor(actor.stats.maxHp * (passiveBonuses.hpCostPerAttack / 100));
+                  // Don't let it kill the attacker - minimum 1 HP
+                  const actualCost = Math.min(hpCost, newHeroes[actorHeroIdx].stats.hp - 1);
+                  if (actualCost > 0) {
+                    newHeroes[actorHeroIdx].stats.hp -= actualCost;
+                    addCombatLog({ type: 'system', message: `Life Tap! ${actor.name} sacrifices ${actualCost} HP` });
+                  }
+                }
+              }
 
               // Only count as killed if monster was alive and is now dead
               const newMonsterHp = targetMonsterIdx !== -1 ? newMonsters[targetMonsterIdx].stats.hp : 0;
@@ -1750,7 +1914,7 @@ export const useCombat = ({ addEffect }) => {
                   isHero: false,
                   monsterId: target.templateId,
                 });
-                handleUnitDeath(target.id);
+                handleUnitDeath(target.id, target);
 
                 // Process ON_KILL affixes
                 if (heroData) {
@@ -1884,7 +2048,7 @@ export const useCombat = ({ addEffect }) => {
                   if (hpBeforeBonus > 0 && hpAfterBonus <= 0) {
                     addCombatLog({ type: 'death', target: { name: target.name }, isHero: false });
                     addEffect({ type: 'death', position: target.position, isHero: false, monsterId: target.templateId });
-                    handleUnitDeath(target.id);
+                    handleUnitDeath(target.id, target);
                     incrementStat('totalMonstersKilled', 1, { heroId: actor.id, monsterId: target.templateId, isBoss: target.isBoss });
                   }
                 }
@@ -1910,7 +2074,7 @@ export const useCombat = ({ addEffect }) => {
                     if (oldHp > 0 && newHp <= 0) {
                       addCombatLog({ type: 'death', target: { name: otherTarget.name }, isHero: false });
                       addEffect({ type: 'death', position: otherTarget.position, isHero: false, monsterId: otherTarget.templateId });
-                      handleUnitDeath(otherTarget.id);
+                      handleUnitDeath(otherTarget.id, otherTarget);
                       incrementStat('totalMonstersKilled', 1, { heroId: actor.id, monsterId: otherTarget.templateId, isBoss: otherTarget.isBoss });
                     }
                   }
