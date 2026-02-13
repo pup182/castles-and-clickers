@@ -683,6 +683,375 @@ export const SpellMasteryIcon = ({ size }) => (
   </IconWrapper>
 );
 
+export const ShadowCloneIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={4} y={3} w={3} h={3} c="#475569" />
+    <P x={4} y={6} w={3} h={5} c="#334155" />
+    <P x={3} y={8} w={2} h={3} c="#334155" />
+    <P x={9} y={4} w={3} h={3} c="#6366f1" />
+    <P x={9} y={7} w={3} h={5} c="#4f46e5" />
+    <P x={12} y={9} w={2} h={3} c="#4f46e5" />
+    <P x={7} y={6} w={2} h={1} c="#4338ca" />
+    <P x={7} y={8} w={2} h={1} c="#3730a3" />
+  </IconWrapper>
+);
+
+export const JuggernautIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={4} y={3} w={8} h={3} c="#78716c" />
+    <P x={3} y={6} w={10} h={4} c="#a8a29e" />
+    <P x={4} y={6} w={2} h={4} c="#d6d3d1" />
+    <P x={8} y={6} w={2} h={4} c="#d6d3d1" />
+    <P x={3} y={10} w={10} h={3} c="#78716c" />
+    <P x={5} y={1} w={2} h={2} c="#fbbf24" />
+    <P x={9} y={1} w={2} h={2} c="#fbbf24" />
+  </IconWrapper>
+);
+
+export const ColossusIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={5} y={1} w={6} h={4} c="#9ca3af" />
+    <P x={6} y={2} w={1} h={2} c="#60a5fa" />
+    <P x={9} y={2} w={1} h={2} c="#60a5fa" />
+    <P x={3} y={5} w={10} h={6} c="#6b7280" />
+    <P x={4} y={5} w={8} h={1} c="#9ca3af" />
+    <P x={1} y={6} w={2} h={4} c="#6b7280" />
+    <P x={13} y={6} w={2} h={4} c="#6b7280" />
+    <P x={4} y={11} w={3} h={3} c="#4b5563" />
+    <P x={9} y={11} w={3} h={3} c="#4b5563" />
+  </IconWrapper>
+);
+
+export const BeastMasterIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={2} y={4} w={6} h={5} c="#854d0e" />
+    <P x={1} y={5} w={2} h={3} c="#a16207" />
+    <P x={3} y={5} w={1} h={1} c="#fbbf24" />
+    <P x={6} y={5} w={1} h={1} c="#fbbf24" />
+    <P x={3} y={7} w={4} h={2} c="#713f12" />
+    <P x={4} y={8} w={2} h={1} c="#f8fafc" />
+    <P x={10} y={2} w={3} h={4} c="#d6d3d1" />
+    <P x={10} y={6} w={4} h={2} c="#a8a29e" />
+    <P x={8} y={5} w={2} h={1} c="#fbbf24" />
+    <P x={9} y={4} w={1} h={1} c="#fde68a" />
+  </IconWrapper>
+);
+
+export const NaturesWrathIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={3} y={2} w={10} h={4} c="#4b5563" />
+    <P x={5} y={1} w={6} h={2} c="#6b7280" />
+    <P x={7} y={6} w={2} h={2} c="#fbbf24" />
+    <P x={6} y={8} w={2} h={2} c="#fde68a" />
+    <P x={7} y={10} w={2} h={2} c="#fbbf24" />
+    <P x={2} y={7} w={2} h={1} c="#22c55e" />
+    <P x={3} y={8} w={1} h={3} c="#16a34a" />
+    <P x={12} y={7} w={2} h={1} c="#22c55e" />
+    <P x={12} y={8} w={1} h={3} c="#16a34a" />
+  </IconWrapper>
+);
+
+// Warrior: Unbreakable - Diamond/shatterproof crystal
+export const UnbreakableIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={7} y={1} w={2} h={2} c="#a5f3fc" />
+    <P x={5} y={3} w={6} h={2} c="#67e8f9" />
+    <P x={4} y={5} w={8} h={4} c="#22d3ee" />
+    <P x={5} y={9} w={6} h={3} c="#06b6d4" />
+    <P x={6} y={12} w={4} h={2} c="#0891b2" />
+    <P x={7} y={14} w={2} h={1} c="#0e7490" />
+    <P x={5} y={5} w={2} h={2} c="#cffafe" />
+    <P x={9} y={7} w={2} h={1} c="#a5f3fc" />
+  </IconWrapper>
+);
+
+// Warrior: Warlord - Crown with war banner
+export const WarlordIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={3} y={4} w={10} h={3} c="#fbbf24" />
+    <P x={3} y={2} w={2} h={2} c="#fbbf24" />
+    <P x={7} y={1} w={2} h={3} c="#fbbf24" />
+    <P x={11} y={2} w={2} h={2} c="#fbbf24" />
+    <P x={4} y={5} w={2} h={1} c="#ef4444" />
+    <P x={10} y={5} w={2} h={1} c="#ef4444" />
+    <P x={7} y={5} w={2} h={1} c="#3b82f6" />
+    <P x={10} y={7} w={2} h={7} c="#78350f" />
+    <P x={12} y={8} w={3} h={4} c="#dc2626" />
+    <P x={12} y={8} w={3} h={1} c="#fbbf24" />
+  </IconWrapper>
+);
+
+// Paladin: Divine Intervention - Angel wings with golden shield
+export const DivineInterventionIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={1} y={4} w={3} h={6} c="#fef08a" />
+    <P x={12} y={4} w={3} h={6} c="#fef08a" />
+    <P x={2} y={3} w={2} h={2} c="#fde68a" />
+    <P x={12} y={3} w={2} h={2} c="#fde68a" />
+    <P x={5} y={3} w={6} h={8} c="#fbbf24" />
+    <P x={6} y={4} w={4} h={6} c="#fef08a" />
+    <P x={7} y={5} w={2} h={4} c="#fbbf24" />
+    <P x={6} y={7} w={4} h={1} c="#fbbf24" />
+    <P x={7} y={1} w={2} h={2} c="#fef9c3" />
+  </IconWrapper>
+);
+
+// Paladin: Avenger - Flaming sword of vengeance
+export const AvengerIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={7} y={1} w={2} h={3} c="#9ca3af" />
+    <P x={6} y={4} w={4} h={2} c="#d1d5db" />
+    <P x={7} y={6} w={2} h={4} c="#9ca3af" />
+    <P x={5} y={10} w={6} h={2} c="#fbbf24" />
+    <P x={6} y={12} w={4} h={2} c="#78350f" />
+    <P x={4} y={1} w={3} h={3} c="#ef4444" />
+    <P x={9} y={1} w={3} h={3} c="#ef4444" />
+    <P x={5} y={3} w={2} h={2} c="#f97316" />
+    <P x={9} y={3} w={2} h={2} c="#f97316" />
+  </IconWrapper>
+);
+
+// Paladin: Beacon of Light - Radiant sun/lighthouse
+export const BeaconOfLightIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={6} y={5} w={4} h={4} c="#fef08a" />
+    <P x={7} y={4} w={2} h={1} c="#fef9c3" />
+    <P x={7} y={9} w={2} h={1} c="#fbbf24" />
+    <P x={5} y={6} w={1} h={2} c="#fef9c3" />
+    <P x={10} y={6} w={1} h={2} c="#fbbf24" />
+    <P x={7} y={1} w={2} h={3} c="#fbbf24" />
+    <P x={7} y={10} w={2} h={3} c="#fbbf24" />
+    <P x={1} y={7} w={4} h={1} c="#fbbf24" />
+    <P x={11} y={7} w={4} h={1} c="#fbbf24" />
+    <P x={3} y={3} w={2} h={2} c="#f59e0b" />
+    <P x={11} y={3} w={2} h={2} c="#f59e0b" />
+    <P x={3} y={10} w={2} h={2} c="#f59e0b" />
+    <P x={11} y={10} w={2} h={2} c="#f59e0b" />
+  </IconWrapper>
+);
+
+// Knight: Unbreakable - Diamond shield
+export const DiamondShieldIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={3} y={2} w={10} h={9} c="#22d3ee" />
+    <P x={4} y={3} w={8} h={7} c="#67e8f9" />
+    <P x={4} y={11} w={2} h={1} c="#06b6d4" />
+    <P x={10} y={11} w={2} h={1} c="#06b6d4" />
+    <P x={5} y={12} w={6} h={1} c="#0891b2" />
+    <P x={7} y={13} w={2} h={1} c="#0e7490" />
+    <P x={6} y={5} w={4} h={4} c="#a5f3fc" />
+    <P x={7} y={6} w={2} h={2} c="#cffafe" />
+  </IconWrapper>
+);
+
+// Knight: Fortress - Castle wall with redirect arrows
+export const FortressIcon2 = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={3} y={4} w={10} h={10} c="#6b7280" />
+    <P x={4} y={5} w={8} h={8} c="#9ca3af" />
+    <P x={3} y={2} w={3} h={2} c="#9ca3af" />
+    <P x={6} y={3} w={4} h={1} c="#6b7280" />
+    <P x={10} y={2} w={3} h={2} c="#9ca3af" />
+    <P x={6} y={7} w={4} h={5} c="#1f2937" />
+    <P x={7} y={6} w={2} h={1} c="#1f2937" />
+    <P x={1} y={6} w={2} h={1} c="#fbbf24" />
+    <P x={1} y={9} w={2} h={1} c="#fbbf24" />
+  </IconWrapper>
+);
+
+// Cleric: Crusader - Sword with healing cross
+export const CrusaderIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={7} y={1} w={2} h={4} c="#d1d5db" />
+    <P x={5} y={5} w={6} h={2} c="#fbbf24" />
+    <P x={7} y={7} w={2} h={5} c="#78350f" />
+    <P x={6} y={12} w={4} h={2} c="#fbbf24" />
+    <P x={11} y={3} w={3} h={2} c="#22c55e" />
+    <P x={12} y={2} w={1} h={4} c="#22c55e" />
+    <P x={12} y={3} w={1} h={1} c="#4ade80" />
+  </IconWrapper>
+);
+
+// Cleric: Radiance - Sun with shield aura
+export const RadianceIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={5} y={4} w={6} h={6} c="#fbbf24" />
+    <P x={6} y={5} w={4} h={4} c="#fef08a" />
+    <P x={7} y={6} w={2} h={2} c="#fef9c3" />
+    <P x={7} y={1} w={2} h={3} c="#f59e0b" />
+    <P x={7} y={10} w={2} h={3} c="#f59e0b" />
+    <P x={1} y={6} w={4} h={2} c="#f59e0b" />
+    <P x={11} y={6} w={4} h={2} c="#f59e0b" />
+    <P x={3} y={3} w={2} h={1} c="#3b82f6" />
+    <P x={11} y={3} w={2} h={1} c="#3b82f6" />
+    <P x={3} y={10} w={2} h={1} c="#3b82f6" />
+    <P x={11} y={10} w={2} h={1} c="#3b82f6" />
+  </IconWrapper>
+);
+
+// Druid: Rebirth - Phoenix/butterfly rising
+export const RebirthIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={6} y={3} w={4} h={6} c="#f97316" />
+    <P x={7} y={2} w={2} h={1} c="#fbbf24" />
+    <P x={7} y={4} w={2} h={2} c="#fef08a" />
+    <P x={3} y={4} w={3} h={4} c="#ef4444" />
+    <P x={10} y={4} w={3} h={4} c="#ef4444" />
+    <P x={2} y={5} w={2} h={2} c="#f97316" />
+    <P x={12} y={5} w={2} h={2} c="#f97316" />
+    <P x={5} y={9} w={6} h={3} c="#fbbf24" />
+    <P x={6} y={12} w={4} h={2} c="#f59e0b" />
+    <P x={7} y={14} w={2} h={1} c="#ca8a04" />
+  </IconWrapper>
+);
+
+// Shaman: Ascendance - Rising spirit form
+export const AscendanceIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={5} y={2} w={6} h={5} c="#818cf8" />
+    <P x={6} y={1} w={4} h={1} c="#a5b4fc" />
+    <P x={6} y={3} w={4} h={2} c="#c7d2fe" />
+    <P x={4} y={7} w={8} h={5} c="#6366f1" />
+    <P x={5} y={8} w={6} h={3} c="#818cf8" />
+    <P x={3} y={5} w={2} h={4} c="#818cf8" />
+    <P x={11} y={5} w={2} h={4} c="#818cf8" />
+    <P x={5} y={12} w={2} h={2} c="#4f46e5" />
+    <P x={9} y={12} w={2} h={2} c="#4f46e5" />
+    <P x={7} y={4} w={2} h={1} c="#e0e7ff" />
+  </IconWrapper>
+);
+
+// Shaman: Spirit Link Totem - Totem pole with spirit chains
+export const SpiritLinkTotemIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={6} y={1} w={4} h={3} c="#22c55e" />
+    <P x={7} y={2} w={2} h={1} c="#4ade80" />
+    <P x={6} y={4} w={4} h={3} c="#3b82f6" />
+    <P x={7} y={5} w={2} h={1} c="#60a5fa" />
+    <P x={6} y={7} w={4} h={3} c="#ef4444" />
+    <P x={7} y={8} w={2} h={1} c="#fca5a5" />
+    <P x={6} y={10} w={4} h={4} c="#78350f" />
+    <P x={4} y={3} w={2} h={1} c="#fbbf24" />
+    <P x={10} y={3} w={2} h={1} c="#fbbf24" />
+    <P x={3} y={6} w={3} h={1} c="#fbbf24" />
+    <P x={10} y={6} w={3} h={1} c="#fbbf24" />
+  </IconWrapper>
+);
+
+// Mage: Archmage - Wizard hat with arcane power
+export const ArchmageIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={7} y={0} w={2} h={2} c="#a855f7" />
+    <P x={6} y={2} w={4} h={2} c="#7c3aed" />
+    <P x={5} y={4} w={6} h={3} c="#6d28d9" />
+    <P x={3} y={7} w={10} h={2} c="#5b21b6" />
+    <P x={4} y={8} w={8} h={1} c="#7c3aed" />
+    <P x={7} y={1} w={1} h={1} c="#e9d5ff" />
+    <P x={3} y={10} w={10} h={4} c="#4c1d95" />
+    <P x={4} y={11} w={8} h={2} c="#6d28d9" />
+    <P x={7} y={12} w={2} h={1} c="#a855f7" />
+  </IconWrapper>
+);
+
+// Mage: Time Warp - Hourglass with arcane glow
+export const TimeWarpIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={3} y={1} w={10} h={2} c="#fbbf24" />
+    <P x={4} y={3} w={8} h={2} c="#a855f7" />
+    <P x={5} y={5} w={6} h={1} c="#c084fc" />
+    <P x={6} y={6} w={4} h={1} c="#a855f7" />
+    <P x={7} y={7} w={2} h={2} c="#e9d5ff" />
+    <P x={6} y={9} w={4} h={1} c="#a855f7" />
+    <P x={5} y={10} w={6} h={1} c="#c084fc" />
+    <P x={4} y={11} w={8} h={2} c="#a855f7" />
+    <P x={3} y={13} w={10} h={2} c="#fbbf24" />
+    <P x={7} y={7} w={1} h={1} c="#fef9c3" />
+  </IconWrapper>
+);
+
+// Rogue: Kingslayer - Dagger through a crown
+export const KingslayerIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={3} y={6} w={10} h={3} c="#fbbf24" />
+    <P x={3} y={4} w={2} h={2} c="#fbbf24" />
+    <P x={7} y={4} w={2} h={2} c="#fbbf24" />
+    <P x={11} y={4} w={2} h={2} c="#fbbf24" />
+    <P x={4} y={7} w={2} h={1} c="#ef4444" />
+    <P x={10} y={7} w={2} h={1} c="#3b82f6" />
+    <P x={7} y={1} w={2} h={4} c="#d1d5db" />
+    <P x={7} y={9} w={2} h={3} c="#78350f" />
+    <P x={6} y={12} w={4} h={2} c="#9ca3af" />
+    <P x={6} y={5} w={1} h={1} c="#dc2626" />
+    <P x={9} y={5} w={1} h={1} c="#dc2626" />
+  </IconWrapper>
+);
+
+// Ranger: Kill Shot - Skull in crosshair
+export const KillShotIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={5} y={4} w={6} h={6} c="#e5e7eb" />
+    <P x={6} y={5} w={1} h={2} c="#1f2937" />
+    <P x={9} y={5} w={1} h={2} c="#1f2937" />
+    <P x={7} y={8} w={2} h={1} c="#1f2937" />
+    <P x={7} y={1} w={2} h={3} c="#ef4444" />
+    <P x={7} y={10} w={2} h={3} c="#ef4444" />
+    <P x={1} y={6} w={4} h={2} c="#ef4444" />
+    <P x={11} y={6} w={4} h={2} c="#ef4444" />
+    <P x={7} y={6} w={2} h={2} c="#ef4444" />
+  </IconWrapper>
+);
+
+// Ranger: Arrow Storm - Rain of arrows with wind
+export const ArrowStormIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={3} y={2} w={10} h={3} c="#4b5563" />
+    <P x={5} y={1} w={6} h={1} c="#6b7280" />
+    <P x={3} y={6} w={1} h={4} c="#78350f" />
+    <P x={2} y={10} w={3} h={1} c="#9ca3af" />
+    <P x={6} y={7} w={1} h={4} c="#78350f" />
+    <P x={5} y={11} w={3} h={1} c="#9ca3af" />
+    <P x={9} y={6} w={1} h={4} c="#78350f" />
+    <P x={8} y={10} w={3} h={1} c="#9ca3af" />
+    <P x={12} y={7} w={1} h={4} c="#78350f" />
+    <P x={11} y={11} w={3} h={1} c="#9ca3af" />
+    <P x={2} y={13} w={12} h={1} c="#6b7280" />
+  </IconWrapper>
+);
+
+// Necromancer: Soul Rend - Torn soul/lifesteal
+export const SoulRendIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={5} y={2} w={6} h={5} c="#a855f7" />
+    <P x={6} y={1} w={4} h={1} c="#c084fc" />
+    <P x={6} y={3} w={4} h={2} c="#e9d5ff" />
+    <P x={3} y={7} w={4} h={3} c="#a855f7" />
+    <P x={9} y={7} w={4} h={3} c="#a855f7" />
+    <P x={4} y={10} w={3} h={3} c="#7c3aed" />
+    <P x={9} y={10} w={3} h={3} c="#7c3aed" />
+    <P x={7} y={6} w={2} h={2} c="#dc2626" />
+    <P x={6} y={8} w={4} h={1} c="#dc2626" />
+    <P x={7} y={9} w={2} h={1} c="#ef4444" />
+  </IconWrapper>
+);
+
+// Necromancer: Raise Dead - Skeletal hand from grave
+export const RaiseDeadIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={2} y={11} w={12} h={3} c="#78716c" />
+    <P x={3} y={12} w={10} h={1} c="#57534e" />
+    <P x={6} y={7} w={4} h={4} c="#e5e7eb" />
+    <P x={5} y={5} w={2} h={3} c="#d1d5db" />
+    <P x={9} y={5} w={2} h={3} c="#d1d5db" />
+    <P x={5} y={3} w={2} h={2} c="#e5e7eb" />
+    <P x={7} y={2} w={2} h={3} c="#e5e7eb" />
+    <P x={9} y={3} w={2} h={2} c="#e5e7eb" />
+    <P x={4} y={1} w={2} h={2} c="#d1d5db" />
+    <P x={10} y={2} w={2} h={1} c="#d1d5db" />
+    <P x={6} y={8} w={1} h={1} c="#a855f7" />
+    <P x={9} y={8} w={1} h={1} c="#a855f7" />
+  </IconWrapper>
+);
+
 // Skill icon mapping
 export const SKILL_ICONS = {
   // Warrior
@@ -696,6 +1065,9 @@ export const SKILL_ICONS = {
   warrior_bloodlust: BloodlustIcon,
   warrior_veteran: FortitudeIcon,
   warrior_last_stand: FortitudeIcon,
+  warrior_juggernaut: JuggernautIcon,
+  warrior_unbreakable: UnbreakableIcon,
+  warrior_warlord: WarlordIcon,
 
   // Mage
   mage_arcane_mind: SpellMasteryIcon,
@@ -708,6 +1080,8 @@ export const SKILL_ICONS = {
   mage_spell_mastery: SpellMasteryIcon,
   mage_arcane_barrier: DivineShieldIcon,
   mage_inferno: InfernoIcon,
+  mage_archmage: ArchmageIcon,
+  mage_time_warp: TimeWarpIcon,
 
   // Rogue
   rogue_quick_feet: RapidFireIcon,
@@ -720,6 +1094,8 @@ export const SKILL_ICONS = {
   rogue_shadow_dance: SmokeBombIcon,
   rogue_deadly_poison: DeadlyPoisonIcon,
   rogue_death_blossom: DeathBlossomIcon,
+  rogue_shadow_clone: ShadowCloneIcon,
+  rogue_kingslayer: KingslayerIcon,
 
   // Cleric
   cleric_blessed: HealIcon,
@@ -732,6 +1108,8 @@ export const SKILL_ICONS = {
   cleric_sanctuary: DivineShieldIcon,
   cleric_martyr: HealIcon,
   cleric_resurrection: ResurrectionIcon,
+  cleric_crusader: CrusaderIcon,
+  cleric_radiance: RadianceIcon,
 
   // Ranger
   ranger_eagle_eye: PrecisionIcon,
@@ -744,6 +1122,9 @@ export const SKILL_ICONS = {
   ranger_rapid_fire: RapidFireIcon,
   ranger_hunters_mark: PrecisionIcon,
   ranger_volley: VolleyIcon,
+  ranger_beast_master: BeastMasterIcon,
+  ranger_kill_shot: KillShotIcon,
+  ranger_arrow_storm: ArrowStormIcon,
 
   // Necromancer
   necromancer_dark_pact: DrainLifeIcon,
@@ -756,6 +1137,8 @@ export const SKILL_ICONS = {
   necromancer_plague: PlagueIcon,
   necromancer_death_coil: DrainLifeIcon,
   necromancer_lich_form: LichFormIcon,
+  necromancer_soul_rend: SoulRendIcon,
+  necromancer_raise_dead: RaiseDeadIcon,
 
   // Paladin
   paladin_holy_strength: FortitudeIcon,
@@ -767,7 +1150,9 @@ export const SKILL_ICONS = {
   paladin_judgment: SmiteIcon,
   paladin_righteous_fury: FireballIcon,
   paladin_bulwark: DivineShieldIcon,
-  paladin_divine_intervention: ResurrectionIcon,
+  paladin_divine_intervention: DivineInterventionIcon,
+  paladin_avenger: AvengerIcon,
+  paladin_beacon_of_light: BeaconOfLightIcon,
 
   // Knight
   knight_heavy_armor: DivineShieldIcon,
@@ -779,7 +1164,9 @@ export const SKILL_ICONS = {
   knight_shield_wall: DivineShieldIcon,
   knight_punish: PowerStrikeIcon,
   knight_stalwart: FortitudeIcon,
-  knight_unbreakable: DivineShieldIcon,
+  knight_unbreakable: DiamondShieldIcon,
+  knight_colossus: ColossusIcon,
+  knight_fortress: FortressIcon2,
 
   // Druid
   druid_natural_healing: RejuvenationIcon,
@@ -792,6 +1179,8 @@ export const SKILL_ICONS = {
   druid_lifebloom: RejuvenationIcon,
   druid_barkskin: DivineShieldIcon,
   druid_tree_of_life: TreeOfLifeIcon,
+  druid_natures_wrath: NaturesWrathIcon,
+  druid_rebirth: RebirthIcon,
 
   // Shaman
   shaman_ancestral_power: SpiritLinkIcon,
@@ -804,6 +1193,8 @@ export const SKILL_ICONS = {
   shaman_mana_tide: FrostNovaIcon,
   shaman_totemic_power: SpiritLinkIcon,
   shaman_bloodlust: BloodlustIcon,
+  shaman_ascendance: AscendanceIcon,
+  shaman_spirit_link_totem: SpiritLinkTotemIcon,
 };
 
 // Helper component to render skill icon by ID

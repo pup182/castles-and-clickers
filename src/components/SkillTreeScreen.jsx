@@ -83,7 +83,7 @@ const SkillTreeScreen = () => {
   };
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4">
+    <div className="pixel-panel p-4">
       {heroes.length === 0 ? (
         <div className="text-gray-500 text-center py-12">
           <div className="flex justify-center mb-4">
@@ -125,7 +125,7 @@ const SkillTreeScreen = () => {
 
             {/* Hero Info */}
             {selectedHero && (
-              <div className="bg-gray-900 rounded-lg p-4 space-y-4">
+              <div className="pixel-panel-dark p-4 space-y-4">
                 <div className="flex items-center gap-3">
                   <HeroIcon classId={selectedHero.classId} equipment={selectedHero.equipment} size={40} />
                   <div>
@@ -135,7 +135,7 @@ const SkillTreeScreen = () => {
                 </div>
 
                 {/* Skill Points */}
-                <div className="bg-gray-800 rounded-lg p-3">
+                <div className="pixel-panel p-3">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-gray-400">Skill Points</span>
                     <span className={`text-lg font-bold ${skillPointInfo.available > 0 ? 'text-green-400' : 'text-gray-500'}`}>
@@ -149,7 +149,10 @@ const SkillTreeScreen = () => {
                     />
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    Earn 1 point every 3 levels ({skillPointInfo.used} used, max 10)
+                    1 per 3 levels ({skillPointInfo.used} used, max 10)
+                  </div>
+                  <div className="text-xs text-yellow-400 mt-1">
+                    Choose wisely — only 10 skills total!
                   </div>
                 </div>
 
@@ -180,10 +183,8 @@ const SkillTreeScreen = () => {
                   <button
                     onClick={() => setShowRespecConfirm(true)}
                     disabled={gold < respecCost}
-                    className={`w-full py-2 rounded-lg text-sm font-medium transition-all ${
-                      gold >= respecCost
-                        ? 'bg-orange-600 hover:bg-orange-500 text-white'
-                        : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    className={`w-full pixel-btn text-sm ${
+                      gold >= respecCost ? 'pixel-btn-danger' : 'opacity-50 cursor-not-allowed'
                     }`}
                   >
                     Respec Skills ({respecCost} gold)
@@ -193,7 +194,7 @@ const SkillTreeScreen = () => {
             )}
 
             {/* Legend */}
-            <div className="bg-gray-900 rounded-lg p-3 space-y-2">
+            <div className="pixel-panel-dark p-3 space-y-2">
               <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Legend</div>
               <div className="flex items-center gap-2 text-sm">
                 <div className="w-4 h-4 rounded bg-yellow-500/20 border-2 border-yellow-400" />
@@ -210,19 +211,6 @@ const SkillTreeScreen = () => {
               <div className="flex items-center gap-2 text-sm">
                 <div className="w-4 h-4 rounded bg-blue-600 flex items-center justify-center text-[8px] text-white font-bold">A</div>
                 <span className="text-gray-400">Active Skill</span>
-              </div>
-            </div>
-
-            {/* Tier Info */}
-            <div className="bg-gray-900 rounded-lg p-3 space-y-2">
-              <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Progression</div>
-              <div className="text-xs text-gray-400 space-y-1">
-                <div>Tier 1: Need 2 Core skills</div>
-                <div>Tier 2: Need 3 Tier 1 skills</div>
-                <div>Capstone: Need 4 Tier 2 skills</div>
-              </div>
-              <div className="text-xs text-yellow-400 mt-2">
-                Only 10 skills obtainable - choose wisely!
               </div>
             </div>
           </div>
@@ -246,10 +234,14 @@ const SkillTreeScreen = () => {
                       <div key={tier} className={`${!tierUnlocked ? 'opacity-50' : ''}`}>
                         {/* Tier Header */}
                         <div className="flex items-center gap-3 mb-3">
-                          <div className={`text-sm font-bold ${tier === 3 ? 'text-purple-400' : 'text-gray-300'}`}>
+                          <div className={`font-bold ${tier === 3 ? 'text-purple-400 text-base pixel-subtitle' : 'text-sm text-gray-300'}`}>
                             {tierLabels[tier]}
                           </div>
-                          <div className="flex-1 h-px bg-gray-700" />
+                          <div className="flex-1 h-px" style={{
+                            background: tier === 3
+                              ? 'linear-gradient(90deg, transparent, rgba(168,85,247,0.5), transparent)'
+                              : 'linear-gradient(90deg, transparent, var(--color-border), transparent)'
+                          }} />
                           <div className={`text-xs ${tierUnlocked ? 'text-green-400' : 'text-gray-500'}`}>
                             {getTierRequirementText(tier)}
                           </div>
@@ -261,6 +253,7 @@ const SkillTreeScreen = () => {
                             <SkillNode
                               key={skill.id}
                               skill={skill}
+                              tier={skill.tier}
                               isUnlocked={heroSkills.includes(skill.id)}
                               isAvailable={arePrerequisitesMet(skill, heroSkills, selectedHero.classId)}
                               canAfford={skillPointInfo.available > 0}
@@ -281,7 +274,7 @@ const SkillTreeScreen = () => {
       {/* Respec Confirmation Modal */}
       {showRespecConfirm && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-sm mx-4">
+          <div className="pixel-panel p-6 max-w-sm mx-4">
             <h3 className="text-xl font-bold text-white mb-2">Respec Skills?</h3>
             <p className="text-gray-400 mb-4">
               Reset all skills for <span className="text-yellow-400 font-bold">{selectedHero?.name}</span>?
@@ -293,13 +286,13 @@ const SkillTreeScreen = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowRespecConfirm(false)}
-                className="flex-1 px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition-all"
+                className="flex-1 pixel-btn"
               >
                 Cancel
               </button>
               <button
                 onClick={handleRespec}
-                className="flex-1 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 text-white transition-all"
+                className="flex-1 pixel-btn pixel-btn-danger"
               >
                 Respec ({respecCost}g)
               </button>

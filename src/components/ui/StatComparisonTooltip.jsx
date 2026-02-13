@@ -1,10 +1,11 @@
 // Side-by-side stat comparison component
+import { HeartIcon, SwordIcon, ShieldIcon, SpeedIcon } from '../icons/ui';
 
 const STAT_CONFIG = {
-  maxHp: { label: 'HP', color: 'text-green-400', icon: '❤️' },
-  attack: { label: 'ATK', color: 'text-red-400', icon: '⚔️' },
-  defense: { label: 'DEF', color: 'text-blue-400', icon: '🛡️' },
-  speed: { label: 'SPD', color: 'text-yellow-400', icon: '⚡' },
+  maxHp: { label: 'HP', color: 'text-green-400', Icon: HeartIcon },
+  attack: { label: 'ATK', color: 'text-red-400', Icon: SwordIcon },
+  defense: { label: 'DEF', color: 'text-blue-400', Icon: ShieldIcon },
+  speed: { label: 'SPD', color: 'text-yellow-400', Icon: SpeedIcon },
 };
 
 const StatComparisonTooltip = ({
@@ -46,7 +47,7 @@ const StatComparisonTooltip = ({
           return (
             <div key={stat} className="grid grid-cols-4 gap-1 text-sm items-center">
               <div className={`${config.color} flex items-center gap-1`}>
-                {showIcons && <span className="text-xs">{config.icon}</span>}
+                {showIcons && <config.Icon size={14} />}
                 {config.label}
               </div>
               <div className="text-center text-gray-400">{current}</div>

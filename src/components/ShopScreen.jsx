@@ -179,12 +179,12 @@ const ShopScreen = () => {
                   <button
                     onClick={() => handleBuy(item.id)}
                     disabled={!canBuy}
-                    className={`px-3 py-1 text-sm rounded transition-all ${
+                    className={`pixel-btn text-sm ${
                       canBuy
                         ? upgradeInfo?.isUpgrade
-                          ? 'bg-green-600 hover:bg-green-500 text-white animate-pulse'
-                          : 'bg-green-600 hover:bg-green-500 text-white'
-                        : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                          ? 'pixel-btn-success animate-pulse'
+                          : 'pixel-btn-success'
+                        : 'opacity-50 cursor-not-allowed'
                     }`}
                   >
                     {inventoryFull ? 'Inv Full' : canAfford ? 'Buy' : 'Need Gold'}

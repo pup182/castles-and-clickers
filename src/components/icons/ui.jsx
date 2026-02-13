@@ -1191,6 +1191,38 @@ export const PhaseIcon = ({ size }) => (
   </IconWrapper>
 );
 
+export const PauseIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={4} y={3} w={3} h={10} c="#e2e8f0" />
+    <P x={4} y={3} w={1} h={10} c="#f8fafc" />
+    <P x={9} y={3} w={3} h={10} c="#e2e8f0" />
+    <P x={9} y={3} w={1} h={10} c="#f8fafc" />
+  </IconWrapper>
+);
+
+export const PlayIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={5} y={3} w={2} h={10} c="#4ade80" />
+    <P x={7} y={4} w={2} h={8} c="#22c55e" />
+    <P x={9} y={5} w={2} h={6} c="#16a34a" />
+    <P x={11} y={6} w={1} h={4} c="#15803d" />
+  </IconWrapper>
+);
+
+export const ResetIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    <P x={7} y={2} w={4} h={2} c="#94a3b8" />
+    <P x={11} y={4} w={2} h={3} c="#94a3b8" />
+    <P x={3} y={4} w={2} h={3} c="#94a3b8" />
+    <P x={3} y={7} w={2} h={3} c="#94a3b8" />
+    <P x={5} y={10} w={6} h={2} c="#94a3b8" />
+    <P x={11} y={7} w={2} h={3} c="#94a3b8" />
+    <P x={7} y={12} w={4} h={2} c="#94a3b8" />
+    <P x={10} y={1} w={2} h={2} c="#cbd5e1" />
+    <P x={12} y={2} w={2} h={2} c="#cbd5e1" />
+  </IconWrapper>
+);
+
 // Helper component to render UI icon by ID
 export const UIIcon = ({ iconId, size = 32, className = '' }) => {
   const IconComponent = UI_ICONS[iconId];

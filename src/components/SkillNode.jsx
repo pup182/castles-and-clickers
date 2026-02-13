@@ -3,7 +3,7 @@ import { SKILL_TYPE } from '../data/skillTrees';
 import { SkillIcon } from './icons/skills';
 import { StarIcon } from './icons/ui';
 
-const SkillNode = ({ skill, isUnlocked, isAvailable, onUnlock, canAfford }) => {
+const SkillNode = ({ skill, tier, isUnlocked, isAvailable, onUnlock, canAfford }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [justUnlocked, setJustUnlocked] = useState(false);
 
@@ -34,6 +34,15 @@ const SkillNode = ({ skill, isUnlocked, isAvailable, onUnlock, canAfford }) => {
     ringColor = '';
   }
 
+  const sizeClass = tier === 3 ? 'w-[4.5rem] h-[4.5rem]' : 'w-16 h-16';
+  const iconSize = tier === 3 ? 36 : 32;
+
+  const animClass = isUnlocked
+    ? tier === 3 ? 'skill-capstone-glow' : 'skill-unlocked'
+    : isAvailable && canAfford ? 'skill-available-breathe' : '';
+
+  const activeClass = isUnlocked && skill.type === SKILL_TYPE.ACTIVE ? 'skill-active-pulse' : '';
+
   const handleClick = () => {
     if (isAvailable && !isUnlocked && canAfford) {
       onUnlock(skill.id);
@@ -63,19 +72,20 @@ const SkillNode = ({ skill, isUnlocked, isAvailable, onUnlock, canAfford }) => {
         onClick={handleClick}
         disabled={isUnlocked || !isAvailable || !canAfford}
         className={`
-          w-16 h-16 rounded-lg border-2 flex flex-col items-center justify-center
+          ${sizeClass} rounded-lg border-2 flex flex-col items-center justify-center
           transition-all duration-200 relative
           ${bgColor} ${borderColor}
           ${isAvailable && !isUnlocked && canAfford ? 'hover:scale-110 hover:ring-2 cursor-pointer' : ''}
           ${ringColor}
           ${isUnlocked ? 'ring-2' : ''}
+          ${animClass} ${activeClass}
           ${justUnlocked ? 'animate-skill-activation' : ''}
         `}
       >
-        <SkillIcon skillId={skill.id} size={32} />
+        <SkillIcon skillId={skill.id} size={iconSize} />
         {isActive && (
-          <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold
-            ${isUnlocked ? 'bg-yellow-500 text-black' : isAvailable ? 'bg-blue-500 text-white' : 'bg-gray-600 text-gray-400'}`}>
+          <div className={`absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border border-black/50 shadow-sm
+            ${isUnlocked ? 'bg-yellow-500 text-black' : isAvailable ? 'bg-blue-500 text-white' : 'bg-gray-600 text-gray-300'}`}>
             A
           </div>
         )}
@@ -93,7 +103,7 @@ const SkillNode = ({ skill, isUnlocked, isAvailable, onUnlock, canAfford }) => {
           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-[-1px]">
             <div className="border-8 border-transparent border-b-gray-600" />
           </div>
-          <div className="bg-gray-900 border border-gray-600 rounded-lg p-3 shadow-xl">
+          <div className="pixel-panel-dark p-3 shadow-xl">
             <div className="flex items-center gap-2 mb-1">
               <SkillIcon skillId={skill.id} size={24} />
               <span className={`font-bold ${textColor}`}>{skill.name}</span>

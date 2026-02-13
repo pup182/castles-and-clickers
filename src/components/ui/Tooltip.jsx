@@ -99,7 +99,7 @@ const Tooltip = ({
             transform: POSITIONS[position].transform,
           }}
         >
-          <div className="bg-gray-900 border border-gray-600 rounded-lg shadow-xl px-3 py-2 text-sm text-white max-w-xs">
+          <div className="pixel-panel-dark shadow-xl px-3 py-2 text-sm text-white max-w-xs">
             {content}
           </div>
         </div>,
