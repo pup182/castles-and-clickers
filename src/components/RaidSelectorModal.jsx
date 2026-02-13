@@ -25,11 +25,11 @@ const RARITY_COLORS = {
 
 // Boss preview component - shows boss sprite, name, and unique drops with details
 const BossPreview = ({ boss, isOwned, isFinal = false }) => {
-  const uniqueDropIds = useMemo(() => {
+  const uniqueDrops = useMemo(() => {
     if (!boss.dropTable) return [];
     return boss.dropTable
       .filter(drop => drop.type === 'unique')
-      .map(drop => drop.itemId);
+      .map(drop => ({ itemId: drop.itemId, chance: drop.chance }));
   }, [boss.dropTable]);
 
   return (
@@ -48,12 +48,13 @@ const BossPreview = ({ boss, isOwned, isFinal = false }) => {
         </div>
       </div>
       {/* Unique drops with icons and descriptions */}
-      {uniqueDropIds.length > 0 && (
+      {uniqueDrops.length > 0 && (
         <div className="space-y-2 ml-2">
-          {uniqueDropIds.map(itemId => {
+          {uniqueDrops.map(({ itemId, chance }) => {
             const item = getUniqueItem(itemId);
             if (!item) return null;
             const owned = isOwned(itemId);
+            const dropPercent = Math.round(chance * 100);
             return (
               <div
                 key={itemId}
@@ -71,9 +72,10 @@ const BossPreview = ({ boss, isOwned, isFinal = false }) => {
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium flex items-center gap-1" style={{ color: RARITY_COLORS.unique }}>
+                  <div className="text-sm font-medium flex items-center gap-2" style={{ color: RARITY_COLORS.unique }}>
                     {item.name}
                     {owned && <CheckIcon size={12} className="text-green-400" />}
+                    <span className="text-xs text-yellow-500">Drop Chance: {dropPercent}%</span>
                   </div>
                   <div className="text-xs text-gray-400 mt-0.5">
                     <span style={{ color: RARITY_COLORS.unique }}>{item.uniquePower?.name}:</span> {item.uniquePower?.description}

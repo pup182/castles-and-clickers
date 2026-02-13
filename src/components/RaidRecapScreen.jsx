@@ -52,10 +52,10 @@ const RaidRecapScreen = () => {
   const allBosses = [...raid.wingBosses, { ...raid.finalBoss, isFinalBoss: true }];
 
   // Extract unique drops from loot messages and look up full item data
-  const legendaryDrops = pendingRaidRecap.lootDrops
-    .filter(msg => msg.includes('LEGENDARY DROP'))
+  const uniqueDrops = pendingRaidRecap.lootDrops
+    .filter(msg => msg.includes('UNIQUE DROP'))
     .map(msg => {
-      const match = msg.match(/LEGENDARY DROP: ([^!(]+)/);
+      const match = msg.match(/UNIQUE DROP: ([^!(]+)/);
       if (!match) return null;
       const name = match[1].trim();
       const item = findUniqueByName(name);
@@ -136,14 +136,14 @@ const RaidRecapScreen = () => {
         </div>
 
         {/* Unique drops */}
-        {legendaryDrops.length > 0 && (
+        {uniqueDrops.length > 0 && (
           <div className="mb-6">
             <div className="text-sm text-gray-400 mb-3 uppercase tracking-wider flex items-center justify-center gap-2">
               <ChestIcon size={16} className="text-amber-400" />
               Unique Loot
             </div>
             <div className="space-y-3">
-              {legendaryDrops.map((item, i) => (
+              {uniqueDrops.map((item, i) => (
                 <div
                   key={i}
                   className="flex items-center gap-3 bg-amber-900/20 border border-amber-500/30 rounded px-3 py-2"
@@ -189,7 +189,7 @@ const RaidRecapScreen = () => {
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-amber-400">
-              {legendaryDrops.length}
+              {uniqueDrops.length}
             </div>
             <div className="text-gray-500">Uniques</div>
           </div>

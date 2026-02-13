@@ -2126,6 +2126,9 @@ export const useCombat = ({ addEffect }) => {
                 if (phaseResult) {
                   addCombatLog({ type: 'system', message: phaseResult.message });
 
+                  // Pause combat for dramatic effect (2.5 seconds, matches animation duration)
+                  useGameStore.getState().pauseCombat(2500);
+
                   // Dramatic phase transition canvas effect
                   addEffect({
                     type: 'phaseTransition',
@@ -2133,6 +2136,7 @@ export const useCombat = ({ addEffect }) => {
                     message: phaseResult.message,
                     bossName: target.name,
                     enraged: phaseResult.enraged || false,
+                    passive: phaseResult.newPhase?.passive || null,
                   });
 
                   // Set enraged if phase triggers enrage

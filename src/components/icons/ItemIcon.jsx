@@ -475,6 +475,210 @@ const EntropyAccessoryIcon = ({ size = 16, color = '#f59e0b' }) => (
   </svg>
 );
 
+// =====================================================
+// LEGACY UNIQUE ICONS
+// =====================================================
+
+// Flamebreaker - Fiery warrior sword (Dragon Sanctum)
+const FlamebreakerIcon = ({ size = 16, color = '#f59e0b' }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" style={pixelStyle}>
+    <rect x="7" y="1" width="2" height="2" fill="#fef3c7" />
+    <rect x="7" y="3" width="2" height="2" fill="#fbbf24" />
+    <rect x="7" y="5" width="2" height="3" fill="#f97316" />
+    <rect x="6" y="8" width="4" height="2" fill={color} />
+    <rect x="4" y="10" width="2" height="2" fill="#ef4444" />
+    <rect x="10" y="10" width="2" height="2" fill="#ef4444" />
+    <rect x="6" y="10" width="4" height="4" fill="#78350f" />
+    <rect x="5" y="2" width="2" height="3" fill="#fbbf24" />
+    <rect x="9" y="2" width="2" height="3" fill="#fbbf24" />
+    <rect x="4" y="4" width="1" height="2" fill="#f97316" />
+    <rect x="11" y="4" width="1" height="2" fill="#f97316" />
+  </svg>
+);
+
+// Shadowfang - Dark rogue dagger (Shadow Realm)
+const ShadowfangIcon = ({ size = 16, color = '#f59e0b' }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" style={pixelStyle}>
+    <rect x="7" y="1" width="2" height="2" fill="#4b5563" />
+    <rect x="7" y="3" width="2" height="4" fill="#374151" />
+    <rect x="6" y="7" width="4" height="2" fill="#1f2937" />
+    <rect x="5" y="9" width="6" height="2" fill={color} />
+    <rect x="6" y="11" width="4" height="3" fill="#78350f" />
+    <rect x="8" y="2" width="1" height="4" fill="#6b7280" />
+    <rect x="4" y="5" width="2" height="2" fill="#7c3aed" />
+    <rect x="10" y="5" width="2" height="2" fill="#7c3aed" />
+  </svg>
+);
+
+// Staff of Eternal Frost - Ice mage staff (Dragon Sanctum)
+const StaffOfFrostIcon = ({ size = 16, color = '#f59e0b' }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" style={pixelStyle}>
+    <rect x="5" y="0" width="6" height="5" fill="#60a5fa" />
+    <rect x="6" y="1" width="4" height="3" fill="#93c5fd" />
+    <rect x="7" y="2" width="2" height="1" fill="#bfdbfe" />
+    <rect x="7" y="5" width="2" height="9" fill="#78350f" />
+    <rect x="4" y="2" width="2" height="2" fill="#3b82f6" />
+    <rect x="10" y="2" width="2" height="2" fill="#3b82f6" />
+    <rect x="3" y="3" width="1" height="1" fill="#93c5fd" />
+    <rect x="12" y="3" width="1" height="1" fill="#93c5fd" />
+    <rect x="6" y="13" width="4" height="1" fill={color} />
+  </svg>
+);
+
+// Windrunner - Swift ranger bow (Dragon Sanctum)
+const WindrunnerIcon = ({ size = 16, color = '#f59e0b' }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" style={pixelStyle}>
+    <rect x="11" y="2" width="2" height="2" fill="#78350f" />
+    <rect x="12" y="4" width="2" height="6" fill="#92400e" />
+    <rect x="11" y="10" width="2" height="2" fill="#78350f" />
+    <rect x="10" y="4" width="1" height="6" fill={color} />
+    <rect x="4" y="6" width="7" height="2" fill="#9ca3af" />
+    <rect x="3" y="7" width="2" height="1" fill="#d1d5db" />
+    <rect x="2" y="5" width="2" height="1" fill="#22c55e" />
+    <rect x="2" y="8" width="2" height="1" fill="#22c55e" />
+    <rect x="1" y="6" width="2" height="2" fill="#4ade80" />
+  </svg>
+);
+
+// Soul Harvester - Necromancer scythe (Lich Throne)
+const SoulHarvesterIcon = ({ size = 16, color = '#f59e0b' }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" style={pixelStyle}>
+    <rect x="4" y="1" width="8" height="2" fill="#4b5563" />
+    <rect x="3" y="3" width="5" height="2" fill="#374151" />
+    <rect x="2" y="4" width="3" height="2" fill="#6b7280" />
+    <rect x="7" y="3" width="2" height="11" fill="#1f2937" />
+    <rect x="6" y="13" width="4" height="1" fill="#374151" />
+    <rect x="9" y="2" width="2" height="2" fill="#a855f7" />
+    <rect x="4" y="2" width="1" height="1" fill="#c4b5fd" />
+    <rect x="8" y="6" width="1" height="1" fill={color} />
+  </svg>
+);
+
+// Armor of the Undying - Death-defying plate (Lich Throne)
+const ArmorOfUndyingIcon = ({ size = 16, color = '#f59e0b' }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" style={pixelStyle}>
+    <rect x="3" y="3" width="10" height="2" fill="#374151" />
+    <rect x="2" y="5" width="4" height="6" fill="#4b5563" />
+    <rect x="10" y="5" width="4" height="6" fill="#4b5563" />
+    <rect x="5" y="5" width="6" height="8" fill="#1f2937" />
+    <rect x="6" y="6" width="4" height="1" fill="#6b7280" />
+    <rect x="7" y="8" width="2" height="3" fill="#22c55e" />
+    <rect x="6" y="10" width="1" height="2" fill="#22c55e" />
+    <rect x="9" y="10" width="1" height="2" fill="#22c55e" />
+    <rect x="7" y="4" width="2" height="1" fill={color} />
+  </svg>
+);
+
+// Dragonscale Mantle - Dragon hide armor (Dragon Sanctum)
+const DragonscaleMantleIcon = ({ size = 16, color = '#f59e0b' }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" style={pixelStyle}>
+    <rect x="3" y="3" width="10" height="2" fill="#dc2626" />
+    <rect x="2" y="5" width="4" height="6" fill="#b91c1c" />
+    <rect x="10" y="5" width="4" height="6" fill="#b91c1c" />
+    <rect x="5" y="5" width="6" height="8" fill="#991b1b" />
+    <rect x="5" y="6" width="2" height="2" fill="#7f1d1d" />
+    <rect x="9" y="6" width="2" height="2" fill="#7f1d1d" />
+    <rect x="6" y="9" width="2" height="2" fill="#7f1d1d" />
+    <rect x="8" y="9" width="2" height="2" fill="#7f1d1d" />
+    <rect x="7" y="4" width="2" height="1" fill={color} />
+    <rect x="4" y="4" width="1" height="1" fill="#fbbf24" />
+    <rect x="11" y="4" width="1" height="1" fill="#fbbf24" />
+  </svg>
+);
+
+// Shadow Cloak - Darkness cloak (Shadow Realm)
+const ShadowCloakIcon = ({ size = 16, color = '#f59e0b' }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" style={pixelStyle}>
+    <rect x="5" y="2" width="6" height="2" fill="#374151" />
+    <rect x="4" y="4" width="8" height="6" fill="#1f2937" />
+    <rect x="3" y="5" width="2" height="5" fill="#111827" />
+    <rect x="11" y="5" width="2" height="5" fill="#111827" />
+    <rect x="4" y="10" width="3" height="3" fill="#111827" />
+    <rect x="9" y="10" width="3" height="3" fill="#111827" />
+    <rect x="7" y="10" width="2" height="4" fill="#030712" />
+    <rect x="6" y="5" width="4" height="2" fill="#4b5563" />
+    <rect x="7" y="3" width="2" height="1" fill={color} />
+  </svg>
+);
+
+// Ring of the Archmage - Magic ring (Arcane Tower)
+const RingOfArchmageIcon = ({ size = 16, color = '#f59e0b' }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" style={pixelStyle}>
+    <rect x="5" y="5" width="6" height="2" fill="#a855f7" />
+    <rect x="4" y="7" width="2" height="4" fill="#8b5cf6" />
+    <rect x="10" y="7" width="2" height="4" fill="#8b5cf6" />
+    <rect x="5" y="11" width="6" height="2" fill="#7c3aed" />
+    <rect x="6" y="3" width="4" height="3" fill="#c4b5fd" />
+    <rect x="7" y="2" width="2" height="2" fill={color} />
+    <rect x="7" y="4" width="2" height="1" fill="#fef9c3" />
+    <rect x="3" y="6" width="1" height="1" fill="#e9d5ff" />
+    <rect x="12" y="6" width="1" height="1" fill="#e9d5ff" />
+  </svg>
+);
+
+// Blood Pendant - Vampiric amulet (Vampire Castle)
+const BloodPendantIcon = ({ size = 16, color = '#f59e0b' }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" style={pixelStyle}>
+    <rect x="6" y="1" width="4" height="1" fill={color} />
+    <rect x="5" y="2" width="2" height="3" fill={color} />
+    <rect x="9" y="2" width="2" height="3" fill={color} />
+    <rect x="5" y="5" width="6" height="6" fill="#dc2626" />
+    <rect x="6" y="11" width="4" height="2" fill="#b91c1c" />
+    <rect x="7" y="13" width="2" height="2" fill="#991b1b" />
+    <rect x="6" y="6" width="4" height="4" fill="#ef4444" />
+    <rect x="7" y="7" width="2" height="2" fill="#fca5a5" />
+    <rect x="7" y="8" width="1" height="1" fill="#fef2f2" />
+  </svg>
+);
+
+// Boots of Blinding Speed - Swift boots (Wind Temple)
+const BootsOfBlindingSpeedIcon = ({ size = 16, color = '#f59e0b' }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" style={pixelStyle}>
+    <rect x="2" y="4" width="4" height="6" fill="#fbbf24" />
+    <rect x="1" y="10" width="6" height="3" fill="#f59e0b" />
+    <rect x="10" y="4" width="4" height="6" fill="#fbbf24" />
+    <rect x="9" y="10" width="6" height="3" fill="#f59e0b" />
+    <rect x="3" y="5" width="2" height="2" fill="#fef3c7" />
+    <rect x="11" y="5" width="2" height="2" fill="#fef3c7" />
+    <rect x="0" y="6" width="2" height="2" fill="#22c55e" />
+    <rect x="6" y="7" width="2" height="2" fill="#22c55e" />
+    <rect x="14" y="6" width="2" height="2" fill="#22c55e" />
+    <rect x="3" y="11" width="2" height="1" fill={color} />
+    <rect x="11" y="11" width="2" height="1" fill={color} />
+  </svg>
+);
+
+// Amulet of Reflection - Mirror amulet (Crystal Caverns)
+const AmuletOfReflectionIcon = ({ size = 16, color = '#f59e0b' }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" style={pixelStyle}>
+    <rect x="6" y="1" width="4" height="1" fill={color} />
+    <rect x="5" y="2" width="2" height="3" fill={color} />
+    <rect x="9" y="2" width="2" height="3" fill={color} />
+    <rect x="4" y="5" width="8" height="8" fill="#6b7280" />
+    <rect x="5" y="6" width="6" height="6" fill="#9ca3af" />
+    <rect x="6" y="7" width="4" height="4" fill="#d1d5db" />
+    <rect x="7" y="8" width="2" height="2" fill="#f3f4f6" />
+    <rect x="5" y="6" width="2" height="2" fill="#e5e7eb" />
+    <rect x="9" y="10" width="2" height="2" fill="#4b5563" />
+  </svg>
+);
+
+// Crown of Command - Leadership crown (Fallen Kingdom)
+const CrownOfCommandIcon = ({ size = 16, color = '#f59e0b' }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" style={pixelStyle}>
+    <rect x="2" y="10" width="12" height="3" fill={color} />
+    <rect x="2" y="6" width="2" height="4" fill="#fbbf24" />
+    <rect x="7" y="4" width="2" height="6" fill="#fbbf24" />
+    <rect x="12" y="6" width="2" height="4" fill="#fbbf24" />
+    <rect x="4" y="7" width="2" height="3" fill="#fbbf24" />
+    <rect x="10" y="7" width="2" height="3" fill="#fbbf24" />
+    <rect x="3" y="5" width="2" height="2" fill="#ef4444" />
+    <rect x="11" y="5" width="2" height="2" fill="#3b82f6" />
+    <rect x="7" y="3" width="2" height="2" fill="#22c55e" />
+    <rect x="5" y="11" width="6" height="1" fill="#ca8a04" />
+  </svg>
+);
+
 // Generic weapon fallback
 const GenericWeaponIcon = ({ size = 16, color = '#94a3b8' }) => (
   <svg width={size} height={size} viewBox="0 0 16 16" style={pixelStyle}>
@@ -586,6 +790,21 @@ const EQUIPMENT_ICONS = {
   cloak_of_nothing: CloakOfNothingIcon,
   void_gods_crown: VoidGodsCrownIcon,
   entropy_accessory: EntropyAccessoryIcon,
+
+  // Legacy Unique Items
+  flamebreaker: FlamebreakerIcon,
+  shadowfang: ShadowfangIcon,
+  staff_of_frost: StaffOfFrostIcon,
+  windrunner: WindrunnerIcon,
+  soul_harvester: SoulHarvesterIcon,
+  armor_of_undying: ArmorOfUndyingIcon,
+  dragonscale_mantle: DragonscaleMantleIcon,
+  shadow_cloak: ShadowCloakIcon,
+  ring_of_archmage: RingOfArchmageIcon,
+  blood_pendant: BloodPendantIcon,
+  boots_of_blinding_speed: BootsOfBlindingSpeedIcon,
+  amulet_of_reflection: AmuletOfReflectionIcon,
+  crown_of_command: CrownOfCommandIcon,
 };
 
 // Get rarity color

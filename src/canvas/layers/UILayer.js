@@ -36,6 +36,11 @@ export class UILayer {
       const healthBarSize = isBoss ? spriteSize + 8 : this.tileSize;
       this.renderHealthBar(ctx, screenX, screenY, healthBarSize, monster.stats.hp, monster.stats.maxHp);
 
+      // Boss nameplate (name + title above the boss)
+      if (isBoss) {
+        this.renderBossNameplate(ctx, screenX, screenY, spriteSize, monster);
+      }
+
       // Status effects
       const unitStatusEffects = statusEffects[monster.id];
       if (unitStatusEffects && unitStatusEffects.length > 0) {
@@ -102,6 +107,61 @@ export class UILayer {
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 1;
     ctx.strokeRect(barX, barY, barWidth, barHeight);
+  }
+
+  // Render boss nameplate (name + title) above the boss
+  renderBossNameplate(ctx, x, y, spriteSize, monster) {
+    const centerX = x + spriteSize / 2;
+    const nameplateY = y - 8;
+
+    // Determine colors based on boss type
+    let nameColor;
+    if (monster.isWorldBoss) {
+      nameColor = '#fbbf24'; // Amber for world bosses
+    } else if (monster.isFinalBoss) {
+      nameColor = '#c084fc'; // Purple for final raid bosses
+    } else if (monster.isRaidBoss || monster.isWingBoss) {
+      nameColor = '#f472b6'; // Pink for raid wing bosses
+    } else {
+      nameColor = '#facc15'; // Yellow for regular bosses
+    }
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+
+    // Boss name
+    ctx.font = 'bold 10px sans-serif';
+    const nameWidth = ctx.measureText(monster.name).width;
+
+    // Background pill for name
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.beginPath();
+    ctx.roundRect(centerX - nameWidth / 2 - 4, nameplateY - 12, nameWidth + 8, 14, 3);
+    ctx.fill();
+
+    // Name text
+    ctx.fillStyle = nameColor;
+    ctx.fillText(monster.name, centerX, nameplateY);
+
+    // Title (if exists)
+    if (monster.title) {
+      ctx.font = '8px sans-serif';
+      const titleText = `"${monster.title}"`;
+      const titleWidth = ctx.measureText(titleText).width;
+
+      // Background pill for title
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.beginPath();
+      ctx.roundRect(centerX - titleWidth / 2 - 3, nameplateY - 24, titleWidth + 6, 11, 2);
+      ctx.fill();
+
+      // Title text
+      ctx.fillStyle = '#9ca3af';
+      ctx.fillText(titleText, centerX, nameplateY - 13);
+    }
+
+    ctx.restore();
   }
 
   // Render death indicator (pixel art skull)

@@ -19,6 +19,10 @@ export const useGameLoop = ({
   const gameSpeed = useGameStore(state => state.gameSpeed);
   // Only subscribe to WHETHER roomCombat exists, not the object itself
   const hasRoomCombat = useGameStore(state => !!state.roomCombat);
+  // Pause game during unique drop celebration
+  const hasPendingCelebration = useGameStore(state => !!state.pendingUniqueCelebration);
+  // Pause combat during dramatic moments (phase transitions)
+  const combatPauseUntil = useGameStore(state => state.combatPauseUntil);
 
   // OPTIMIZATION: Get actions imperatively to avoid re-renders
   const addGold = useCallback((amount) => useGameStore.getState().addGold(amount), []);
@@ -61,6 +65,10 @@ export const useGameLoop = ({
 
     // Phase: COMBAT
     if (phase === PHASES.COMBAT) {
+      // Skip tick if combat is paused (for dramatic phase transitions)
+      if (Date.now() < state.combatPauseUntil) {
+        return;
+      }
       handleCombatTick();
       return;
     }
@@ -214,7 +222,7 @@ export const useGameLoop = ({
 
   // Game loop - only recreate interval when truly necessary
   useEffect(() => {
-    if (!dungeon || !isRunning || !hasRoomCombat) return;
+    if (!dungeon || !isRunning || !hasRoomCombat || hasPendingCelebration) return;
 
     const tickRate = 250 / gameSpeed;
 
@@ -255,7 +263,7 @@ export const useGameLoop = ({
       // Note: Don't cancel autoStartTimeoutRef here - it needs to survive
       // the dungeon transition to start the next dungeon
     };
-  }, [dungeon, isRunning, gameSpeed, hasRoomCombat]); // Only recreate on these specific changes
+  }, [dungeon, isRunning, gameSpeed, hasRoomCombat, hasPendingCelebration]); // Only recreate on these specific changes
 
   // Offline progress check is handled in Game.jsx
 

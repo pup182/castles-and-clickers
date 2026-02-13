@@ -142,6 +142,32 @@ const Notification = ({ notification, onDismiss }) => {
           </>
         );
 
+      case 'unique-drop':
+        return (
+          <>
+            <div className="flex items-center gap-2">
+              <ItemIcon item={item} size={20} />
+              <span className="font-medium text-amber-400">{item.name}</span>
+            </div>
+            <div className="text-xs text-amber-300 mt-1">
+              New unique added to collection!
+            </div>
+          </>
+        );
+
+      case 'unique-duplicate':
+        return (
+          <>
+            <div className="flex items-center gap-2">
+              <ItemIcon item={item} size={20} />
+              <span className="font-medium text-amber-400">{item.name}</span>
+            </div>
+            <div className="text-xs text-yellow-400 mt-1">
+              Duplicate unique - converted to {notification.gold}g
+            </div>
+          </>
+        );
+
       default:
         return null;
     }
@@ -154,6 +180,8 @@ const Notification = ({ notification, onDismiss }) => {
       case 'looted': return notification.upgradeFor ? '#22c55e' : item.rarityColor;
       case 'inventory-full': return '#ef4444';
       case 'auto-equipped': return '#22c55e';
+      case 'unique-drop': return '#f59e0b'; // amber
+      case 'unique-duplicate': return '#f59e0b'; // amber
       default: return '#6b7280';
     }
   };

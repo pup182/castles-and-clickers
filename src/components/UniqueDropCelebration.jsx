@@ -68,12 +68,12 @@ const UniqueDropCelebration = () => {
       }`}
       onClick={handleClose}
     >
-      {/* Golden flash overlay */}
+      {/* Cyan flash overlay */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: 'radial-gradient(ellipse at center, rgba(245, 158, 11, 0.3) 0%, rgba(0, 0, 0, 0.9) 70%)',
-          animation: isClosing ? 'none' : 'goldFlash 0.5s ease-out',
+          background: 'radial-gradient(ellipse at center, rgba(6, 182, 212, 0.3) 0%, rgba(0, 0, 0, 0.9) 70%)',
+          animation: isClosing ? 'none' : 'cyanFlash 0.5s ease-out',
         }}
       />
 
@@ -82,7 +82,7 @@ const UniqueDropCelebration = () => {
         {Array.from({ length: 20 }).map((_, i) => (
           <div
             key={i}
-            className="absolute w-2 h-2 bg-amber-400"
+            className="absolute w-2 h-2 bg-cyan-400"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
@@ -96,24 +96,25 @@ const UniqueDropCelebration = () => {
 
       {/* Main celebration card */}
       <div
-        className={`relative pixel-panel-gold p-8 max-w-md mx-4 text-center transform transition-transform duration-300 ${
+        className={`relative pixel-panel p-8 max-w-md mx-4 text-center transform transition-transform duration-300 ${
           isClosing ? 'scale-90 opacity-0' : 'scale-100'
         }`}
         style={{
           animation: isClosing ? 'none' : 'celebrationPop 0.5s ease-out',
-          boxShadow: '0 0 60px rgba(245, 158, 11, 0.5), inset 0 0 20px rgba(245, 158, 11, 0.1)',
+          boxShadow: '0 0 60px rgba(6, 182, 212, 0.5), inset 0 0 20px rgba(6, 182, 212, 0.1)',
+          borderColor: '#06b6d4',
         }}
       >
         {/* Stars decoration */}
         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-          <StarIcon size={24} className="text-amber-400 animate-pulse" />
-          <StarIcon size={32} className="text-amber-300" />
-          <StarIcon size={24} className="text-amber-400 animate-pulse" />
+          <StarIcon size={24} className="text-cyan-400 animate-pulse" />
+          <StarIcon size={32} className="text-cyan-300" />
+          <StarIcon size={24} className="text-cyan-400 animate-pulse" />
         </div>
 
         {/* Header */}
-        <h2 className="pixel-title text-2xl text-amber-400 mb-6 uppercase tracking-wider">
-          New Unique Item!
+        <h2 className="pixel-title text-2xl text-cyan-400 mb-6 uppercase tracking-wider">
+          Unique Item!
         </h2>
 
         {/* Item display */}
@@ -122,15 +123,15 @@ const UniqueDropCelebration = () => {
           <div
             className="absolute inset-0 rounded-full"
             style={{
-              background: 'radial-gradient(circle, rgba(245, 158, 11, 0.4) 0%, transparent 70%)',
+              background: 'radial-gradient(circle, rgba(6, 182, 212, 0.4) 0%, transparent 70%)',
               transform: 'scale(1.5)',
             }}
           />
 
           {/* Item icon */}
-          <div className="relative mx-auto w-24 h-24 flex items-center justify-center rounded-lg bg-amber-900/50 border-2 border-amber-500"
+          <div className="relative mx-auto w-24 h-24 flex items-center justify-center rounded-lg bg-cyan-900/50 border-2 border-cyan-500"
             style={{
-              boxShadow: '0 0 20px rgba(245, 158, 11, 0.5)',
+              boxShadow: '0 0 20px rgba(6, 182, 212, 0.5)',
             }}
           >
             <ItemIcon item={item} size={64} />
@@ -138,11 +139,11 @@ const UniqueDropCelebration = () => {
         </div>
 
         {/* Item name */}
-        <h3 className="pixel-title text-xl text-amber-300 mb-1">
+        <h3 className="pixel-title text-xl text-cyan-300 mb-1">
           {itemData.name}
         </h3>
-        <div className="text-amber-500/70 text-sm capitalize mb-4">
-          Legendary {itemData.slot}
+        <div className="text-cyan-500/70 text-sm capitalize mb-4">
+          Unique {itemData.slot}
         </div>
 
         {/* Flavor text */}
@@ -166,15 +167,15 @@ const UniqueDropCelebration = () => {
 
         {/* Unique power */}
         {itemData.uniquePower && (
-          <div className="bg-amber-900/30 border border-amber-600/50 rounded px-3 py-2 mb-4">
+          <div className="bg-cyan-900/30 border border-cyan-600/50 rounded px-3 py-2 mb-4">
             <div className="flex items-center justify-center gap-2 mb-1">
-              <div className="w-2 h-2 bg-amber-500 transform rotate-45" />
-              <span className="text-amber-400 font-bold uppercase text-sm">
+              <div className="w-2 h-2 bg-cyan-500 transform rotate-45" />
+              <span className="text-cyan-400 font-bold uppercase text-sm">
                 {itemData.uniquePower.name}
               </span>
-              <div className="w-2 h-2 bg-amber-500 transform rotate-45" />
+              <div className="w-2 h-2 bg-cyan-500 transform rotate-45" />
             </div>
-            <div className="text-amber-300/80 text-xs">
+            <div className="text-cyan-300/80 text-xs">
               {itemData.uniquePower.description}
             </div>
           </div>
@@ -194,7 +195,7 @@ const UniqueDropCelebration = () => {
 
       {/* CSS Animations */}
       <style>{`
-        @keyframes goldFlash {
+        @keyframes cyanFlash {
           0% { opacity: 0; }
           30% { opacity: 1; }
           100% { opacity: 1; }

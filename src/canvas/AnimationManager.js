@@ -85,6 +85,7 @@ export class AnimationManager {
       lootDrop: 1500,
       goldDrop: 1200,
       legendaryDrop: 2500, // Longer duration for legendary celebration
+      phaseTransition: 2500, // Boss phase transition announcement
     };
     return durations[type] || 1000;
   }
@@ -143,6 +144,9 @@ export class AnimationManager {
         break;
       case 'legendaryDrop':
         this.renderLegendaryDrop(ctx, cameraPos, effect, progress);
+        break;
+      case 'phaseTransition':
+        this.renderPhaseTransition(ctx, cameraPos, effect, progress);
         break;
     }
   }
@@ -858,7 +862,7 @@ export class AnimationManager {
 
       ctx.restore();
 
-      // Text: "LEGENDARY!" floating above
+      // Text: "UNIQUE!" floating above
       if (revealProgress > 0.1) {
         const textProgress = (revealProgress - 0.1) / 0.9;
         const textAlpha = Math.min(1, textProgress * 2) * (1 - Math.max(0, textProgress - 0.7) / 0.3);
@@ -873,7 +877,7 @@ export class AnimationManager {
         ctx.shadowColor = '#000000';
         ctx.shadowBlur = 4;
         ctx.fillStyle = legendaryColor;
-        ctx.fillText('LEGENDARY!', screenX, textY);
+        ctx.fillText('UNIQUE!', screenX, textY);
 
         // Item name below
         if (effect.itemName) {
@@ -884,6 +888,178 @@ export class AnimationManager {
 
         ctx.restore();
       }
+    }
+  }
+
+  // Render boss phase transition - screen flash, floating message, boss glow
+  renderPhaseTransition(ctx, cameraPos, effect, progress) {
+    const pos = effect.position;
+    const screenX = (pos.x - cameraPos.x) * this.tileSize + this.tileSize / 2;
+    const screenY = (pos.y - cameraPos.y) * this.tileSize + this.tileSize / 2;
+
+    // Color scheme - red/orange for danger, more intense if enraged
+    const isEnraged = effect.enraged;
+    const flashColor = isEnraged ? '#dc2626' : '#f97316'; // Red or orange
+    const glowColor = isEnraged ? '#ef4444' : '#fb923c';
+    const textColor = isEnraged ? '#fca5a5' : '#fed7aa';
+
+    // Phase 1: Screen flash (0-0.15)
+    if (progress < 0.15) {
+      const flashProgress = progress / 0.15;
+      const flashAlpha = 0.35 * (1 - flashProgress);
+      ctx.save();
+      ctx.fillStyle = flashColor;
+      ctx.globalAlpha = flashAlpha;
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.restore();
+    }
+
+    // Phase 2: Boss glow ring (0.1-0.9)
+    if (progress > 0.1 && progress < 0.9) {
+      const glowProgress = (progress - 0.1) / 0.8;
+      const pulse = Math.sin(glowProgress * Math.PI * 6) * 0.3 + 0.7;
+      const radius = 30 + pulse * 10;
+      const alpha = 0.7 * (1 - Math.abs(glowProgress - 0.5) * 2);
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+
+      // Outer glow ring
+      ctx.strokeStyle = glowColor;
+      ctx.lineWidth = 4;
+      ctx.shadowColor = flashColor;
+      ctx.shadowBlur = 20;
+      ctx.beginPath();
+      ctx.arc(screenX, screenY, radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Inner radial glow
+      const gradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, radius);
+      gradient.addColorStop(0, `${flashColor}40`);
+      gradient.addColorStop(0.6, `${flashColor}20`);
+      gradient.addColorStop(1, `${flashColor}00`);
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(screenX, screenY, radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // Phase 3: Floating message text (0.05-0.90)
+    if (progress > 0.05 && effect.message) {
+      const textProgress = (progress - 0.05) / 0.85;
+
+      // Text rises from boss position (slower rise)
+      const riseAmount = 50 + textProgress * 30;
+      const textY = screenY - riseAmount;
+
+      // Fade in quickly, hold longer, fade out
+      let textAlpha;
+      if (textProgress < 0.1) {
+        textAlpha = textProgress / 0.1;
+      } else if (textProgress < 0.8) {
+        textAlpha = 1;
+      } else {
+        textAlpha = 1 - (textProgress - 0.8) / 0.2;
+      }
+
+      // Slight scale pulse
+      const scale = 1 + Math.sin(textProgress * Math.PI * 2) * 0.05;
+
+      ctx.save();
+      ctx.globalAlpha = textAlpha;
+      ctx.translate(screenX, textY);
+      ctx.scale(scale, scale);
+
+      // Message text with shadow - LARGER font
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Dark background pill for readability
+      const textWidth = ctx.measureText(effect.message).width;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.beginPath();
+      ctx.roundRect(-textWidth / 2 - 8, -12, textWidth + 16, 24, 4);
+      ctx.fill();
+
+      // Main text (no shadow needed with background)
+      ctx.fillStyle = textColor;
+      ctx.fillText(effect.message, 0, 0);
+
+      // Boss name above (larger, with background)
+      if (effect.bossName) {
+        ctx.font = 'bold 12px sans-serif';
+        const nameWidth = ctx.measureText(effect.bossName).width;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.beginPath();
+        ctx.roundRect(-nameWidth / 2 - 6, -32, nameWidth + 12, 18, 3);
+        ctx.fill();
+        ctx.fillStyle = isEnraged ? '#fecaca' : '#fde68a';
+        ctx.fillText(effect.bossName, 0, -23);
+      }
+
+      // Passive effects below message (e.g., "+20% Defense")
+      const effects = [];
+      if (effect.passive) {
+        if (effect.passive.damageReduction) {
+          effects.push(`+${Math.round(effect.passive.damageReduction * 100)}% Defense`);
+        }
+        if (effect.passive.damageBonus) {
+          effects.push(`+${Math.round(effect.passive.damageBonus * 100)}% Damage`);
+        }
+        if (effect.passive.lifesteal) {
+          effects.push(`+${Math.round(effect.passive.lifesteal * 100)}% Lifesteal`);
+        }
+        if (effect.passive.regenPercent) {
+          effects.push(`+${Math.round(effect.passive.regenPercent * 100)}% Regen`);
+        }
+        if (effect.passive.reflectDamage) {
+          effects.push(`+${Math.round(effect.passive.reflectDamage * 100)}% Reflect`);
+        }
+      }
+      if (isEnraged) {
+        effects.push('ENRAGED!');
+      }
+
+      if (effects.length > 0) {
+        const effectText = effects.join('  ');
+        ctx.font = 'bold 11px sans-serif';
+        const effectWidth = ctx.measureText(effectText).width;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.beginPath();
+        ctx.roundRect(-effectWidth / 2 - 6, 16, effectWidth + 12, 16, 3);
+        ctx.fill();
+        ctx.fillStyle = '#f87171'; // Red for danger
+        ctx.fillText(effectText, 0, 24);
+      }
+
+      ctx.restore();
+    }
+
+    // Enrage indicator - extra particles if enraged
+    if (isEnraged && progress > 0.1 && progress < 0.85) {
+      const particleProgress = (progress - 0.1) / 0.75;
+      const particleAlpha = 0.8 * (1 - Math.abs(particleProgress - 0.5) * 2);
+
+      ctx.save();
+      ctx.globalAlpha = particleAlpha;
+
+      // Angry particles rising from boss
+      for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2 + progress * 4;
+        const distance = 20 + particleProgress * 30;
+        const particleX = screenX + Math.cos(angle) * distance * 0.7;
+        const particleY = screenY - particleProgress * 40 + Math.sin(angle * 2) * 10;
+
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(particleX, particleY, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
     }
   }
 

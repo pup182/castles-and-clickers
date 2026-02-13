@@ -46,7 +46,7 @@ export const RAIDS = {
         attackRange: 3,
         phases: [
           { hpPercent: 100, abilities: ['curse', 'water_bolt'] },
-          { hpPercent: 50, abilities: ['drain_life', 'dark_heal'], enraged: false },
+          { hpPercent: 50, abilities: ['drain_life', 'dark_heal'], passive: { lifesteal: 0.15 }, phaseTransitionMessage: 'The Corrupted Priest calls upon forbidden magic!' },
         ],
         rewards: { gold: 3000, guaranteedRarity: 'rare' },
         dropTable: [
@@ -69,7 +69,7 @@ export const RAIDS = {
         passive: { lifesteal: 0.08 },
         phases: [
           { hpPercent: 100, abilities: ['venomous_bite', 'tail_swipe'] },
-          { hpPercent: 60, abilities: ['summon_minions', 'water_surge'] },
+          { hpPercent: 60, abilities: ['water_surge', 'venomous_bite'], passive: { damageBonus: 0.20 }, phaseTransitionMessage: 'The Naga Queen commands the tides to surge!', onPhaseStart: { summonAdds: { type: 'naga_warrior', count: 2 } } },
         ],
         summonType: 'naga_warrior',
         rewards: { gold: 3500, guaranteedRarity: 'epic' },
@@ -95,9 +95,9 @@ export const RAIDS = {
       passive: { lifesteal: 0.12 },
       phases: [
         { hpPercent: 100, abilities: ['venomous_bite', 'tail_swipe'] },
-        { hpPercent: 70, abilities: ['water_surge', 'constrict'] },
-        { hpPercent: 40, abilities: ['tidal_wave', 'summon_minions'] },
-        { hpPercent: 20, abilities: ['tidal_wave', 'venomous_bite'], enraged: true },
+        { hpPercent: 70, abilities: ['water_surge', 'constrict'], passive: { damageBonus: 0.15 }, phaseTransitionMessage: 'The Sea Serpent coils tighter!' },
+        { hpPercent: 40, abilities: ['tidal_wave', 'constrict'], passive: { damageReduction: 0.15 }, phaseTransitionMessage: 'The Sea Serpent calls the waters to rise!', onPhaseStart: { summonAdds: { type: 'water_elemental', count: 2 } } },
+        { hpPercent: 20, abilities: ['tidal_wave', 'venomous_bite'], passive: { damageBonus: 0.30 }, enraged: true, phaseTransitionMessage: 'The Sea Serpent thrashes in fury!' },
       ],
       summonType: 'water_elemental',
       rewards: { gold: 8000, guaranteedRarity: 'legendary' },
@@ -151,7 +151,7 @@ export const RAIDS = {
         attackRange: 2,
         phases: [
           { hpPercent: 100, abilities: ['quick_strike', 'phase_shift'] },
-          { hpPercent: 50, abilities: ['curse', 'terrifying_presence'] },
+          { hpPercent: 50, abilities: ['curse', 'terrifying_presence'], passive: { damageReduction: 0.20 }, phaseTransitionMessage: 'The Phantom Butler reveals his true horror!' },
         ],
         rewards: { gold: 4000, guaranteedRarity: 'rare' },
         dropTable: [
@@ -174,8 +174,8 @@ export const RAIDS = {
         passive: { lifesteal: 0.10 },
         phases: [
           { hpPercent: 100, abilities: ['wail_of_agony', 'curse'] },
-          { hpPercent: 60, abilities: ['drain_life', 'phase_shift'] },
-          { hpPercent: 30, abilities: ['wail_of_agony', 'drain_life'], enraged: true },
+          { hpPercent: 60, abilities: ['drain_life', 'phase_shift'], passive: { lifesteal: 0.15 }, phaseTransitionMessage: 'The Banshee Queen\'s form flickers between worlds!' },
+          { hpPercent: 30, abilities: ['wail_of_agony', 'drain_life'], passive: { damageBonus: 0.25, lifesteal: 0.20 }, enraged: true, phaseTransitionMessage: 'The Banshee Queen unleashes a deafening shriek!' },
         ],
         rewards: { gold: 5500, guaranteedRarity: 'epic' },
         dropTable: [
@@ -198,14 +198,14 @@ export const RAIDS = {
         passive: { regenPercent: 0.02 },
         phases: [
           { hpPercent: 100, abilities: ['power_attack', 'cleave'] },
-          { hpPercent: 50, abilities: ['regenerate', 'enrage'] },
+          { hpPercent: 50, abilities: ['regenerate', 'power_attack'], passive: { regenPercent: 0.05, damageBonus: 0.20 }, phaseTransitionMessage: 'The Flesh Golem\'s wounds begin to close!' },
         ],
         rewards: { gold: 4500, guaranteedRarity: 'epic' },
         dropTable: [
           { rarity: 'epic', chance: 0.55, type: 'random' },
           { rarity: 'rare', chance: 0.45, type: 'random' },
         ],
-        lore: 'A abomination stitched together from the manor\'s victims.',
+        lore: 'An abomination stitched together from the manor\'s victims.',
       },
     ],
 
@@ -223,9 +223,9 @@ export const RAIDS = {
       passive: { lifesteal: 0.15 },
       phases: [
         { hpPercent: 100, abilities: ['drain_life', 'charm'] },
-        { hpPercent: 70, abilities: ['blood_frenzy', 'summon_minions'] },
-        { hpPercent: 40, abilities: ['bat_swarm', 'phase_shift'] },
-        { hpPercent: 20, abilities: ['blood_frenzy', 'drain_life'], enraged: true },
+        { hpPercent: 70, abilities: ['blood_frenzy', 'drain_life'], passive: { lifesteal: 0.20 }, phaseTransitionMessage: 'The Vampire Lord calls his children to feast!', onPhaseStart: { summonAdds: { type: 'vampire_spawn', count: 2 } } },
+        { hpPercent: 40, abilities: ['bat_swarm', 'phase_shift'], passive: { damageReduction: 0.20 }, phaseTransitionMessage: 'The Vampire Lord dissolves into a swarm of bats!' },
+        { hpPercent: 20, abilities: ['blood_frenzy', 'drain_life'], passive: { lifesteal: 0.30, damageBonus: 0.30 }, enraged: true, phaseTransitionMessage: 'The Vampire Lord\'s eyes glow with bloodlust!' },
       ],
       summonType: 'vampire_spawn',
       rewards: { gold: 12000, guaranteedRarity: 'legendary' },
@@ -280,7 +280,7 @@ export const RAIDS = {
         attackRange: 2,
         phases: [
           { hpPercent: 100, abilities: ['wing_buffet', 'quick_strike'] },
-          { hpPercent: 50, abilities: ['cyclone', 'evasion_boost'] },
+          { hpPercent: 50, abilities: ['cyclone', 'evasion_boost'], passive: { damageReduction: 0.25 }, phaseTransitionMessage: 'The Wind Elemental spins into a raging cyclone!' },
         ],
         rewards: { gold: 5500, guaranteedRarity: 'rare' },
         dropTable: [
@@ -303,8 +303,8 @@ export const RAIDS = {
         passive: { reflectDamage: 0.15 },
         phases: [
           { hpPercent: 100, abilities: ['lightning_strike', 'shield_wall'] },
-          { hpPercent: 60, abilities: ['chain_lightning', 'overcharge'] },
-          { hpPercent: 30, abilities: ['chain_lightning', 'lightning_strike'], enraged: true },
+          { hpPercent: 60, abilities: ['chain_lightning', 'overcharge'], passive: { reflectDamage: 0.20 }, phaseTransitionMessage: 'The Lightning Golem crackles with building energy!' },
+          { hpPercent: 30, abilities: ['chain_lightning', 'lightning_strike'], passive: { damageBonus: 0.30, reflectDamage: 0.25 }, enraged: true, phaseTransitionMessage: 'The Lightning Golem overloads with power!' },
         ],
         rewards: { gold: 7000, guaranteedRarity: 'epic' },
         dropTable: [
@@ -326,7 +326,7 @@ export const RAIDS = {
         attackRange: 3,
         phases: [
           { hpPercent: 100, abilities: ['dive_bomb', 'lightning_talons'] },
-          { hpPercent: 50, abilities: ['wind_fury', 'screech'] },
+          { hpPercent: 50, abilities: ['wind_fury', 'screech'], passive: { damageBonus: 0.25 }, phaseTransitionMessage: 'The Storm Hawk screeches with furious winds!' },
         ],
         rewards: { gold: 6000, guaranteedRarity: 'epic' },
         dropTable: [
@@ -350,9 +350,9 @@ export const RAIDS = {
       attackRange: 4,
       phases: [
         { hpPercent: 100, abilities: ['lightning_strike', 'storm_shield'] },
-        { hpPercent: 70, abilities: ['chain_lightning', 'tempest'] },
-        { hpPercent: 40, abilities: ['tempest', 'summon_minions', 'thunderclap'] },
-        { hpPercent: 20, abilities: ['chain_lightning', 'tempest'], enraged: true },
+        { hpPercent: 70, abilities: ['chain_lightning', 'tempest'], passive: { damageBonus: 0.20 }, phaseTransitionMessage: 'The Storm Lord summons a raging tempest!' },
+        { hpPercent: 40, abilities: ['tempest', 'thunderclap'], passive: { damageReduction: 0.15 }, phaseTransitionMessage: 'The Storm Lord calls lightning from the heavens!', onPhaseStart: { summonAdds: { type: 'lightning_sprite', count: 3 } } },
+        { hpPercent: 20, abilities: ['chain_lightning', 'tempest'], passive: { damageBonus: 0.40 }, enraged: true, phaseTransitionMessage: 'The Storm Lord becomes the storm itself!' },
       ],
       summonType: 'lightning_sprite',
       rewards: { gold: 15000, guaranteedRarity: 'legendary' },
@@ -408,7 +408,7 @@ export const RAIDS = {
         passive: { regenPercent: 0.02 },
         phases: [
           { hpPercent: 100, abilities: ['cleave', 'crushing_grip'] },
-          { hpPercent: 50, abilities: ['consume', 'intimidate'] },
+          { hpPercent: 50, abilities: ['consume', 'intimidate'], passive: { lifesteal: 0.15, damageBonus: 0.15 }, phaseTransitionMessage: 'The Abyssal Horror opens its maw wide!' },
         ],
         rewards: { gold: 8000, guaranteedRarity: 'epic' },
         dropTable: [
@@ -430,8 +430,8 @@ export const RAIDS = {
         attackRange: 3,
         phases: [
           { hpPercent: 100, abilities: ['tentacle_slam', 'ink_cloud'] },
-          { hpPercent: 60, abilities: ['constrict', 'whirlpool'] },
-          { hpPercent: 30, abilities: ['tentacle_slam', 'constrict'], enraged: true },
+          { hpPercent: 60, abilities: ['constrict', 'whirlpool'], passive: { damageReduction: 0.15 }, phaseTransitionMessage: 'The Kraken spreads its tentacles wide!' },
+          { hpPercent: 30, abilities: ['tentacle_slam', 'constrict'], passive: { damageBonus: 0.35 }, enraged: true, phaseTransitionMessage: 'The Kraken thrashes in a frenzy of destruction!' },
         ],
         rewards: { gold: 10000, guaranteedRarity: 'epic' },
         dropTable: [
@@ -453,7 +453,7 @@ export const RAIDS = {
         attackRange: 4,
         phases: [
           { hpPercent: 100, abilities: ['void_bolt', 'curse'] },
-          { hpPercent: 50, abilities: ['summon_minions', 'madness_aura'] },
+          { hpPercent: 50, abilities: ['madness_aura', 'void_bolt'], passive: { damageBonus: 0.20 }, phaseTransitionMessage: 'The Deep One Prophet chants in an alien tongue!', onPhaseStart: { summonAdds: { type: 'deep_one', count: 2 } } },
         ],
         summonType: 'deep_one',
         rewards: { gold: 9000, guaranteedRarity: 'epic' },
@@ -479,9 +479,9 @@ export const RAIDS = {
       passive: { regenPercent: 0.03 },
       phases: [
         { hpPercent: 100, abilities: ['tidal_wave', 'pressure_crush'] },
-        { hpPercent: 70, abilities: ['cataclysm', 'consume'] },
-        { hpPercent: 40, abilities: ['summon_minions', 'ancient_roar'] },
-        { hpPercent: 20, abilities: ['cataclysm', 'consume'], enraged: true },
+        { hpPercent: 70, abilities: ['cataclysm', 'consume'], passive: { damageBonus: 0.20 }, phaseTransitionMessage: 'The Leviathan rises from the depths!' },
+        { hpPercent: 40, abilities: ['ancient_roar', 'pressure_crush'], passive: { damageReduction: 0.20 }, phaseTransitionMessage: 'The Leviathan lets loose a primal roar!', onPhaseStart: { summonAdds: { type: 'abyssal_spawn', count: 3 } } },
+        { hpPercent: 20, abilities: ['cataclysm', 'consume'], passive: { damageBonus: 0.40, lifesteal: 0.20 }, enraged: true, phaseTransitionMessage: 'THE LEVIATHAN WILL NOT BE DENIED!' },
       ],
       summonType: 'abyssal_spawn',
       rewards: { gold: 20000, guaranteedRarity: 'legendary' },
@@ -537,7 +537,7 @@ export const RAIDS = {
         passive: { lifesteal: 0.15 },
         phases: [
           { hpPercent: 100, abilities: ['void_bolt', 'blink_strike'] },
-          { hpPercent: 50, abilities: ['phase_shift', 'consume'] },
+          { hpPercent: 50, abilities: ['phase_shift', 'consume'], passive: { lifesteal: 0.25, damageReduction: 0.15 }, phaseTransitionMessage: 'The Void Stalker Prime phases between dimensions!' },
         ],
         rewards: { gold: 10000, guaranteedRarity: 'epic' },
         dropTable: [
@@ -559,8 +559,8 @@ export const RAIDS = {
         attackRange: 3,
         phases: [
           { hpPercent: 100, abilities: ['reality_tear', 'power_attack'] },
-          { hpPercent: 60, abilities: ['dimensional_rift', 'unmake'] },
-          { hpPercent: 30, abilities: ['unmake', 'reality_tear'], enraged: true },
+          { hpPercent: 60, abilities: ['dimensional_rift', 'unmake'], passive: { damageBonus: 0.25 }, phaseTransitionMessage: 'Reality Ripper Alpha tears open a rift in space!' },
+          { hpPercent: 30, abilities: ['unmake', 'reality_tear'], passive: { damageBonus: 0.40 }, enraged: true, phaseTransitionMessage: 'Reality itself begins to collapse!' },
         ],
         rewards: { gold: 12000, guaranteedRarity: 'epic' },
         dropTable: [
@@ -582,8 +582,8 @@ export const RAIDS = {
         attackRange: 4,
         phases: [
           { hpPercent: 100, abilities: ['void_bolt', 'invisibility'] },
-          { hpPercent: 60, abilities: ['entropy', 'drain_life'] },
-          { hpPercent: 30, abilities: ['void_bolt', 'entropy'], enraged: true },
+          { hpPercent: 60, abilities: ['entropy', 'drain_life'], passive: { lifesteal: 0.20 }, phaseTransitionMessage: 'Null Shade Omega dissolves into the shadows!' },
+          { hpPercent: 30, abilities: ['void_bolt', 'entropy'], passive: { damageBonus: 0.30, lifesteal: 0.25 }, enraged: true, phaseTransitionMessage: 'The Nothing hungers!' },
         ],
         rewards: { gold: 12000, guaranteedRarity: 'epic' },
         dropTable: [
@@ -605,7 +605,7 @@ export const RAIDS = {
         attackRange: 4,
         phases: [
           { hpPercent: 100, abilities: ['entropy', 'decay'] },
-          { hpPercent: 50, abilities: ['time_stop', 'oblivion'] },
+          { hpPercent: 50, abilities: ['time_stop', 'oblivion'], passive: { damageBonus: 0.25, damageReduction: 0.20 }, phaseTransitionMessage: 'Entropy Avatar warps the flow of time!' },
         ],
         rewards: { gold: 11000, guaranteedRarity: 'epic' },
         dropTable: [
@@ -631,10 +631,10 @@ export const RAIDS = {
       passive: { lifesteal: 0.10 },
       phases: [
         { hpPercent: 100, abilities: ['void_bolt', 'dimensional_rift'] },
-        { hpPercent: 80, abilities: ['entropy', 'summon_minions'] },
-        { hpPercent: 60, abilities: ['void_aura', 'consume'] },
-        { hpPercent: 40, abilities: ['annihilate', 'phase_shift'] },
-        { hpPercent: 20, abilities: ['reality_collapse', 'annihilate'], enraged: true },
+        { hpPercent: 80, abilities: ['entropy', 'void_aura'], passive: { lifesteal: 0.15 }, phaseTransitionMessage: 'The Void God stirs from its eternal slumber...', onPhaseStart: { summonAdds: { type: 'null_shade', count: 2 } } },
+        { hpPercent: 60, abilities: ['void_aura', 'consume'], passive: { damageReduction: 0.20 }, phaseTransitionMessage: 'The Void God opens its countless eyes!' },
+        { hpPercent: 40, abilities: ['annihilate', 'phase_shift'], passive: { damageBonus: 0.30 }, phaseTransitionMessage: 'YOU DARE CHALLENGE ETERNITY?' },
+        { hpPercent: 20, abilities: ['reality_collapse', 'annihilate'], passive: { damageBonus: 0.50, lifesteal: 0.25 }, enraged: true, phaseTransitionMessage: 'ALL SHALL RETURN TO THE VOID!' },
       ],
       summonType: 'null_shade',
       rewards: { gold: 35000, guaranteedRarity: 'legendary' },
