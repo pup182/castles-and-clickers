@@ -1063,6 +1063,134 @@ export const UI_ICONS = {
   chart: ChartIcon,
 };
 
+// === UNIQUE ITEM STATE ICONS ===
+
+export const SoulStackIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Ghostly soul wisp */}
+    <P x={5} y={2} w={6} h={4} c="#a855f7" />
+    <P x={6} y={1} w={4} h={1} c="#c084fc" />
+    <P x={4} y={6} w={8} h={4} c="#7c3aed" />
+    <P x={5} y={10} w={6} h={2} c="#a855f7" />
+    {/* Inner glow */}
+    <P x={6} y={4} w={4} h={3} c="#e9d5ff" />
+    <P x={7} y={3} w={2} h={1} c="#f3e8ff" />
+    {/* Wispy tail */}
+    <P x={4} y={12} w={2} h={2} c="#7c3aed" />
+    <P x={8} y={12} w={2} h={2} c="#7c3aed" />
+    <P x={6} y={13} w={4} h={1} c="#a855f7" />
+  </IconWrapper>
+);
+
+export const HungerStackIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Open maw/jaw */}
+    <P x={3} y={2} w={10} h={4} c="#991b1b" />
+    <P x={4} y={6} w={8} h={2} c="#1f2937" />
+    <P x={3} y={8} w={10} h={4} c="#991b1b" />
+    {/* Teeth top */}
+    <P x={4} y={5} w={2} h={2} c="#e5e7eb" />
+    <P x={7} y={5} w={2} h={2} c="#e5e7eb" />
+    <P x={10} y={5} w={2} h={2} c="#e5e7eb" />
+    {/* Teeth bottom */}
+    <P x={5} y={7} w={2} h={2} c="#e5e7eb" />
+    <P x={9} y={7} w={2} h={2} c="#e5e7eb" />
+    {/* Eyes */}
+    <P x={5} y={3} w={2} h={2} c="#ef4444" />
+    <P x={9} y={3} w={2} h={2} c="#ef4444" />
+    {/* Highlight */}
+    <P x={5} y={3} w={1} h={1} c="#fca5a5" />
+    <P x={9} y={3} w={1} h={1} c="#fca5a5" />
+  </IconWrapper>
+);
+
+export const VoidStorageIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Dark void sphere */}
+    <P x={4} y={3} w={8} h={10} c="#4c1d95" />
+    <P x={5} y={2} w={6} h={1} c="#5b21b6" />
+    <P x={5} y={13} w={6} h={1} c="#5b21b6" />
+    <P x={3} y={5} w={1} h={6} c="#5b21b6" />
+    <P x={12} y={5} w={1} h={6} c="#5b21b6" />
+    {/* Inner swirl */}
+    <P x={6} y={5} w={4} h={6} c="#6d28d9" />
+    <P x={7} y={6} w={3} h={2} c="#8b5cf6" />
+    <P x={6} y={8} w={3} h={2} c="#8b5cf6" />
+    {/* Center glow */}
+    <P x={7} y={7} w={2} h={2} c="#c4b5fd" />
+  </IconWrapper>
+);
+
+export const TidalIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Water wave */}
+    <P x={2} y={5} w={4} h={3} c="#3b82f6" />
+    <P x={6} y={4} w={4} h={3} c="#60a5fa" />
+    <P x={10} y={5} w={4} h={3} c="#3b82f6" />
+    {/* Lower wave */}
+    <P x={1} y={8} w={4} h={3} c="#2563eb" />
+    <P x={5} y={9} w={4} h={3} c="#3b82f6" />
+    <P x={9} y={8} w={5} h={3} c="#2563eb" />
+    {/* Foam/highlights */}
+    <P x={3} y={5} w={2} h={1} c="#bfdbfe" />
+    <P x={7} y={4} w={2} h={1} c="#dbeafe" />
+    <P x={11} y={5} w={2} h={1} c="#bfdbfe" />
+    {/* Droplet */}
+    <P x={7} y={1} w={2} h={2} c="#93c5fd" />
+    <P x={7} y={2} w={2} h={1} c="#60a5fa" />
+  </IconWrapper>
+);
+
+export const StealthIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Hooded figure */}
+    <P x={4} y={2} w={8} h={4} c="#374151" />
+    <P x={5} y={1} w={6} h={1} c="#4b5563" />
+    <P x={3} y={6} w={10} h={6} c="#1f2937" />
+    <P x={4} y={12} w={8} h={2} c="#374151" />
+    {/* Hood shadow */}
+    <P x={5} y={4} w={6} h={3} c="#111827" />
+    {/* Eyes in darkness */}
+    <P x={6} y={5} w={2} h={1} c="#a78bfa" />
+    <P x={10} y={5} w={2} h={1} c="#a78bfa" />
+    {/* Cloak edges */}
+    <P x={3} y={7} w={1} h={4} c="#4b5563" />
+    <P x={12} y={7} w={1} h={4} c="#4b5563" />
+  </IconWrapper>
+);
+
+export const SoulReapIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Scythe blade */}
+    <P x={7} y={1} w={6} h={2} c="#9ca3af" />
+    <P x={10} y={3} w={4} h={2} c="#d1d5db" />
+    <P x={11} y={5} w={3} h={2} c="#9ca3af" />
+    <P x={12} y={7} w={2} h={1} c="#6b7280" />
+    {/* Blade edge highlight */}
+    <P x={8} y={1} w={4} h={1} c="#e5e7eb" />
+    {/* Handle */}
+    <P x={7} y={3} w={2} h={10} c="#78350f" />
+    <P x={6} y={13} w={4} h={2} c="#92400e" />
+    {/* Soul wisp on blade */}
+    <P x={12} y={2} w={2} h={2} c="#a855f7" />
+  </IconWrapper>
+);
+
+export const PhaseIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Ghostly silhouette - phasing through */}
+    <P x={3} y={3} w={4} h={10} c="#6366f1" />
+    <P x={4} y={2} w={2} h={1} c="#818cf8" />
+    {/* Phased copy */}
+    <P x={9} y={3} w={4} h={10} c="#a5b4fc" />
+    <P x={10} y={2} w={2} h={1} c="#c7d2fe" />
+    {/* Connection lines */}
+    <P x={7} y={5} w={2} h={1} c="#818cf8" />
+    <P x={7} y={8} w={2} h={1} c="#818cf8" />
+    <P x={7} y={11} w={2} h={1} c="#818cf8" />
+  </IconWrapper>
+);
+
 // Helper component to render UI icon by ID
 export const UIIcon = ({ iconId, size = 32, className = '' }) => {
   const IconComponent = UI_ICONS[iconId];

@@ -22,9 +22,17 @@ export const getUniqueState = (heroId) => {
       isInvisible: false,       // Stealth status
       invisibleTurns: 0,        // Turns remaining invisible
       usedFirstAttackBonus: false, // First attack bonus used
+      soulReapStacks: 0,           // Soul Harvester kill stacks (max 10)
+      frostCounter: 0,             // Staff of Eternal Frost attack counter
     });
   }
   return uniqueStates.get(heroId);
+};
+
+// Get a snapshot of unique state for a hero (for sidebar display)
+export const getUniqueStateSnapshot = (heroId) => {
+  if (!uniqueStates.has(heroId)) return null;
+  return { ...uniqueStates.get(heroId) };
 };
 
 // Reset unique states for a new dungeon
@@ -61,6 +69,30 @@ export const hasUniquePower = (hero, powerId) => {
   return uniques.some(item => item.uniquePower?.id === powerId);
 };
 
+// Get healing reduction for a hero (Vampire's Embrace - 50% reduction)
+export const getHeroHealingReduction = (hero) => {
+  const uniques = getHeroUniqueItems(hero);
+  let reduction = 0;
+  for (const item of uniques) {
+    if (item.uniquePower?.trigger === UNIQUE_TRIGGER.PASSIVE && item.uniquePower?.effect?.healingReduction) {
+      reduction += item.uniquePower.effect.healingReduction;
+    }
+  }
+  return Math.min(1, reduction);
+};
+
+// Check if hero is immune to a status effect (Dragonscale Mantle - immune to burn/freeze)
+export const isHeroImmuneToStatus = (hero, statusId) => {
+  const uniques = getHeroUniqueItems(hero);
+  for (const item of uniques) {
+    const immuneList = item.uniquePower?.effect?.immuneToStatus;
+    if (immuneList && immuneList.includes(statusId)) {
+      return true;
+    }
+  }
+  return false;
+};
+
 // Get all passive stat bonuses from unique items
 export const getUniquePassiveBonuses = (hero) => {
   const bonuses = {
@@ -72,7 +104,12 @@ export const getUniquePassiveBonuses = (hero) => {
     armorPenetration: 0,
     dodgeChance: 0,
     critChance: 0,
+    doubleHitChance: 0,
     movementBonus: 0,
+    enemyAccuracyReduction: 0,
+    enemyMissChance: 0,
+    attackBonus: 0,
+    healingReduction: 0,
   };
 
   const uniques = getHeroUniqueItems(hero);
@@ -84,9 +121,12 @@ export const getUniquePassiveBonuses = (hero) => {
 
     const effect = power.effect;
 
-    // Eye of the Storm - speed doubler
+    // Eye of the Storm - speed doubler + accuracy reduction
     if (effect.speedMultiplier) {
       bonuses.speedMultiplier *= effect.speedMultiplier;
+    }
+    if (effect.enemyAccuracyReduction) {
+      bonuses.enemyAccuracyReduction += effect.enemyAccuracyReduction;
     }
 
     // Leviathan's Heart - HP doubler with damage reduction
@@ -97,9 +137,12 @@ export const getUniquePassiveBonuses = (hero) => {
       bonuses.damageReduction += effect.damageReduction;
     }
 
-    // Vampire's Embrace - lifesteal
+    // Vampire's Embrace - lifesteal + healing reduction
     if (effect.lifesteal) {
       bonuses.lifesteal += effect.lifesteal;
+    }
+    if (effect.healingReduction) {
+      bonuses.healingReduction += effect.healingReduction;
     }
 
     // Nullblade - armor penetration
@@ -107,9 +150,12 @@ export const getUniquePassiveBonuses = (hero) => {
       bonuses.armorPenetration += effect.armorPenetration;
     }
 
-    // Reality Shard - double hit chance
+    // Reality Shard - double hit chance + enemy miss chance
     if (effect.doubleHitChance) {
-      bonuses.critChance += effect.doubleHitChance; // Reuse crit for double hit
+      bonuses.doubleHitChance += effect.doubleHitChance;
+    }
+    if (effect.enemyMissChance) {
+      bonuses.enemyMissChance += effect.enemyMissChance;
     }
 
     // Shadow Cloak - dodge chance
@@ -122,10 +168,8 @@ export const getUniquePassiveBonuses = (hero) => {
       bonuses.movementBonus += effect.movementBonus;
     }
 
-    // Party stat bonus (Crown of Command)
-    if (effect.partyStatBonus) {
-      bonuses.damageMultiplier *= (1 + effect.partyStatBonus);
-    }
+    // Party stat bonus (Crown of Command) - handled by getPartyUniqueBonuses() for party-wide effect
+    // Skip here since it applies to all heroes, not just the wearer
   }
 
   // Add kill stacks bonus (Abyssal Maw)
@@ -143,6 +187,28 @@ export const getUniquePassiveBonuses = (hero) => {
     bonuses.damageMultiplier *= 2.0;
   }
 
+  // Soul Harvester stacks (+3 attack, +5% maxHp per stack, max 10)
+  if (state.soulReapStacks > 0 && hasUniquePower(hero, 'soul_reap')) {
+    bonuses.attackBonus += state.soulReapStacks * 3;
+    bonuses.maxHpMultiplier *= (1 + state.soulReapStacks * 0.05);
+  }
+
+  return bonuses;
+};
+
+// Get party-wide bonuses from unique items (Crown of Command - +10% all stats to party)
+export const getPartyUniqueBonuses = (allHeroes) => {
+  const bonuses = { statMultiplier: 1.0 };
+  for (const hero of allHeroes) {
+    const uniques = getHeroUniqueItems(hero);
+    for (const item of uniques) {
+      const power = item.uniquePower;
+      if (power.trigger !== UNIQUE_TRIGGER.PASSIVE) continue;
+      if (power.effect.partyStatBonus) {
+        bonuses.statMultiplier *= (1 + power.effect.partyStatBonus);
+      }
+    }
+  }
   return bonuses;
 };
 
@@ -157,6 +223,7 @@ export const processOnHitUniques = (hero, target, damage, context) => {
     chainTargets: [],
     chainDamage: 0,
     maxHpReduction: 0,
+    freezeAllEnemies: null,
   };
 
   for (const item of uniques) {
@@ -164,6 +231,15 @@ export const processOnHitUniques = (hero, target, damage, context) => {
     if (power.trigger !== UNIQUE_TRIGGER.ON_HIT) continue;
 
     const effect = power.effect;
+
+    // Staff of Eternal Frost - every Nth attack freezes all enemies
+    if (effect.freezeAllEnemiesEveryN) {
+      state.frostCounter++;
+      if (state.frostCounter >= effect.freezeAllEnemiesEveryN) {
+        state.frostCounter = 0;
+        results.freezeAllEnemies = { duration: effect.freezeDuration || 2 };
+      }
+    }
 
     // Tidal Pendant - every 3rd attack
     if (effect.everyNthAttack) {
@@ -296,11 +372,12 @@ export const processOnKillUniques = (hero, target, context) => {
       results.resetCooldowns = true;
     }
 
-    // Soul Harvester - stacking buff
-    if (effect.stackingBuff) {
-      const maxStacks = effect.stackingBuff.maxStacks;
-      // Track this separately based on item
-      results.stacksGained++;
+    // Soul Harvester - stacking kill buff (+5% maxHp, +3 attack per stack)
+    if (effect.stackingBuff && !effect.stackingBuff.id) {
+      if (state.soulReapStacks < effect.stackingBuff.maxStacks) {
+        state.soulReapStacks++;
+        results.stacksGained++;
+      }
     }
 
     // Banshee's Wail - soul stacks

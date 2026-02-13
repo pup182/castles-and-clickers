@@ -572,12 +572,11 @@ export const UNIQUE_ITEMS = {
     uniquePower: {
       id: 'absolute_zero',
       name: 'Absolute Zero',
-      description: 'Activate: Freeze all enemies for 2 turns (10 turn CD)',
-      trigger: UNIQUE_TRIGGER.ACTIVE,
-      cooldown: 10,
+      description: 'Every 10th attack freezes all enemies for 2 turns.',
+      trigger: UNIQUE_TRIGGER.ON_HIT,
       effect: {
-        targetType: 'all_enemies',
-        appliesStatus: { id: 'freeze', duration: 2 },
+        freezeAllEnemiesEveryN: 10,
+        freezeDuration: 2,
       },
     },
     dropSource: { raid: 'dragon_sanctum', wing: 1 },

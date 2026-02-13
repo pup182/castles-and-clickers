@@ -22,7 +22,8 @@ import {
   VIEWPORT_HEIGHT,
   createTurnOrder,
 } from '../game/constants';
-import { resetUniqueStates } from '../game/uniqueEngine';
+import { resetUniqueStates, processOnCombatStartUniques, processOnRoomStartUniques, getUniquePassiveBonuses } from '../game/uniqueEngine';
+import { applyStatusEffect } from '../game/statusEngine';
 import { resetBossStates } from '../game/bossEngine';
 
 /**
@@ -88,7 +89,15 @@ export const useDungeon = ({ addEffect }) => {
     const combatHeroes = sortedHeroes.map((hero, i) => {
       const classData = CLASSES[hero.classId];
       const stats = calculateHeroStats(hero, heroes, homesteadBonuses);
-      const currentHp = heroHp[hero.id] !== undefined ? heroHp[hero.id] : stats.maxHp;
+
+      // Apply unique item maxHpMultiplier (Leviathan's Heart - 2x HP)
+      const uniqueBonuses = getUniquePassiveBonuses({ ...hero, stats });
+      if (uniqueBonuses.maxHpMultiplier && uniqueBonuses.maxHpMultiplier !== 1) {
+        stats.maxHp = Math.floor(stats.maxHp * uniqueBonuses.maxHpMultiplier);
+        addCombatLog({ type: 'system', message: `Leviathan's Heart! ${hero.name}'s max HP doubled to ${stats.maxHp}!` });
+      }
+
+      const currentHp = heroHp[hero.id] !== undefined ? Math.min(heroHp[hero.id], stats.maxHp) : stats.maxHp;
 
       return {
         id: hero.id,
@@ -165,12 +174,37 @@ export const useDungeon = ({ addEffect }) => {
 
     addCombatLog({ type: 'system', message: `${nearbyMonsters.length} enemies!` });
 
+    // Process unique ON_COMBAT_START effects (Kraken's Grasp root, Cloak of Nothing stealth)
+    const aliveHeroes = combatHeroes.filter(h => h.stats.hp > 0);
+    const initialStatusEffects = { ...(roomCombat.statusEffects || {}) };
+    for (const hero of aliveHeroes) {
+      const combatStartResult = processOnCombatStartUniques(hero, nearbyMonsters, {});
+
+      // Kraken's Grasp - root all enemies at combat start
+      if (combatStartResult.rootEnemies) {
+        for (const enemy of nearbyMonsters) {
+          const mockEnemy = { ...enemy, statusEffects: initialStatusEffects[enemy.id] || [] };
+          const statusResult = applyStatusEffect(mockEnemy, 'root', hero, {
+            duration: combatStartResult.rootEnemies.duration,
+          });
+          initialStatusEffects[enemy.id] = statusResult.effects;
+        }
+        addCombatLog({ type: 'system', message: `Kraken's Grasp! ${hero.name} roots all enemies!` });
+      }
+
+      // Cloak of Nothing - start combat invisible
+      if (combatStartResult.invisibleTurns > 0) {
+        addCombatLog({ type: 'system', message: `Cloak of Nothing! ${hero.name} vanishes into the shadows!` });
+      }
+    }
+
     updateRoomCombat({
       phase: PHASES.COMBAT,
       combatMonsters: nearbyMonsters.map(m => m.id),
       turnOrder,
       currentTurnIndex: 0,
       round: 1,
+      statusEffects: initialStatusEffects,
     });
   }, [addCombatLog, updateRoomCombat]);
 
@@ -252,6 +286,18 @@ export const useDungeon = ({ addEffect }) => {
     return null;
   };
 
+  // Helper to find which room index a position is in (-1 if in corridor)
+  const findRoomIndex = (rooms, pos) => {
+    if (!rooms || !pos) return -1;
+    for (let i = 0; i < rooms.length; i++) {
+      const r = rooms[i];
+      if (pos.x >= r.x && pos.x < r.x + r.width && pos.y >= r.y && pos.y < r.y + r.height) {
+        return i;
+      }
+    }
+    return -1;
+  };
+
   // Handle exploration phase tick
   const handleExplorationTick = useCallback(() => {
     // OPTIMIZATION: Get state imperatively
@@ -267,6 +313,22 @@ export const useDungeon = ({ addEffect }) => {
 
     const aliveHeroes = combatHeroes.filter(h => h.stats.hp > 0);
     const aliveMonsters = monsters.filter(m => m.stats.hp > 0);
+
+    // Detect room change for ON_ROOM_START unique effects (Ancient Bark shield)
+    const currentRoomIndex = findRoomIndex(mazeDungeon.rooms, partyPosition);
+    const lastRoomIndex = roomCombat.lastExploreRoomIndex ?? -1;
+    if (currentRoomIndex !== -1 && currentRoomIndex !== lastRoomIndex) {
+      const newBuffs = { ...(roomCombat.buffs || {}) };
+      for (const hero of aliveHeroes) {
+        const roomStartResult = processOnRoomStartUniques(hero, {});
+        if (roomStartResult.shieldAmount > 0) {
+          if (!newBuffs[hero.id]) newBuffs[hero.id] = {};
+          newBuffs[hero.id].shield = roomStartResult.shieldAmount;
+          addCombatLog({ type: 'system', message: `Ancient Bark! ${hero.name} gains a ${roomStartResult.shieldAmount} HP shield!` });
+        }
+      }
+      updateRoomCombat({ lastExploreRoomIndex: currentRoomIndex, buffs: newBuffs });
+    }
     const aliveBoss = aliveMonsters.find(m => m.isBoss);
     const aliveNonBoss = aliveMonsters.filter(m => !m.isBoss);
 

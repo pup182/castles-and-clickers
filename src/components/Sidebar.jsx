@@ -5,7 +5,7 @@ import { STATUS_EFFECTS, STATUS_TYPE } from '../data/statusEffects';
 import { CLASSES, ROLE_INFO } from '../data/classes';
 import HeroIcon from './icons/HeroIcon';
 import { RoleIcon } from './icons/ClassIcon';
-import { GhostIcon, FireIcon, ShieldBuffIcon, TauntIcon, EvasionIcon, HasteIcon, RegenIcon, MightIcon, SpeedIcon } from './icons/ui';
+import { GhostIcon, FireIcon, ShieldBuffIcon, TauntIcon, EvasionIcon, HasteIcon, RegenIcon, MightIcon, SpeedIcon, SoulStackIcon, HungerStackIcon, VoidStorageIcon, TidalIcon, StealthIcon, SoulReapIcon, PhaseIcon } from './icons/ui';
 import { SkillIcon } from './icons/skills';
 import { StatusEffectIcon } from './icons/statusEffects';
 
@@ -14,7 +14,7 @@ const EMPTY_OBJECT = {};
 const EMPTY_ARRAY = [];
 
 // Memoized Hero Card - only re-renders when this hero's data changes
-const HeroCard = memo(({ hero, combatHero, cooldowns, effects, buffs, usedPhoenix, inDungeon }) => {
+const HeroCard = memo(({ hero, combatHero, cooldowns, effects, buffs, usedPhoenix, inDungeon, uniqueState }) => {
   // Get stored HP for when not in dungeon
   const heroHp = useGameStore(state => state.heroHp);
   const allHeroes = useGameStore(state => state.heroes);
@@ -94,6 +94,37 @@ const HeroCard = memo(({ hero, combatHero, cooldowns, effects, buffs, usedPhoeni
     return result;
   }, [isDead, buffs]);
 
+  // Process unique item state indicators
+  const uniqueBuffs = useMemo(() => {
+    if (isDead || !uniqueState) return [];
+    const result = [];
+    if (uniqueState.soulStacks > 0) {
+      result.push({ Icon: SoulStackIcon, name: 'Soul Stacks', value: `x${uniqueState.soulStacks}`, color: 'bg-purple-600/40' });
+    }
+    if (uniqueState.killStacks > 0) {
+      result.push({ Icon: HungerStackIcon, name: 'Hunger', value: `x${uniqueState.killStacks}`, color: 'bg-red-600/40' });
+    }
+    if (uniqueState.soulReapStacks > 0) {
+      result.push({ Icon: SoulReapIcon, name: 'Soul Reap', value: `x${uniqueState.soulReapStacks}`, color: 'bg-purple-600/40' });
+    }
+    if (uniqueState.damageStored > 0) {
+      result.push({ Icon: VoidStorageIcon, name: 'Stored Damage', value: Math.floor(uniqueState.damageStored), color: 'bg-violet-600/40' });
+    }
+    if (uniqueState.attackCounter > 0) {
+      result.push({ Icon: TidalIcon, name: 'Tidal', value: `${uniqueState.attackCounter}/3`, color: 'bg-blue-600/40' });
+    }
+    if (uniqueState.isInvisible && uniqueState.invisibleTurns > 0) {
+      result.push({ Icon: StealthIcon, name: 'Stealth', value: `${uniqueState.invisibleTurns}t`, color: 'bg-gray-600/40' });
+    }
+    if (uniqueState.hasPhaseBonus) {
+      result.push({ Icon: PhaseIcon, name: 'Phase Bonus', value: '2x', color: 'bg-indigo-600/40' });
+    }
+    if (uniqueState.frostCounter > 0) {
+      result.push({ Icon: ShieldBuffIcon, name: 'Frost Charge', value: `${uniqueState.frostCounter}/10`, color: 'bg-cyan-600/40' });
+    }
+    return result;
+  }, [isDead, uniqueState]);
+
   // Skills
   const heroSkillIds = combatHero?.skills || hero.skills || [];
 
@@ -162,6 +193,12 @@ const HeroCard = memo(({ hero, combatHero, cooldowns, effects, buffs, usedPhoeni
               <buff.Icon size={14} />
             </span>
           ))}
+          {uniqueBuffs.map((ub, i) => (
+            <span key={`ub-${i}`} className={`cursor-help ${ub.color} rounded px-1 flex items-center gap-0.5`} title={`${ub.name}: ${ub.value}`}>
+              <ub.Icon size={14} />
+              <span className="text-[8px] text-white font-bold">{ub.value}</span>
+            </span>
+          ))}
           {statusBuffs.map((effect, i) => {
             const def = STATUS_EFFECTS[effect.id];
             return def ? (
@@ -222,6 +259,7 @@ function useSidebarState() {
       statusEffects: rc?.statusEffects || EMPTY_OBJECT,
       skillBuffs: rc?.buffs || EMPTY_OBJECT,
       usedPhoenixRevives: rc?.usedPhoenixRevives || EMPTY_OBJECT,
+      uniqueStates: rc?.uniqueStates || EMPTY_OBJECT,
       monsters: rc?.monsters || [],
       bossUnlocked: rc?.bossUnlocked || false,
       round: rc?.round || 1,
@@ -250,6 +288,7 @@ function useSidebarState() {
           statusEffects: rc?.statusEffects || EMPTY_OBJECT,
           skillBuffs: rc?.buffs || EMPTY_OBJECT,
           usedPhoenixRevives: rc?.usedPhoenixRevives || EMPTY_OBJECT,
+          uniqueStates: rc?.uniqueStates || EMPTY_OBJECT,
           monsters: rc?.monsters || [],
           bossUnlocked: rc?.bossUnlocked || false,
           round: rc?.round || 1,
@@ -280,6 +319,7 @@ const Sidebar = memo(({
     statusEffects,
     skillBuffs,
     usedPhoenixRevives,
+    uniqueStates,
   } = useSidebarState();
 
   // OPTIMIZATION: Use individual selectors to avoid re-renders on unrelated state changes
@@ -310,6 +350,7 @@ const Sidebar = memo(({
                   buffs={skillBuffs[hero.id] || EMPTY_OBJECT}
                   usedPhoenix={usedPhoenixRevives[hero.id]}
                   inDungeon={!!dungeon}
+                  uniqueState={uniqueStates[hero.id]}
                 />
               );
             })}

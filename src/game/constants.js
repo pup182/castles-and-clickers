@@ -1,3 +1,5 @@
+import { getHeroUniqueItems, getUniquePassiveBonuses } from './uniqueEngine';
+
 // Combat phases
 export const PHASES = {
   IDLE: 'idle',
@@ -20,10 +22,22 @@ export const VISION_RANGE = 4;
 export const VIEWPORT_WIDTH = 20;
 export const VIEWPORT_HEIGHT = 15;
 
-// Roll initiative for a unit
+// Roll initiative for a unit (applies unique speed multiplier and alwaysFirst for heroes)
 export const rollInitiative = (unit) => {
   const d20 = Math.floor(Math.random() * 20) + 1;
-  return (unit.stats?.speed || 5) + d20;
+  let speed = unit.stats?.speed || 5;
+  // Apply unique item effects for heroes
+  if (unit.isHero && unit.equipment) {
+    const uniqueBonuses = getUniquePassiveBonuses(unit);
+    // Eye of the Storm - speed multiplier
+    speed = Math.floor(speed * (uniqueBonuses.speedMultiplier || 1));
+    // Boots of Blinding Speed - always act first
+    const uniques = getHeroUniqueItems(unit);
+    if (uniques.some(item => item.uniquePower?.effect?.alwaysFirst)) {
+      return Infinity;
+    }
+  }
+  return speed + d20;
 };
 
 // Speed mechanics calculations

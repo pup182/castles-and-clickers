@@ -66,6 +66,10 @@ import {
   getShieldBonusDamage,
   tickUniqueEffects,
   isHeroInvisible,
+  getPartyUniqueBonuses,
+  getHeroHealingReduction,
+  isHeroImmuneToStatus,
+  getUniqueStateSnapshot,
 } from '../game/uniqueEngine';
 import {
   PHASES,
@@ -612,6 +616,10 @@ export const useCombat = ({ addEffect }) => {
     let regenHeroPosition = null;
     let regenHeroName = null;
 
+    // Crown of Command party-wide bonus (+10% all stats from any hero with Crown)
+    const crownBonus = getPartyUniqueBonuses(heroes);
+    const crownMultiplier = crownBonus.statMultiplier;
+
     // Track damage dealt this turn for damage_heals effect and stats
     let totalDamageDealtThisTurn = 0;
     // Track damage taken by heroes this turn for stats (per-hero)
@@ -630,7 +638,9 @@ export const useCombat = ({ addEffect }) => {
         for (let i = 0; i < newHeroes.length; i++) {
           const hero = newHeroes[i];
           if (hero.stats.hp > 0 && hero.stats.hp < hero.stats.maxHp) {
-            const healAmount = Math.floor(hero.stats.maxHp * perTurnEffects.partyRegenPercent);
+            let healAmount = Math.floor(hero.stats.maxHp * perTurnEffects.partyRegenPercent);
+            const regenHealReduction = getHeroHealingReduction(heroes.find(hr => hr.id === hero.id) || {});
+            if (regenHealReduction > 0) healAmount = Math.floor(healAmount * (1 - regenHealReduction));
             const actualHeal = Math.min(healAmount, hero.stats.maxHp - hero.stats.hp);
             if (actualHeal > 0) {
               newHeroes[i].stats.hp += actualHeal;
@@ -651,7 +661,10 @@ export const useCombat = ({ addEffect }) => {
         const turnStartResult = processOnTurnStartAffixes(heroWithEquipment);
 
         if (turnStartResult.healAmount > 0 && actor.stats.hp < actor.stats.maxHp) {
-          regenHealAmount = Math.min(turnStartResult.healAmount, actor.stats.maxHp - actor.stats.hp);
+          let affixRegenAmount = turnStartResult.healAmount;
+          const affixRegenReduction = getHeroHealingReduction(heroData);
+          if (affixRegenReduction > 0) affixRegenAmount = Math.floor(affixRegenAmount * (1 - affixRegenReduction));
+          regenHealAmount = Math.min(affixRegenAmount, actor.stats.maxHp - actor.stats.hp);
           regenHeroId = actor.id;
           regenHeroPosition = actor.position;
           regenHeroName = actor.name;
@@ -724,6 +737,11 @@ export const useCombat = ({ addEffect }) => {
         // Don't advance turn - actor gets another action
         // This is handled by not calling getNextTurnState for this actor
       }
+    }
+
+    // Tick unique item effects at start of turn (Cloak of Nothing invisibility countdown)
+    if (actor.isHero) {
+      tickUniqueEffects(actor);
     }
 
     // Handle undead minion expiration
@@ -919,8 +937,14 @@ export const useCombat = ({ addEffect }) => {
         // OPTIMIZATION: Mutate in place instead of creating new array
         const heroIdx = findHeroIndex(actor.id);
         if (heroIdx !== -1) {
-          const actualHeal = Math.min(statusResult.healing, newHeroes[heroIdx].stats.maxHp - newHeroes[heroIdx].stats.hp);
-          newHeroes[heroIdx].stats.hp = Math.min(newHeroes[heroIdx].stats.maxHp, newHeroes[heroIdx].stats.hp + statusResult.healing);
+          let hotHealAmount = statusResult.healing;
+          const hotHeroData = heroes.find(h => h.id === actor.id);
+          if (hotHeroData) {
+            const hotHealReduction = getHeroHealingReduction(hotHeroData);
+            if (hotHealReduction > 0) hotHealAmount = Math.floor(hotHealAmount * (1 - hotHealReduction));
+          }
+          const actualHeal = Math.min(hotHealAmount, newHeroes[heroIdx].stats.maxHp - newHeroes[heroIdx].stats.hp);
+          newHeroes[heroIdx].stats.hp = Math.min(newHeroes[heroIdx].stats.maxHp, newHeroes[heroIdx].stats.hp + hotHealAmount);
           if (actualHeal > 0) {
             healingReceivedByHero[actor.id] = (healingReceivedByHero[actor.id] || 0) + actualHeal;
           }
@@ -954,12 +978,16 @@ export const useCombat = ({ addEffect }) => {
 
     // Monsters must attack taunting heroes
     if (!actor.isHero) {
-      const tauntingHero = aliveHeroes.find(h => newBuffs[h.id]?.taunt > 0);
+      // Filter out invisible heroes from monster targeting (Cloak of Nothing)
+      const visibleHeroes = aliveHeroes.filter(h => !isHeroInvisible(h));
+      const targetableHeroes = visibleHeroes.length > 0 ? visibleHeroes : aliveHeroes;
+
+      const tauntingHero = targetableHeroes.find(h => newBuffs[h.id]?.taunt > 0);
       if (tauntingHero) {
         target = tauntingHero;
         minDist = getDistance(actor.position, target.position);
       } else {
-        for (const e of enemies) {
+        for (const e of targetableHeroes) {
           const d = getDistance(actor.position, e.position);
           if (d < minDist) { minDist = d; target = e; }
         }
@@ -1206,7 +1234,7 @@ export const useCombat = ({ addEffect }) => {
               }
             } else if (result.type === 'raiseEnemy') {
               // Handle Raise Dead active skill - raise strongest dead enemy
-              const deadMonsters = newMonsters.filter(m => m.stats.hp <= 0);
+              const deadMonsters = newMonsters.filter(m => m.stats.hp <= 0 && !m.preventResurrection);
               if (deadMonsters.length > 0) {
                 // Find strongest dead monster by max HP
                 const strongest = deadMonsters.reduce((best, m) =>
@@ -1253,8 +1281,14 @@ export const useCombat = ({ addEffect }) => {
               const heroIdx = findHeroIndex(result.targetId);
               if (heroIdx !== -1) {
                 const h = newHeroes[heroIdx];
-                const actualHealAmount = Math.min(result.amount, h.stats.maxHp - h.stats.hp);
-                h.stats.hp = Math.min(h.stats.maxHp, h.stats.hp + result.amount);
+                // Vampire's Embrace: reduce non-lifesteal healing
+                const targetHealReduction = getHeroHealingReduction(heroes.find(hr => hr.id === result.targetId) || {});
+                const reducedHealAmount = targetHealReduction > 0 ? Math.floor(result.amount * (1 - targetHealReduction)) : result.amount;
+                const actualHealAmount = Math.min(reducedHealAmount, h.stats.maxHp - h.stats.hp);
+                h.stats.hp = Math.min(h.stats.maxHp, h.stats.hp + reducedHealAmount);
+                if (targetHealReduction > 0) {
+                  addCombatLog({ type: 'system', message: `Vampire's Embrace reduces ${h.name}'s healing by ${Math.round(targetHealReduction * 100)}%` });
+                }
                 // HP synced at end of tick via syncHeroHp
                 if (actualHealAmount > 0) {
                   healingReceivedByHero[result.targetId] = (healingReceivedByHero[result.targetId] || 0) + actualHealAmount;
@@ -1482,6 +1516,15 @@ export const useCombat = ({ addEffect }) => {
                     : newMonsters.find(m => m.id === actionResult.targetId);
 
                   if (statusTarget && actionResult.status) {
+                    // Dragonscale Mantle: check status immunity for heroes
+                    if (actionResult.isHero) {
+                      const immuneHeroData = heroes.find(h => h.id === actionResult.targetId);
+                      if (immuneHeroData && isHeroImmuneToStatus(immuneHeroData, actionResult.status.id)) {
+                        addCombatLog({ type: 'system', message: `Dragonscale Mantle! ${statusTarget.name} is immune to ${actionResult.status.id}!` });
+                        break;
+                      }
+                    }
+
                     // Create mock target with current status effects for applyStatusEffect
                     const mockTarget = {
                       ...statusTarget,
@@ -1660,11 +1703,45 @@ export const useCombat = ({ addEffect }) => {
           bossDamageMultiplier = 1 + phaseDamageBonus + enrageDamageBonus;
         }
 
+        // Stealth bonus damage (Cloak of Nothing - +200% from stealth)
+        let stealthMultiplier = 1;
+        if (actor.isHero && heroData) {
+          const stealthBonus = getStealthBonusDamage({ ...heroData, stats: actor.stats });
+          if (stealthBonus > 0) {
+            stealthMultiplier = 1 + stealthBonus;
+            addCombatLog({ type: 'system', message: `Cloak of Nothing! ${actor.name} strikes from the shadows for ${Math.round(stealthBonus * 100)}% bonus damage!` });
+          }
+        }
+
+        // Rooted target bonus damage (Kraken's Grasp - 3x vs rooted)
+        let rootedMultiplier = 1;
+        if (actor.isHero && heroData) {
+          const targetEffects = newStatusEffects[target.id] || [];
+          rootedMultiplier = getRootedBonusDamage({ ...heroData, stats: actor.stats }, { ...target, statusEffects: targetEffects });
+          if (rootedMultiplier > 1) {
+            addCombatLog({ type: 'system', message: `Kraken's Grasp! ${actor.name} deals ${rootedMultiplier}x damage to rooted ${target.name}!` });
+          }
+        }
+
+        // Shield bonus damage (Ancient Bark - +15% while shielded)
+        let shieldBonusMultiplier = 1;
+        if (actor.isHero && heroData) {
+          const heroShield = newBuffs[actor.id]?.shield || 0;
+          if (heroShield > 0) {
+            shieldBonusMultiplier = getShieldBonusDamage({ ...heroData, shield: heroShield, stats: actor.stats });
+          }
+        }
+
+        // Crown of Command: +10% attack for heroes, +10% defense when hero is targeted
+        const crownAttackBonus = actor.isHero ? crownMultiplier : 1;
+        const crownDefenseBonus = target.isHero ? crownMultiplier : 1;
         let baseDmg = Math.max(1, Math.floor(
-          (actor.stats.attack * actorDamageBonus + (passiveBonuses.attackBonus || 0) - target.stats.defense * targetDefenseBonus * 0.5) * (0.85 + Math.random() * 0.3)
+          (actor.stats.attack * actorDamageBonus * crownAttackBonus + (passiveBonuses.attackBonus || 0) + (uniqueBonuses.attackBonus || 0) - target.stats.defense * crownDefenseBonus * (1 - (uniqueBonuses.armorPenetration || 0)) * targetDefenseBonus * 0.5) * (0.85 + Math.random() * 0.3)
         ));
 
-        let dmg = Math.floor(baseDmg * passiveBonuses.damageMultiplier * uniqueBonuses.damageMultiplier * executeMultiplier * berserkerMultiplier * vengeanceMultiplier * tauntPartyMultiplier * buffDamageMultiplier * weaknessMultiplier * bossDamageMultiplier);
+        // Apply unique damageReduction as self-nerf (Leviathan's Heart -25% damage)
+        const uniqueDamageReductionMultiplier = 1 - (uniqueBonuses.damageReduction || 0);
+        let dmg = Math.floor(baseDmg * passiveBonuses.damageMultiplier * uniqueBonuses.damageMultiplier * uniqueDamageReductionMultiplier * executeMultiplier * berserkerMultiplier * vengeanceMultiplier * tauntPartyMultiplier * buffDamageMultiplier * weaknessMultiplier * bossDamageMultiplier * stealthMultiplier * rootedMultiplier * shieldBonusMultiplier);
         let isCrit = false;
 
         // Base crit chance: 5% for tanks/healers, 10% for DPS classes
@@ -1752,7 +1829,24 @@ export const useCombat = ({ addEffect }) => {
           });
         } else {
           // Calculate dodge chance including skill-based bonuses
-          let baseDodgeChance = calculateDodgeChance(target.stats.speed, actor.stats.speed);
+          // Apply unique speed multiplier (Eye of the Storm) to effective speed
+          let defenderEffectiveSpeed = target.stats.speed;
+          let attackerEffectiveSpeed = actor.stats.speed;
+          let targetUniqueAccuracyReduction = 0;
+          let targetUniqueMissChance = 0;
+          if (target.isHero) {
+            const targetHeroForSpeed = heroes.find(h => h.id === target.id);
+            if (targetHeroForSpeed) {
+              const targetUniqueBonuses = getUniquePassiveBonuses({ ...targetHeroForSpeed, stats: target.stats });
+              defenderEffectiveSpeed = Math.floor(target.stats.speed * (targetUniqueBonuses.speedMultiplier || 1));
+              targetUniqueAccuracyReduction = targetUniqueBonuses.enemyAccuracyReduction || 0;
+              targetUniqueMissChance = targetUniqueBonuses.enemyMissChance || 0;
+            }
+          }
+          if (actor.isHero && heroData) {
+            attackerEffectiveSpeed = Math.floor(actor.stats.speed * (uniqueBonuses.speedMultiplier || 1));
+          }
+          let baseDodgeChance = calculateDodgeChance(defenderEffectiveSpeed, attackerEffectiveSpeed);
           if (target.isHero) {
             const targetDefenderBonuses = applyPassiveEffects(target, 'on_defend', {});
             baseDodgeChance += targetDefenderBonuses.dodgeChance || 0;
@@ -1761,6 +1855,8 @@ export const useCombat = ({ addEffect }) => {
           if (target.bonusDodge) {
             baseDodgeChance += target.bonusDodge;
           }
+          // Add unique item dodge bonuses (Eye of the Storm accuracy reduction, Reality Shard miss chance)
+          baseDodgeChance += targetUniqueAccuracyReduction + targetUniqueMissChance;
           const dodged = Math.random() < baseDodgeChance;
 
           if (dodged) {
@@ -1840,6 +1936,24 @@ export const useCombat = ({ addEffect }) => {
                 incrementStat('totalMitigated', skillMitigated, { heroId: target.id });
               }
 
+              // Hero shield absorption (Ancient Bark unique item)
+              const heroTargetBuffs = newBuffs[target.id] || {};
+              if (heroTargetBuffs.shield > 0 && reducedDmg > 0) {
+                if (!newBuffs[target.id]) newBuffs[target.id] = {};
+                const shieldAbsorbed = Math.min(newBuffs[target.id].shield || heroTargetBuffs.shield, reducedDmg);
+                newBuffs[target.id].shield = (newBuffs[target.id].shield || heroTargetBuffs.shield) - shieldAbsorbed;
+                reducedDmg -= shieldAbsorbed;
+                if (shieldAbsorbed > 0) {
+                  addCombatLog({ type: 'system', message: `${target.name}'s bark shield absorbs ${shieldAbsorbed} damage!` });
+                  incrementStat('totalMitigated', shieldAbsorbed, { heroId: target.id });
+                  if (newBuffs[target.id].shield <= 0) {
+                    delete newBuffs[target.id].shield;
+                    addCombatLog({ type: 'system', message: `${target.name}'s bark shield is broken!` });
+                    addEffect({ type: 'buffAura', position: target.position, color: '#6495ed' });
+                  }
+                }
+              }
+
               // Check for damage redirect (Knight Fortress - all damage redirected to tank)
               const damageRedirect = checkDamageRedirect(aliveHeroes, target, reducedDmg);
               if (damageRedirect) {
@@ -1903,6 +2017,32 @@ export const useCombat = ({ addEffect }) => {
                 // Track damage taken per hero for stats
                 damageTakenByHero[target.id] = (damageTakenByHero[target.id] || 0) + reducedDmg;
 
+                // Check for low HP unique triggers (Crown of the Fallen vengeance)
+                if (target.isHero && targetHeroData) {
+                  const currentHpAfterDmg = newHeroes[targetHeroIdx].stats.hp;
+                  const targetMaxHp = newHeroes[targetHeroIdx].stats.maxHp;
+                  if (currentHpAfterDmg > 0) {
+                    const lowHpResult = processOnLowHpUniques(
+                      { ...targetHeroData, stats: target.stats },
+                      currentHpAfterDmg,
+                      targetMaxHp,
+                      {}
+                    );
+                    if (lowHpResult.buffsToApply.length > 0) {
+                      if (!newBuffs[target.id]) newBuffs[target.id] = {};
+                      for (const buff of lowHpResult.buffsToApply) {
+                        if (buff.id === 'vengeance') {
+                          newBuffs[target.id].vengeanceDamageBonus = buff.damageBonus;
+                          newBuffs[target.id].vengeanceLifesteal = buff.lifesteal;
+                          newBuffs[target.id].vengeanceDuration = buff.duration;
+                          addCombatLog({ type: 'system', message: `${target.name} is filled with vengeance! +${Math.round(buff.damageBonus * 100)}% damage, +${Math.round(buff.lifesteal * 100)}% lifesteal!` });
+                          addEffect({ type: 'buffAura', position: target.position, color: '#ef4444' });
+                        }
+                      }
+                    }
+                  }
+                }
+
                 // Elite monster lifesteal (Vampiric affix)
                 if (!actor.isHero && actor.passive?.lifesteal > 0) {
                   const actorMonsterIdx = findMonsterIndex(actor.id);
@@ -1933,7 +2073,9 @@ export const useCombat = ({ addEffect }) => {
                 // Check for living seed trigger (Druid Living Seed - heal when hit)
                 const targetBuffs = newBuffs[target.id] || {};
                 if (targetBuffs.livingSeed) {
-                  const seedHeal = Math.floor(target.stats.maxHp * targetBuffs.livingSeed);
+                  let seedHeal = Math.floor(target.stats.maxHp * targetBuffs.livingSeed);
+                  const seedHealReduction = targetHeroData ? getHeroHealingReduction(targetHeroData) : 0;
+                  if (seedHealReduction > 0) seedHeal = Math.floor(seedHeal * (1 - seedHealReduction));
                   if (targetHeroIdx !== -1 && seedHeal > 0) {
                     const actualSeedHeal = Math.min(seedHeal, newHeroes[targetHeroIdx].stats.maxHp - newHeroes[targetHeroIdx].stats.hp);
                     if (actualSeedHeal > 0) {
@@ -2289,8 +2431,9 @@ export const useCombat = ({ addEffect }) => {
                 );
 
                 // Apply unique lifesteal (from Vampire's Embrace, etc.)
-                if (uniqueBonuses.lifesteal > 0) {
-                  const uniqueLifestealAmount = Math.floor(dmg * uniqueBonuses.lifesteal);
+                const totalUniqueLifesteal = (uniqueBonuses.lifesteal || 0) + (actorBuffs.vengeanceLifesteal || 0);
+                if (totalUniqueLifesteal > 0) {
+                  const uniqueLifestealAmount = Math.floor(dmg * totalUniqueLifesteal);
                   if (uniqueLifestealAmount > 0) {
                     const actorHeroIdx = findHeroIndex(actor.id);
                     if (actorHeroIdx !== -1) {
@@ -2299,7 +2442,7 @@ export const useCombat = ({ addEffect }) => {
                       const healAmount = Math.min(uniqueLifestealAmount, maxHp - currentHp);
                       if (healAmount > 0) {
                         newHeroes[actorHeroIdx].stats.hp = Math.min(maxHp, currentHp + healAmount);
-                        addCombatLog({ type: 'system', message: `Vampire's Embrace! ${actor.name} drains ${healAmount} HP` });
+                        addCombatLog({ type: 'system', message: `${actorBuffs.vengeanceLifesteal ? 'Vengeance drain' : "Vampire's Embrace"}! ${actor.name} drains ${healAmount} HP` });
                         healingDoneByHero[actor.id] = (healingDoneByHero[actor.id] || 0) + healAmount;
                         healingReceivedByHero[actor.id] = (healingReceivedByHero[actor.id] || 0) + healAmount;
                       }
@@ -2344,6 +2487,46 @@ export const useCombat = ({ addEffect }) => {
                   }
                 }
 
+                // Apply status effects from unique on-hit (Magma Core burn, Stormcaller's Rod shock, Flamebreaker burn)
+                if (uniqueOnHitResult.statusToApply.length > 0) {
+                  for (const statusEntry of uniqueOnHitResult.statusToApply) {
+                    // Skip chain target entries (they have a .target property) — only apply to primary target
+                    if (statusEntry.target) continue;
+                    const mockTarget = { ...target, statusEffects: newStatusEffects[target.id] || [] };
+                    const statusResult = applyStatusEffect(mockTarget, statusEntry.id, actor, {
+                      duration: statusEntry.duration,
+                    });
+                    newStatusEffects[target.id] = statusResult.effects;
+                    const statusDef = STATUS_EFFECTS[statusEntry.id];
+                    if (statusDef) {
+                      addCombatLog({ type: 'system', message: `${target.name} is ${statusDef.name.toLowerCase()}!` });
+                    }
+                  }
+                }
+
+                // Apply max HP reduction from unique on-hit (Entropy)
+                if (uniqueOnHitResult.maxHpReduction > 0 && targetMonsterIdx !== -1) {
+                  const reduction = Math.floor(newMonsters[targetMonsterIdx].stats.maxHp * uniqueOnHitResult.maxHpReduction);
+                  if (reduction > 0) {
+                    newMonsters[targetMonsterIdx].stats.maxHp -= reduction;
+                    newMonsters[targetMonsterIdx].stats.hp = Math.min(newMonsters[targetMonsterIdx].stats.hp, newMonsters[targetMonsterIdx].stats.maxHp);
+                    addCombatLog({ type: 'system', message: `Entropy reduces ${target.name}'s max HP by ${reduction}!` });
+                  }
+                }
+
+                // Apply freeze-all-enemies from unique on-hit (Staff of Eternal Frost)
+                if (uniqueOnHitResult.freezeAllEnemies) {
+                  const freezeDuration = uniqueOnHitResult.freezeAllEnemies.duration;
+                  for (const monster of activeCombatMonsters) {
+                    if (monster.stats.hp <= 0) continue;
+                    const mockMonster = { ...monster, statusEffects: newStatusEffects[monster.id] || [] };
+                    const freezeResult = applyStatusEffect(mockMonster, 'freeze', actor, { duration: freezeDuration });
+                    newStatusEffects[monster.id] = freezeResult.effects;
+                  }
+                  addCombatLog({ type: 'system', message: `Absolute Zero! All enemies are frozen for ${freezeDuration} turns!` });
+                  addEffect({ type: 'buffAura', position: actor.position, color: '#93c5fd' });
+                }
+
                 // Process ON_CRIT status effects (e.g., Savage - bleed on crit)
                 if (isCrit) {
                   const critAffixResult = processOnCritAffixes(heroData, dmg, target);
@@ -2368,14 +2551,25 @@ export const useCombat = ({ addEffect }) => {
                     {}
                   );
 
-                  // Apply chain attack (Serpent's Fang - 50% chance to strike again)
+                  // Apply chain attack (Serpent's Fang - 50% chance to strike again, can chain infinitely)
                   if (uniqueCritResult.chainAttack && targetMonsterIdx !== -1) {
-                    const chainDmg = Math.floor(uniqueCritResult.chainAttack.damage);
-                    newMonsters[targetMonsterIdx].stats.hp = Math.max(0, newMonsters[targetMonsterIdx].stats.hp - chainDmg);
-                    totalDamageDealtThisTurn += chainDmg;
-                    addCombatLog({ type: 'system', message: `Chain Strike! ${actor.name} hits again for ${chainDmg}!` });
-                    addEffect({ type: 'beam', from: actor.position, to: target.position, attackerClass: actor.classId });
-                    addEffect({ type: 'damage', position: target.position, damage: chainDmg });
+                    let currentChainDmg = Math.floor(uniqueCritResult.chainAttack.damage);
+                    let chainCount = 0;
+                    const maxChains = 10; // Safety cap
+                    const canChainInfinite = uniqueCritResult.chainAttack.canChain;
+
+                    while (currentChainDmg > 0 && newMonsters[targetMonsterIdx].stats.hp > 0 && chainCount < maxChains) {
+                      newMonsters[targetMonsterIdx].stats.hp = Math.max(0, newMonsters[targetMonsterIdx].stats.hp - currentChainDmg);
+                      totalDamageDealtThisTurn += currentChainDmg;
+                      chainCount++;
+                      addCombatLog({ type: 'system', message: `Chain Strike x${chainCount}! ${actor.name} hits for ${currentChainDmg}!` });
+                      addEffect({ type: 'beam', from: actor.position, to: target.position, attackerClass: actor.classId });
+                      addEffect({ type: 'damage', position: target.position, damage: currentChainDmg });
+
+                      // Roll for next chain (50% chance, damage halves each time)
+                      if (!canChainInfinite || Math.random() >= 0.50) break;
+                      currentChainDmg = Math.floor(currentChainDmg * 0.50);
+                    }
                   }
 
                   // Apply crit bonus damage
@@ -2383,6 +2577,18 @@ export const useCombat = ({ addEffect }) => {
                     const bonusDmg = Math.floor(uniqueCritResult.bonusDamage);
                     newMonsters[targetMonsterIdx].stats.hp = Math.max(0, newMonsters[targetMonsterIdx].stats.hp - bonusDmg);
                     totalDamageDealtThisTurn += bonusDmg;
+                  }
+
+                  // Apply buffs from unique on-crit (Shadowfang invisibility)
+                  if (uniqueCritResult.buffsToApply.length > 0) {
+                    if (!newBuffs[actor.id]) newBuffs[actor.id] = {};
+                    for (const buff of uniqueCritResult.buffsToApply) {
+                      if (buff.id === 'invisible') {
+                        newBuffs[actor.id].invisible = true;
+                        newBuffs[actor.id].invisibleDuration = buff.duration || 1;
+                        addCombatLog({ type: 'system', message: `${actor.name} vanishes into the shadows!` });
+                      }
+                    }
                   }
                 }
               }
@@ -2400,6 +2606,43 @@ export const useCombat = ({ addEffect }) => {
                   monsterId: target.templateId,
                 });
                 handleUnitDeath(target.id, target);
+
+                // Magma Core: burning enemy explodes on death for 25% maxHp AoE
+                if (heroData) {
+                  const killerUniquesForExplosion = getHeroUniqueItems(heroData);
+                  const hasMagmaCore = killerUniquesForExplosion.some(item => item.uniquePower?.effect?.onBurnDeathExplosion);
+                  const targetBurning = (newStatusEffects[target.id] || []).some(e => e.id === 'burn');
+                  if (hasMagmaCore && targetBurning) {
+                    const magmaCoreItem = killerUniquesForExplosion.find(item => item.uniquePower?.effect?.onBurnDeathExplosion);
+                    const explosionPercent = magmaCoreItem.uniquePower.effect.onBurnDeathExplosion;
+                    const explosionRange = magmaCoreItem.uniquePower.effect.explosionRange || 2;
+                    const explosionDmg = Math.floor(target.stats.maxHp * explosionPercent);
+                    const nearbyEnemies = activeCombatMonsters.filter(m =>
+                      m.id !== target.id && m.stats.hp > 0 &&
+                      getDistance(target.position, m.position) <= explosionRange
+                    );
+                    if (nearbyEnemies.length > 0 && explosionDmg > 0) {
+                      addCombatLog({ type: 'system', message: `Magma Core! ${target.name} explodes for ${explosionDmg} damage!` });
+                      addEffect({ type: 'buffAura', position: target.position, color: '#ef4444' });
+                      for (const nearbyEnemy of nearbyEnemies) {
+                        const nearbyIdx = findMonsterIndex(nearbyEnemy.id);
+                        if (nearbyIdx !== -1) {
+                          newMonsters[nearbyIdx].stats.hp = Math.max(0, newMonsters[nearbyIdx].stats.hp - explosionDmg);
+                          totalDamageDealtThisTurn += explosionDmg;
+                          addCombatLog({ type: 'system', message: `Explosion hits ${nearbyEnemy.name} for ${explosionDmg}!` });
+                          addEffect({ type: 'damage', position: nearbyEnemy.position, damage: explosionDmg });
+                          // Check if explosion killed this enemy
+                          if (newMonsters[nearbyIdx].stats.hp <= 0) {
+                            addCombatLog({ type: 'death', target: { name: nearbyEnemy.name }, isHero: false });
+                            addEffect({ type: 'death', position: nearbyEnemy.position, isHero: false, monsterId: nearbyEnemy.templateId });
+                            handleUnitDeath(nearbyEnemy.id, nearbyEnemy);
+                            incrementStat('totalMonstersKilled', 1, { heroId: actor.ownerId || actor.id, monsterId: nearbyEnemy.templateId, isBoss: nearbyEnemy.isBoss });
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
 
                 // Process ON_KILL affixes
                 if (heroData) {
@@ -2426,7 +2669,9 @@ export const useCombat = ({ addEffect }) => {
                     if (actorHeroIdx !== -1) {
                       const currentHp = newHeroes[actorHeroIdx].stats.hp;
                       const maxHp = newHeroes[actorHeroIdx].stats.maxHp;
-                      const healAmount = skillOnKillEffects.healAmount + Math.floor(maxHp * skillOnKillEffects.healPercent);
+                      let healAmount = skillOnKillEffects.healAmount + Math.floor(maxHp * skillOnKillEffects.healPercent);
+                      const killHealReduction = getHeroHealingReduction(heroData);
+                      if (killHealReduction > 0) healAmount = Math.floor(healAmount * (1 - killHealReduction));
                       const actualHeal = Math.min(healAmount, maxHp - currentHp);
                       if (actualHeal > 0) {
                         newHeroes[actorHeroIdx].stats.hp = Math.min(maxHp, currentHp + actualHeal);
@@ -2438,9 +2683,17 @@ export const useCombat = ({ addEffect }) => {
                     }
                   }
 
+                  // Check if killer has Nullblade (prevents resurrection of killed target)
+                  const killerUniques = getHeroUniqueItems(heroData);
+                  const hasNullblade = killerUniques.some(item => item.uniquePower?.effect?.preventsResurrection);
+                  if (hasNullblade && targetMonsterIdx !== -1) {
+                    newMonsters[targetMonsterIdx].preventResurrection = true;
+                    addCombatLog({ type: 'system', message: `Nullblade severs ${target.name}'s soul — it cannot be resurrected!` });
+                  }
+
                   // Check for raise_dead - raise the killed monster as a temporary ally
                   const raiseDeadData = checkRaiseDead(actor);
-                  if (raiseDeadData.canRaise) {
+                  if (raiseDeadData.canRaise && !hasNullblade) {
                     const raisedUndead = createRaisedUndead(target, raiseDeadData.duration, target.position);
                     newHeroes.push(raisedUndead);
                     // Add to turn order
@@ -2456,10 +2709,16 @@ export const useCombat = ({ addEffect }) => {
                     { usedExtraTurnThisRound: false }
                   );
 
-                  // Handle extra turn from unique
+                  // Handle extra turn from unique (Windrunner)
                   if (uniqueOnKillResult.extraTurn) {
-                    addCombatLog({ type: 'system', message: `${actor.name}'s unique power grants an extra action!` });
-                    // TODO: Implement extra turn logic
+                    addCombatLog({ type: 'system', message: `${actor.name}'s Windrunner grants an extra action!` });
+                    if (!newBuffs[actor.id]) newBuffs[actor.id] = {};
+                    newBuffs[actor.id].extraTurn = true;
+                  }
+
+                  // Handle Soul Harvester stacks gained
+                  if (uniqueOnKillResult.stacksGained > 0) {
+                    addCombatLog({ type: 'system', message: `Soul Harvester! ${actor.name} gains power from the kill!` });
                   }
 
                   // Handle cooldown reset
@@ -2628,7 +2887,9 @@ export const useCombat = ({ addEffect }) => {
               const currentMonsterHp = targetMonsterIdx !== -1 ? newMonsters[targetMonsterIdx].stats.hp : 0;
               if (currentMonsterHp > 0) {
                 // Include skill-based double attack bonus
-                const baseDoubleChance = calculateDoubleAttackChance(actor.stats.speed, target.stats.speed);
+                // Apply unique speed multiplier (Eye of the Storm) to attacker speed
+                const attackerSpeedForDouble = actor.isHero && uniqueBonuses.speedMultiplier ? Math.floor(actor.stats.speed * uniqueBonuses.speedMultiplier) : actor.stats.speed;
+                const baseDoubleChance = calculateDoubleAttackChance(attackerSpeedForDouble, target.stats.speed);
                 const skillDoubleBonus = passiveBonuses.doubleAttackChance || 0;
                 const doubleChance = baseDoubleChance + skillDoubleBonus;
                 if (Math.random() < doubleChance) {
@@ -2695,6 +2956,26 @@ export const useCombat = ({ addEffect }) => {
                         }
                       }
                     }
+                  }
+                }
+              }
+
+              // Reality Shard double hit - separate full attack (not speed-based double attack)
+              if (actor.isHero && uniqueBonuses.doubleHitChance > 0 && targetMonsterIdx !== -1 && newMonsters[targetMonsterIdx].stats.hp > 0) {
+                if (Math.random() < uniqueBonuses.doubleHitChance) {
+                  const doubleHitDmg = Math.max(1, Math.floor(dmg));
+                  newMonsters[targetMonsterIdx].stats.hp = Math.max(0, newMonsters[targetMonsterIdx].stats.hp - doubleHitDmg);
+                  totalDamageDealtThisTurn += doubleHitDmg;
+                  addCombatLog({ type: 'system', message: `Reality Shard! ${actor.name}'s attack hits twice for ${doubleHitDmg}!` });
+                  addEffect({ type: 'beam', from: actor.position, to: target.position, attackerClass: actor.classId });
+                  addEffect({ type: 'damage', position: target.position, damage: doubleHitDmg });
+
+                  // Check if double hit killed the target
+                  if (newMonsters[targetMonsterIdx].stats.hp <= 0) {
+                    addCombatLog({ type: 'death', target: { name: target.name }, isHero: false });
+                    addEffect({ type: 'death', position: target.position, isHero: false, monsterId: target.templateId });
+                    handleUnitDeath(target.id, target);
+                    incrementStat('totalMonstersKilled', 1, { heroId: actor.ownerId || actor.id, monsterId: target.templateId, isBoss: target.isBoss });
                   }
                 }
               }
@@ -2767,7 +3048,17 @@ export const useCombat = ({ addEffect }) => {
       }
     } else {
       // MOVE toward target
-      const moveDistance = calculateMoveDistance(actor.stats.speed);
+      // Apply unique item movement bonus (Boots of Blinding Speed +2)
+      let moveDistance = calculateMoveDistance(actor.stats.speed);
+      if (actor.isHero) {
+        const moveHeroData = heroes.find(h => h.id === actor.id);
+        if (moveHeroData) {
+          const moveUniqueBonuses = getUniquePassiveBonuses({ ...moveHeroData, stats: actor.stats });
+          if (moveUniqueBonuses.movementBonus > 0) {
+            moveDistance += moveUniqueBonuses.movementBonus;
+          }
+        }
+      }
       const allUnits = [...newHeroes, ...activeCombatMonsters].filter(u => u.id !== actor.id && u.stats.hp > 0);
       const occupied = allUnits.map(u => u.position);
       let currentOccupied = new Set(occupied.map(p => `${p.x},${p.y}`));
@@ -2775,6 +3066,12 @@ export const useCombat = ({ addEffect }) => {
       const grid = mazeDungeon ? mazeDungeon.grid : null;
       if (!grid) {
         // OPTIMIZATION: Single batched update including turn advance
+        const noGridUniqueSnapshots = {};
+        for (const h of newHeroes) {
+          if (h.isPet || h.isClone || h.isUndead) continue;
+          const snap = getUniqueStateSnapshot(h.id);
+          if (snap) noGridUniqueSnapshots[h.id] = snap;
+        }
         const nextTurn = getNextTurnState(roomCombat, newHeroes, newMonsters);
         updateRoomCombat({
           heroes: newHeroes,
@@ -2787,6 +3084,7 @@ export const useCombat = ({ addEffect }) => {
           turnOrder: newTurnOrder,
           combatMonsters: newCombatMonsters,
           usedPhoenixRevives: newUsedPhoenixRevives,
+          uniqueStates: noGridUniqueSnapshots,
           ...(nextTurn || {}),
         });
         syncHeroHp(buildHeroHpMap(newHeroes));
@@ -2882,7 +3180,9 @@ export const useCombat = ({ addEffect }) => {
           for (let i = 0; i < newHeroes.length; i++) {
             const hero = newHeroes[i];
             if (hero.stats.hp > 0 && hero.stats.hp < hero.stats.maxHp) {
-              const healPerHero = Math.floor(partyHealAmount / aliveHeroes.length);
+              let healPerHero = Math.floor(partyHealAmount / aliveHeroes.length);
+              const d2hReduction = getHeroHealingReduction(heroes.find(hr => hr.id === hero.id) || {});
+              if (d2hReduction > 0) healPerHero = Math.floor(healPerHero * (1 - d2hReduction));
               const actualHeal = Math.min(healPerHero, hero.stats.maxHp - hero.stats.hp);
               if (actualHeal > 0) {
                 newHeroes[i].stats.hp += actualHeal;
@@ -2892,6 +3192,31 @@ export const useCombat = ({ addEffect }) => {
             }
           }
           addCombatLog({ type: 'system', message: `${actor.name}'s damage heals the party for ${partyHealAmount}!` });
+        }
+      }
+    }
+
+    // Blood Pendant: heal heroes with Blood Pendant for 5% of total party damage this turn
+    if (totalDamageDealtThisTurn > 0 && actor.isHero) {
+      for (let i = 0; i < newHeroes.length; i++) {
+        const hero = newHeroes[i];
+        if (hero.stats.hp <= 0 || hero.isPet || hero.isClone || hero.isUndead) continue;
+        const pendantHeroData = heroes.find(h => h.id === hero.id);
+        if (!pendantHeroData) continue;
+        const pendantItems = getHeroUniqueItems(pendantHeroData);
+        const bloodPendant = pendantItems.find(item => item.uniquePower?.effect?.partyLifesteal);
+        if (bloodPendant) {
+          const partyLifestealPercent = bloodPendant.uniquePower.effect.partyLifesteal;
+          const pendantHeal = Math.floor(totalDamageDealtThisTurn * partyLifestealPercent);
+          if (pendantHeal > 0 && hero.stats.hp < hero.stats.maxHp) {
+            const actualPendantHeal = Math.min(pendantHeal, hero.stats.maxHp - hero.stats.hp);
+            if (actualPendantHeal > 0) {
+              newHeroes[i].stats.hp += actualPendantHeal;
+              addCombatLog({ type: 'system', message: `Blood Pendant! ${hero.name} drains ${actualPendantHeal} HP from party damage!` });
+              addEffect({ type: 'damage', position: hero.position, damage: actualPendantHeal, isHeal: true });
+              healingReceivedByHero[hero.id] = (healingReceivedByHero[hero.id] || 0) + actualPendantHeal;
+            }
+          }
         }
       }
     }
@@ -2939,6 +3264,14 @@ export const useCombat = ({ addEffect }) => {
     // Update viewport to keep combat units visible
     const newViewport = calculateCombatViewport(newHeroes, newMonsters);
 
+    // Sync unique item state snapshots for sidebar display
+    const uniqueStateSnapshots = {};
+    for (const hero of newHeroes) {
+      if (hero.isPet || hero.isClone || hero.isUndead) continue;
+      const snapshot = getUniqueStateSnapshot(hero.id);
+      if (snapshot) uniqueStateSnapshots[hero.id] = snapshot;
+    }
+
     // OPTIMIZATION: Single batched state update at end of tick (includes turn advance)
     updateRoomCombat({
       heroes: newHeroes,
@@ -2953,6 +3286,7 @@ export const useCombat = ({ addEffect }) => {
       usedPhoenixRevives: newUsedPhoenixRevives,
       lastSummonRoomIndex,
       viewport: newViewport,
+      uniqueStates: uniqueStateSnapshots,
       ...(nextTurnState || {}),
     });
 
