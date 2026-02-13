@@ -11,6 +11,9 @@ export class SpriteManager {
     // Offscreen canvas for SVG rendering
     this.offscreenCanvas = document.createElement('canvas');
     this.offscreenCtx = this.offscreenCanvas.getContext('2d');
+    if (!this.offscreenCtx) {
+      console.warn('SpriteManager: could not get 2d context');
+    }
   }
 
   // Generate cache key for a sprite
@@ -48,6 +51,7 @@ export class SpriteManager {
       const url = URL.createObjectURL(blob);
 
       img.onload = () => {
+        if (!this.offscreenCtx) { URL.revokeObjectURL(url); resolve(null); return; }
         // Draw to offscreen canvas
         this.offscreenCanvas.width = size;
         this.offscreenCanvas.height = size;

@@ -59,6 +59,7 @@ export class TerrainLayer {
       this.offscreenCanvas.width = width * this.tileSize;
       this.offscreenCanvas.height = height * this.tileSize;
       this.offscreenCtx = this.offscreenCanvas.getContext('2d');
+      if (!this.offscreenCtx) return;
       this.offscreenCtx.imageSmoothingEnabled = false;
     }
 

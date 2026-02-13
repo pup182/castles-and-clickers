@@ -704,7 +704,8 @@ export const getEquipmentForClass = (classId, tier = 99) => {
 // Generate a random equipment drop
 export const generateEquipment = (dungeonLevel, options = {}) => {
   const tier = Math.ceil(dungeonLevel / 5);
-  const possibleItems = getEquipmentByTier(tier);
+  let possibleItems = getEquipmentByTier(tier);
+  if (possibleItems.length === 0) possibleItems = EQUIPMENT_LIST;
   const template = possibleItems[Math.floor(Math.random() * possibleItems.length)];
 
   // Determine rarity based on dungeon level (higher = better chances)
@@ -728,7 +729,7 @@ export const generateEquipment = (dungeonLevel, options = {}) => {
     }
   }
 
-  const rarityData = RARITY[rarity];
+  const rarityData = RARITY[rarity] || RARITY.common;
 
   // Calculate final stats with rarity multiplier
   const stats = {};

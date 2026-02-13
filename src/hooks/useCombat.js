@@ -257,6 +257,7 @@ export const useCombat = ({ addEffect }) => {
     const homesteadBonuses = state.getHomesteadBonuses();
 
     if (!roomCombat || roomCombat.phase !== PHASES.COMBAT) return false;
+    if (!dungeon) return false;
 
     const { heroes: combatHeroes, monsters, combatMonsters, dungeon: mazeDungeon } = roomCombat;
 

@@ -114,11 +114,12 @@ const Minimap = memo(({ dungeon, partyPosition, monsters }) => {
     bgCanvas.width = mapWidth;
     bgCanvas.height = mapHeight;
     const ctx = bgCanvas.getContext('2d');
+    if (!ctx) return;
 
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        const tile = grid[y][x];
-        if (tile === 0) continue; // WALL
+        const tile = grid[y]?.[x];
+        if (tile == null || tile === 0) continue; // null/undefined/WALL
 
         let color = colors.floor;
         if (x >= bossRoom.x && x < bossRoom.x + bossRoom.width &&
@@ -147,6 +148,7 @@ const Minimap = memo(({ dungeon, partyPosition, monsters }) => {
     if (!canvas || !bgCanvas) return;
 
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     // Clear canvas before redrawing to prevent trail artifacts
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(bgCanvas, 0, 0);

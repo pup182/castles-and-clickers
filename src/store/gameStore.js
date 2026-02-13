@@ -100,7 +100,12 @@ const throttledStorage = (() => {
 
   return {
     getItem: (name) => {
-      return localStorage.getItem(name);
+      try {
+        return localStorage.getItem(name);
+      } catch (e) {
+        console.warn('localStorage.getItem failed:', e);
+        return null;
+      }
     },
     setItem: (name, value) => {
       pendingName = name;
@@ -109,16 +114,42 @@ const throttledStorage = (() => {
         timeout = setTimeout(() => {
           timeout = null;
           if (pendingValue !== null) {
-            localStorage.setItem(pendingName, pendingValue);
+            try {
+              localStorage.setItem(pendingName, pendingValue);
+            } catch (e) {
+              console.warn('localStorage.setItem failed:', e);
+            }
           }
         }, DELAY);
       }
     },
     removeItem: (name) => {
-      localStorage.removeItem(name);
+      try {
+        localStorage.removeItem(name);
+      } catch (e) {
+        console.warn('localStorage.removeItem failed:', e);
+      }
+    },
+    flush: () => {
+      if (timeout) {
+        clearTimeout(timeout);
+        timeout = null;
+      }
+      if (pendingValue !== null) {
+        try {
+          localStorage.setItem(pendingName, pendingValue);
+        } catch (e) {
+          console.warn('localStorage flush failed:', e);
+        }
+        pendingValue = null;
+        pendingName = null;
+      }
     },
   };
 })();
+
+// Flush pending save on tab close / navigation
+window.addEventListener('beforeunload', () => throttledStorage.flush());
 import { canClassUseEquipment, generateEquipment, getEquipmentForClass, getEquipmentByTier } from '../data/equipment';
 import { getSkillById, getStarterSkill, arePrerequisitesMet, calculateRespecCost, SKILL_TYPE } from '../data/skillTrees';
 import { BUILDINGS, getUpgradeCost, calculateHomesteadBonuses } from '../data/homestead';
@@ -1130,13 +1161,14 @@ export const useGameStore = create(
       },
 
       addXpToHero: (heroId, xp) => {
+        const oldLevel = get().heroes.find(h => h.id === heroId)?.level;
         set(state => {
           const heroes = state.heroes.map(hero => {
             if (hero.id !== heroId) return hero;
 
             let newXp = hero.xp + xp;
             let newLevel = hero.level;
-            const oldLevel = hero.level;
+            const oldLvl = hero.level;
 
             // Level up loop
             while (newXp >= xpForLevel(newLevel)) {
@@ -1145,7 +1177,7 @@ export const useGameStore = create(
             }
 
             // OPTIMIZATION: Invalidate stat cache on level up
-            if (newLevel !== oldLevel) {
+            if (newLevel !== oldLvl) {
               invalidateStatCache(heroId);
             }
 
@@ -1153,6 +1185,11 @@ export const useGameStore = create(
           });
           return { heroes };
         });
+        // Immediate save on level-up to prevent progress loss
+        const newLevel = get().heroes.find(h => h.id === heroId)?.level;
+        if (newLevel !== oldLevel) {
+          throttledStorage.flush();
+        }
       },
 
       equipItem: (heroId, item) => {
@@ -1647,6 +1684,9 @@ export const useGameStore = create(
             },
           }));
 
+          // Immediate save on unique item drop
+          throttledStorage.flush();
+
           get().addLootNotification({
             type: 'unique-drop',
             item: uniqueItem,
@@ -1668,6 +1708,9 @@ export const useGameStore = create(
               totalItemsLooted: (state.stats.totalItemsLooted || 0) + 1,
             },
           }));
+
+          // Immediate save on unique item drop
+          throttledStorage.flush();
 
           get().addLootNotification({
             type: 'unique-drop',
@@ -1849,6 +1892,9 @@ export const useGameStore = create(
           },
         });
 
+        // Immediate save on homestead upgrade
+        throttledStorage.flush();
+
         return { success: true, newLevel: currentLevel + 1, cost };
       },
 
@@ -1951,6 +1997,9 @@ export const useGameStore = create(
 
         // Check if dungeon clear unlocks auto-advance (D5)
         get().checkAutoAdvanceUnlock();
+
+        // Immediate save on dungeon completion
+        throttledStorage.flush();
       },
 
       // Process pending recruits (called after dungeon ends)
@@ -2268,6 +2317,9 @@ export const useGameStore = create(
           roomCombat: null,
           isRunning: false,
         }));
+
+        // Immediate save on raid completion
+        throttledStorage.flush();
       },
 
       // Clear raid recap (user dismissed the screen)
@@ -2561,6 +2613,9 @@ export const useGameStore = create(
               : h
           ),
         }));
+
+        // Immediate save on skill unlock
+        throttledStorage.flush();
 
         return { success: true };
       },

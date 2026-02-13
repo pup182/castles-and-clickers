@@ -427,6 +427,7 @@ function getCachedHeroSprite(classId, size, isDead, armorRarity, weaponRarity, w
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext('2d');
+  if (!ctx) { heroSpriteCache.set(cacheKey, canvas); return canvas; }
   ctx.imageSmoothingEnabled = false;
 
   // Render sprite to cache

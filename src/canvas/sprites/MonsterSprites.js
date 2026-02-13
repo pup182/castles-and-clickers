@@ -1677,6 +1677,7 @@ function getCachedSprite(monsterId, size, isDead = false, colorVariation = null)
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext('2d');
+  if (!ctx) { spriteCache.set(cacheKey, canvas); return canvas; }
   ctx.imageSmoothingEnabled = false;
 
   // Render sprite to cache

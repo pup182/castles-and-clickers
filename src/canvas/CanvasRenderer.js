@@ -20,6 +20,12 @@ export class CanvasRenderer {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.options = options;
+    this.disabled = !this.ctx;
+
+    if (this.disabled) {
+      console.warn('CanvasRenderer: could not get 2d context');
+      return;
+    }
 
     // Set canvas dimensions
     this.width = VIEWPORT_WIDTH * TILE_SIZE;
@@ -87,7 +93,7 @@ export class CanvasRenderer {
 
   // Main render loop - adaptive FPS
   render(timestamp) {
-    if (!this.isRunning) return;
+    if (!this.isRunning || this.disabled) return;
 
     const deltaTime = timestamp - this.lastFrameTime;
 
