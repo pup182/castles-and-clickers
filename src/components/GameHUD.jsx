@@ -79,7 +79,7 @@ const GameHUD = ({
             <h1 className="pixel-title text-base sm:text-lg">
               Castles & Clickers
             </h1>
-            <span className="text-xs text-gray-500">v0.2.1</span>
+            <span className="text-xs text-gray-500">v0.1.14</span>
           </div>
         </div>
 
