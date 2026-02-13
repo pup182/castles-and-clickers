@@ -141,9 +141,9 @@ export class UnitLayer {
       return pos;
     }
 
-    // Get sprite ID - use mapping for raid bosses
+    // Get sprite ID - prefer spriteId from monster object, fall back to map for raid bosses
     const isRaidBoss = monster.isWingBoss || monster.isFinalBoss || monster.isRaidBoss;
-    const spriteId = isRaidBoss ? (RAID_BOSS_SPRITE_MAP[monster.templateId] || monster.templateId) : monster.templateId;
+    const spriteId = monster.spriteId || (isRaidBoss ? (RAID_BOSS_SPRITE_MAP[monster.templateId] || monster.templateId) : monster.templateId);
 
     // Animated boss aura effect
     if (isBoss) {

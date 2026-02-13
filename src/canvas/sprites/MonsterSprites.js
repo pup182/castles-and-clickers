@@ -1254,37 +1254,58 @@ MONSTER_SPRITE_DATA.boss_lightning_golem = [
 ];
 
 MONSTER_SPRITE_DATA.boss_storm_hawk = [
-  // Body
+  // Body - sleek raptor
   [6, 4, 4, 5, '#3f3f46'],
   [7, 3, 2, 2, '#52525b'],
-  // Wings spread
+  // Wings spread wide with gradient
   [0, 5, 6, 3, '#52525b'],
   [10, 5, 6, 3, '#52525b'],
-  [1, 4, 3, 1, '#71717a'],
-  [12, 4, 3, 1, '#71717a'],
-  // Tail feathers
+  [1, 4, 4, 2, '#71717a'],
+  [11, 4, 4, 2, '#71717a'],
+  [2, 3, 2, 2, '#a1a1aa'],
+  [12, 3, 2, 2, '#a1a1aa'],
+  // Head - fierce hawk, lighter gray
+  [6, 1, 4, 3, '#71717a'],
+  [5, 2, 6, 1, '#a1a1aa'],
+  // Sharp beak - prominent
+  [7, 3, 2, 2, '#f59e0b'],
+  [8, 4, 1, 1, '#fbbf24'],
+  // Electric eyes
+  [6, 2, 1, 1, '#38bdf8'],
+  [9, 2, 1, 1, '#38bdf8'],
+  // Tail feathers - sharp
   [6, 9, 4, 3, '#3f3f46'],
   [7, 11, 2, 2, '#27272a'],
-  // Beak
-  [7, 2, 2, 1, '#fbbf24'],
-  // Eyes - electric
-  [6, 4, 1, 1, '#38bdf8'],
-  [9, 4, 1, 1, '#38bdf8'],
-  // Lightning on wings
-  [1, 6, 1, 1, '#fde047'],
+  [5, 10, 2, 2, '#52525b'],
+  [9, 10, 2, 2, '#52525b'],
+  // Talons
+  [5, 8, 2, 1, '#f59e0b'],
+  [10, 8, 2, 1, '#f59e0b'],
+  // Lightning crackling on wings
+  [2, 6, 1, 1, '#fde047'],
+  [3, 5, 1, 1, '#fbbf24'],
   [14, 6, 1, 1, '#fde047'],
+  [12, 5, 1, 1, '#fbbf24'],
+  // Electric trail
+  [0, 7, 1, 1, '#fde047'],
+  [15, 7, 1, 1, '#fde047'],
 ];
 
 MONSTER_SPRITE_DATA.boss_thunderbird = MONSTER_SPRITE_DATA.boss_storm_hawk;
 
 MONSTER_SPRITE_DATA.boss_storm_lord = [
-  // Massive cloud body
-  [2, 5, 12, 9, '#d1d5db'],
-  [1, 7, 14, 6, '#e5e7eb'],
-  [3, 4, 10, 3, '#f3f4f6'],
-  // Head forming from clouds
+  // Humanoid storm torso
+  [4, 5, 8, 8, '#d1d5db'],
+  [3, 7, 10, 5, '#e5e7eb'],
+  // Head
   [5, 1, 6, 5, '#f3f4f6'],
   [4, 2, 8, 3, '#e5e7eb'],
+  // Lightning crown
+  [4, 0, 2, 2, '#fde047'],
+  [7, 0, 2, 1, '#fbbf24'],
+  [10, 0, 2, 2, '#fde047'],
+  [6, 0, 1, 1, '#fef08a'],
+  [9, 0, 1, 1, '#fef08a'],
   // Lightning eyes
   [5, 2, 2, 2, '#0ea5e9'],
   [9, 2, 2, 2, '#0ea5e9'],
@@ -1292,13 +1313,25 @@ MONSTER_SPRITE_DATA.boss_storm_lord = [
   [10, 3, 1, 1, '#fef08a'],
   // Storm mouth
   [6, 4, 4, 1, '#6b7280'],
+  // Cloud arms
+  [0, 6, 4, 4, '#d1d5db'],
+  [12, 6, 4, 4, '#d1d5db'],
+  [0, 9, 3, 2, '#9ca3af'],
+  [13, 9, 3, 2, '#9ca3af'],
+  // Lightning scepter in right hand
+  [14, 3, 1, 8, '#fbbf24'],
+  [13, 2, 2, 2, '#fde047'],
+  [14, 1, 1, 1, '#fef08a'],
+  // Storm base - swirling
+  [3, 12, 10, 3, '#9ca3af'],
+  [2, 13, 12, 2, '#6b7280'],
+  // Rain below
+  [4, 14, 1, 1, '#38bdf8'],
+  [7, 15, 1, 1, '#38bdf8'],
+  [10, 14, 1, 1, '#38bdf8'],
   // Lightning in body
-  [4, 7, 1, 2, '#fde047'],
-  [11, 8, 1, 2, '#fde047'],
-  [7, 10, 1, 2, '#fbbf24'],
-  // Arms from clouds
-  [0, 7, 3, 4, '#d1d5db'],
-  [13, 7, 3, 4, '#d1d5db'],
+  [5, 7, 1, 2, '#fde047'],
+  [10, 8, 1, 2, '#fbbf24'],
 ];
 
 MONSTER_SPRITE_DATA.boss_sky_titan = MONSTER_SPRITE_DATA.boss_storm_lord;
@@ -1428,7 +1461,42 @@ MONSTER_SPRITE_DATA.boss_void_sentinel = [
   [9, 12, 2, 3, '#312e81'],
 ];
 
-MONSTER_SPRITE_DATA.boss_void_stalker_prime = MONSTER_SPRITE_DATA.boss_void_sentinel;
+MONSTER_SPRITE_DATA.boss_void_stalker_prime = [
+  // Sleek predator body - crouched
+  [3, 4, 10, 7, '#1e1b4b'],
+  [2, 6, 12, 4, '#312e81'],
+  // Angular predatory head
+  [4, 1, 8, 4, '#3730a3'],
+  [3, 2, 10, 2, '#1e1b4b'],
+  // Narrow visor - menacing
+  [4, 2, 8, 1, '#c084fc'],
+  [5, 2, 2, 1, '#e9d5ff'],
+  [9, 2, 2, 1, '#e9d5ff'],
+  // Bladed shoulders
+  [0, 5, 3, 3, '#4338ca'],
+  [13, 5, 3, 3, '#4338ca'],
+  [0, 4, 2, 2, '#3730a3'],
+  [14, 4, 2, 2, '#3730a3'],
+  // Arm blades - void energy
+  [0, 8, 3, 1, '#6366f1'],
+  [13, 8, 3, 1, '#6366f1'],
+  [0, 7, 1, 2, '#818cf8'],
+  [15, 7, 1, 2, '#818cf8'],
+  // Void energy core
+  [7, 6, 2, 2, '#7c3aed'],
+  [7, 7, 1, 1, '#a855f7'],
+  // Legs - digitigrade stalker
+  [4, 11, 2, 3, '#312e81'],
+  [10, 11, 2, 3, '#312e81'],
+  [3, 13, 2, 2, '#1e1b4b'],
+  [11, 13, 2, 2, '#1e1b4b'],
+  // Void trail
+  [6, 12, 4, 1, '#3730a3'],
+  [7, 13, 2, 1, '#4c1d95'],
+  // Energy particles
+  [1, 3, 1, 1, '#8b5cf6'],
+  [14, 3, 1, 1, '#8b5cf6'],
+];
 
 MONSTER_SPRITE_DATA.boss_reality_ripper = [
   // Fragmented body

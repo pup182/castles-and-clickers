@@ -8,7 +8,7 @@ export const RAID_BOSS_SPRITE_MAP = {
   sea_serpent: 'boss_sea_serpent',
   // Cursed Manor
   phantom_butler: 'boss_phantom_butler',
-  banshee_queen: 'boss_banshee',
+  banshee_queen: 'boss_banshee_queen',
   flesh_golem: 'boss_flesh_golem',
   vampire_lord: 'boss_vampire_lord',
   // Sky Fortress
