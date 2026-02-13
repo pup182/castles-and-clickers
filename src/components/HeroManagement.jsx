@@ -12,40 +12,13 @@ const HeroManagement = () => {
   const heroes = useGameStore(state => state.heroes);
   const gold = useGameStore(state => state.gold);
   const dungeon = useGameStore(state => state.dungeon);
-  const retireHero = useGameStore(state => state.retireHero);
   const highestDungeonCleared = useGameStore(state => state.highestDungeonCleared);
   const usedSlotDiscounts = useGameStore(state => state.usedSlotDiscounts);
   const addHero = useGameStore(state => state.addHero);
   const spendGold = useGameStore(state => state.spendGold);
   const pendingRecruits = useGameStore(state => state.pendingRecruits);
-  const pendingPartyChanges = useGameStore(state => state.pendingPartyChanges);
-  const queueClassChange = useGameStore(state => state.queueClassChange);
 
   const [expandedSlot, setExpandedSlot] = useState(null);
-  const [confirmRetire, setConfirmRetire] = useState(null);
-
-  const handleRetire = (heroId) => {
-    const goldGained = retireHero(heroId);
-    if (goldGained) {
-      setConfirmRetire(null);
-    }
-  };
-
-  const getRetireValue = (hero) => 25 + (hero.level * 25);
-
-  // Check if a hero has a pending retirement (not class change)
-  const hasPendingRetire = (heroId) => {
-    return pendingPartyChanges.some(p => p.heroId === heroId && p.type === 'retire');
-  };
-
-  // Check if a slot has a pending class change
-  const hasPendingSlotChange = (slotIndex) => {
-    return pendingPartyChanges.some(p => p.slotIndex === slotIndex && p.type === 'classChange');
-  };
-
-  const getTotalHeroCount = () => {
-    return heroes.filter(Boolean).length;
-  };
 
   // Check if a slot is unlocked based on dungeon progress
   const isSlotUnlocked = (slotIndex) => {
@@ -84,13 +57,6 @@ const HeroManagement = () => {
   return (
     <div className="max-w-2xl mx-auto">
       <h3 className="pixel-subtitle mb-4">Party Management</h3>
-
-      {/* Active dungeon notice */}
-      {dungeon && (
-        <div className="pixel-panel p-2 text-yellow-400 text-xs mb-4" style={{ borderColor: 'var(--color-gold)' }}>
-          Dungeon in progress - changes will take effect after completion.
-        </div>
-      )}
 
       {/* Party Slots Grid */}
       <div className="grid grid-cols-2 gap-3">
@@ -185,80 +151,6 @@ const HeroManagement = () => {
                       );
                     })()}
 
-                    {/* Pending change indicator */}
-                    {hasPendingRetire(hero.id) && (
-                      <div className="text-xs text-yellow-400 bg-yellow-900/30 rounded px-2 py-1 mb-2 text-center">
-                        Pending retirement after dungeon
-                      </div>
-                    )}
-                    {hasPendingSlotChange(index) && (
-                      <div className="text-xs text-blue-400 bg-blue-900/30 rounded px-2 py-1 mb-2 text-center">
-                        Class change pending after dungeon
-                      </div>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setExpandedSlot(isExpanded ? null : index)}
-                        disabled={hasPendingRetire(hero.id) || hasPendingSlotChange(index)}
-                        className={`flex-1 px-2 py-1.5 text-sm rounded transition-all ${
-                          hasPendingRetire(hero.id) || hasPendingSlotChange(index)
-                            ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
-                            : isExpanded
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        }`}
-                      >
-                        Change Class
-                      </button>
-                      <button
-                        onClick={() => getTotalHeroCount() > 1 && setConfirmRetire(hero.id)}
-                        disabled={getTotalHeroCount() <= 1 || hasPendingRetire(hero.id)}
-                        className={`px-3 py-1.5 text-sm rounded ${
-                          hasPendingRetire(hero.id)
-                            ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
-                            : 'bg-gray-700 text-red-400 hover:bg-red-900 disabled:opacity-50'
-                        }`}
-                      >
-                        Retire
-                      </button>
-                    </div>
-
-                    {/* Class Change Panel - Compact horizontal layout */}
-                    {isExpanded && (
-                      <div className="mt-2 pt-2 border-t border-gray-700">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs text-gray-500">{recruitCost}g</span>
-                          <span className="text-xs text-red-400">Resets to Lv.1</span>
-                          {dungeon && <span className="text-xs text-yellow-400">(after dungeon)</span>}
-                          <div className="flex gap-1 ml-auto">
-                            {availableClasses.filter(c => c.id !== hero.classId).map(classData => (
-                              <button
-                                key={classData.id}
-                                onClick={() => {
-                                  if (gold >= recruitCost) {
-                                    if (dungeon) {
-                                      queueClassChange(hero.id, index, classData.id, recruitCost);
-                                    } else {
-                                      spendGold(recruitCost);
-                                      retireHero(hero.id);
-                                      addHero(classData.id, null, index);
-                                    }
-                                    setExpandedSlot(null);
-                                  }
-                                }}
-                                disabled={gold < recruitCost}
-                                className="p-1.5 bg-gray-900 rounded hover:bg-gray-700 disabled:opacity-50"
-                                title={`${classData.name}: ${classData.description}`}
-                              >
-                                <ClassIcon classId={classData.id} size={20} />
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 ) : (
                   // Empty slot - unlocked
@@ -310,41 +202,6 @@ const HeroManagement = () => {
         })}
       </div>
 
-      {/* Retire Confirmation Modal */}
-      {confirmRetire && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="pixel-panel-gold p-4 max-w-xs mx-4">
-            {(() => {
-              const hero = heroes.find(h => h?.id === confirmRetire);
-              if (!hero) return null;
-              const goldValue = getRetireValue(hero);
-              return (
-                <>
-                  <h3 className="pixel-title text-lg mb-2">Retire {hero.name}?</h3>
-                  <p className="text-[var(--color-text-dim)] text-sm mb-3">
-                    This hero will be permanently dismissed. You'll receive{' '}
-                    <span className="text-[var(--color-gold)]">{goldValue} gold</span>.
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setConfirmRetire(null)}
-                      className="flex-1 pixel-btn"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={() => handleRetire(confirmRetire)}
-                      className="flex-1 pixel-btn pixel-btn-danger"
-                    >
-                      Retire
-                    </button>
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

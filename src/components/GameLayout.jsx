@@ -31,7 +31,7 @@ import LootNotifications from './LootNotifications';
 import { CheckIcon } from './icons/ui';
 import UniqueDropCelebration from './UniqueDropCelebration';
 import RaidRecapScreen from './RaidRecapScreen';
-import { PartyIcon, TreeIcon, BagIcon, HomeIcon, CastleIcon, GoldIcon, TrophyIcon, SkullIcon, ChestIcon, ChartIcon, GemIcon, FireIcon, GhostIcon, CrownIcon, HeartIcon, SwordIcon, ShieldIcon } from './icons/ui';
+import { PartyIcon, TreeIcon, BagIcon, HomeIcon, CastleIcon, GoldIcon, TrophyIcon, SkullIcon, ChestIcon, ChartIcon, GemIcon, FireIcon, GhostIcon, CrownIcon, HeartIcon, SwordIcon, ShieldIcon, LockIcon } from './icons/ui';
 import { WorldBossIcon } from './icons/worldBosses';
 
 // Theme visuals for zone header - pixel art icons
@@ -232,14 +232,28 @@ const GameLayout = () => {
     // Define all unlockable features
     const allUnlocks = [
       // Hero slots
-      ...PARTY_SLOTS.slice(1).map((slot, i) => ({
-        type: 'hero',
-        name: `Hero Slot ${i + 2}`,
-        dungeonRequired: slot.dungeonRequired,
-      })),
+      ...(() => {
+        const dpsCount = { current: 0 };
+        return PARTY_SLOTS.slice(1).map((slot) => {
+          let name;
+          if (slot.role === 'dps') {
+            dpsCount.current++;
+            name = `DPS Slot ${dpsCount.current}`;
+          } else {
+            name = `${slot.role.charAt(0).toUpperCase() + slot.role.slice(1)} Slot`;
+          }
+          return { type: 'hero', name, dungeonRequired: slot.dungeonRequired };
+        });
+      })(),
       // Features (Homestead hidden for now)
-      { type: 'feature', name: 'Item Shop', dungeonRequired: 5 },
+      { type: 'feature', name: 'Shop', dungeonRequired: 5 },
       { type: 'feature', name: 'Auto-Run', dungeonRequired: 5 },
+      // Raids
+      { type: 'raid', name: 'Sunken Temple', dungeonRequired: 12 },
+      { type: 'raid', name: 'Cursed Manor', dungeonRequired: 18 },
+      { type: 'raid', name: 'Sky Fortress', dungeonRequired: 24 },
+      { type: 'raid', name: 'The Abyss', dungeonRequired: 30 },
+      { type: 'raid', name: 'Void Throne', dungeonRequired: 35 },
     ];
 
     // Filter to only unlocks the player hasn't reached yet
@@ -429,6 +443,31 @@ const GameLayout = () => {
                           })}
                         </div>
                       )}
+
+                      {/* Next unlock indicator */}
+                      {upcomingUnlocks && (() => {
+                        const isCurrentLevel = dungeon.level === upcomingUnlocks.dungeonRequired;
+                        return (
+                          <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
+                            isCurrentLevel
+                              ? 'bg-green-900/30 border border-green-500/50 animate-pulse'
+                              : 'bg-blue-900/30 border border-blue-500/30'
+                          }`}>
+                            <LockIcon size={12} className={isCurrentLevel ? 'text-green-400' : 'text-blue-400'} />
+                            <span className={isCurrentLevel ? 'text-green-300' : 'text-blue-300'}>
+                              {isCurrentLevel ? 'Unlocking Now!' : `Next Unlock at Lv ${upcomingUnlocks.dungeonRequired}`}:{' '}
+                              {upcomingUnlocks.unlocks.map((u, i) => (
+                                <span key={i}>
+                                  {i > 0 && ', '}
+                                  {u.type === 'raid' ? (
+                                    <><span className="text-amber-400">(Raid)</span> {u.name}</>
+                                  ) : u.name}
+                                </span>
+                              ))}
+                            </span>
+                          </div>
+                        );
+                      })()}
 
                       {/* Phase indicator */}
                       <div className={`pixel-label ${phaseInfo.color}`}>
