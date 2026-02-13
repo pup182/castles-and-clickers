@@ -14,12 +14,13 @@ Tracked items for future implementation.
 - [ ] Economy balance - gold too abundant
 - [x] ~~"Retrying" text on dungeon retry transition~~ (Fixed)
 - [x] ~~Empty dungeon screen between dungeons~~ (Fixed - shows "Victory!" transition)
-- [ ] Skill tree redesign - remove forced lane pathing requirement
-- [ ] Raids and unique items
+- [x] Skill tree redesign - remove forced lane pathing requirement
+- [x] Raids and unique items
 - [x] ~~Party changes during dungeon~~ (Fixed - class changes and retires now queue during dungeon, apply after)
 - [ ] Meta progression and milestones pass
 - [x] ~~Sprites not updating based on gear~~ (Fixed - canvas now reads equipment from store instead of combat snapshot)
 - [x] ~~Items need to drop in the world (visual)~~ (Fixed - added lootDrop and goldDrop visual effects on monster death)
+- [ ] XP too abundant 
 
 ## Bugs
 
@@ -49,4 +50,3 @@ Tracked items for future implementation.
 - [x] ~~Remove elite mode - tie into dungeon scaling instead~~ (Done - removed elite toggle, raids still get 1.5x multiplier)
 - [x] ~~Enemy rebalance - some monsters too strong, possible scaling issues~~ (Done - nerfed Stone Golem stats/reflect, reduced scaling from 1.12x to 1.08x per level, shield_wall cooldown 6→9)
 - [ ] Replace Knight class - consider alternatives: Monk, Death Knight, Berserker, or other tank archetypes
-- [ ] Healers are OP - can survive alone against many mobs

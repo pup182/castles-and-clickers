@@ -31,7 +31,7 @@ import LootNotifications from './LootNotifications';
 import { CheckIcon } from './icons/ui';
 import UniqueDropCelebration from './UniqueDropCelebration';
 import RaidRecapScreen from './RaidRecapScreen';
-import { PartyIcon, TreeIcon, BagIcon, HomeIcon, CastleIcon, GoldIcon, TrophyIcon, SkullIcon, ChestIcon, ChartIcon, GemIcon, FireIcon, GhostIcon, CrownIcon, HeartIcon, SwordIcon, ShieldIcon, LockIcon } from './icons/ui';
+import { PartyIcon, TreeIcon, BagIcon, HomeIcon, CastleIcon, GoldIcon, TrophyIcon, SkullIcon, ChestIcon, ChartIcon, GemIcon, FireIcon, GhostIcon, CrownIcon, HeartIcon, SwordIcon, ShieldIcon, LockIcon, MenuIcon } from './icons/ui';
 import { WorldBossIcon } from './icons/worldBosses';
 
 // Theme visuals for zone header - pixel art icons
@@ -116,6 +116,7 @@ const GameLayout = () => {
   const enemyCount = useEnemyCount();
 
   const [activeModal, setActiveModal] = useState(null); // 'heroes' | 'skills' | 'equipment' | 'homestead' | 'dungeonSelect'
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [offlineProgress, setOfflineProgress] = useState(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [dungeonTransition, setDungeonTransition] = useState(null); // { level, type, isRetry }
@@ -311,17 +312,35 @@ const GameLayout = () => {
         featureUnlocks={featureUnlocks}
         markFeatureSeen={markFeatureSeen}
         onReset={() => setShowResetConfirm(true)}
+        onToggleSidebar={() => setSidebarOpen(prev => !prev)}
       />
 
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar */}
-        <Sidebar
-          heroes={heroes}
-          dungeon={dungeon}
-          onOpenSelector={() => setActiveModal('dungeonSelect')}
-          onAbandon={abandonDungeon}
-        />
+        {/* Sidebar - hidden on mobile, shown as drawer */}
+        <div className="hidden md:block">
+          <Sidebar
+            heroes={heroes}
+            dungeon={dungeon}
+            onOpenSelector={() => setActiveModal('dungeonSelect')}
+            onAbandon={abandonDungeon}
+          />
+        </div>
+
+        {/* Mobile sidebar drawer */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 z-40 md:hidden">
+            <div className="absolute inset-0 bg-black/60" onClick={() => setSidebarOpen(false)} />
+            <div className="absolute left-0 top-0 bottom-0 w-72 animate-slide-in">
+              <Sidebar
+                heroes={heroes}
+                dungeon={dungeon}
+                onOpenSelector={() => { setActiveModal('dungeonSelect'); setSidebarOpen(false); }}
+                onAbandon={() => { abandonDungeon(); setSidebarOpen(false); }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Dungeon View - Always visible */}
         <main className="flex-1 p-4 overflow-hidden flex flex-col">

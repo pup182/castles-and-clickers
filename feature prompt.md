@@ -1,4 +1,4 @@
-Perform a comprehensive audit of is the ui good? does it do its job? does it look cool? also do they have unique animations AND unique icons on the skill tree sheet or showcases in this codebase.
+Perform a comprehensive audit of a good mobile view of the game also do they have unique animations AND unique icons on the skill tree sheet or showcases in this codebase.
 
 Audit every \[unit of the feature — e.g., "skill tree node", "homestead upgrade",
 "affix", "monster ability", "raid mechanic"] and determine whether its described/intended

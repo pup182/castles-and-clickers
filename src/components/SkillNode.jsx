@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { SKILL_TYPE } from '../data/skillTrees';
 import { SkillIcon } from './icons/skills';
 import { StarIcon } from './icons/ui';
@@ -6,6 +6,7 @@ import { StarIcon } from './icons/ui';
 const SkillNode = ({ skill, tier, isUnlocked, isAvailable, onUnlock, canAfford }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [justUnlocked, setJustUnlocked] = useState(false);
+  const [touchActive, setTouchActive] = useState(false); // tracks if tooltip was shown by touch
 
   const isActive = skill.type === SKILL_TYPE.ACTIVE;
   const isStarter = skill.starterSkill;
@@ -43,13 +44,43 @@ const SkillNode = ({ skill, tier, isUnlocked, isAvailable, onUnlock, canAfford }
 
   const activeClass = isUnlocked && skill.type === SKILL_TYPE.ACTIVE ? 'skill-active-pulse' : '';
 
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
+    // On touch devices: first tap shows tooltip, second tap unlocks
+    if (touchActive) {
+      // Tooltip is already showing from touch - this is the second tap
+      if (isAvailable && !isUnlocked && canAfford) {
+        onUnlock(skill.id);
+        setJustUnlocked(true);
+        setTimeout(() => setJustUnlocked(false), 300);
+      }
+      setTouchActive(false);
+      return;
+    }
+
+    // Desktop click (no prior touch) - unlock directly
     if (isAvailable && !isUnlocked && canAfford) {
       onUnlock(skill.id);
       setJustUnlocked(true);
       setTimeout(() => setJustUnlocked(false), 300);
     }
-  };
+  }, [touchActive, isAvailable, isUnlocked, canAfford, onUnlock, skill.id]);
+
+  // Touch handling: first tap shows tooltip
+  const handleTouchEnd = useCallback((e) => {
+    if (!showTooltip) {
+      // First tap: show tooltip, prevent click
+      e.preventDefault();
+      setShowTooltip(true);
+      setTouchActive(true);
+
+      // Auto-dismiss after 4 seconds
+      setTimeout(() => {
+        setShowTooltip(false);
+        setTouchActive(false);
+      }, 4000);
+    }
+    // If tooltip already shown, let the click handler fire (second tap)
+  }, [showTooltip]);
 
   // Format effect description
   const getEffectDescription = () => {
@@ -66,10 +97,12 @@ const SkillNode = ({ skill, tier, isUnlocked, isAvailable, onUnlock, canAfford }
     <div
       className="relative"
       onMouseEnter={() => setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
+      onMouseLeave={() => { setShowTooltip(false); setTouchActive(false); }}
+      style={{ touchAction: 'manipulation' }}
     >
       <button
         onClick={handleClick}
+        onTouchEnd={handleTouchEnd}
         disabled={isUnlocked || !isAvailable || !canAfford}
         className={`
           ${sizeClass} rounded-lg border-2 flex flex-col items-center justify-center
@@ -137,7 +170,7 @@ const SkillNode = ({ skill, tier, isUnlocked, isAvailable, onUnlock, canAfford }
               'text-gray-500'
             }`}>
               {isUnlocked && 'Unlocked'}
-              {!isUnlocked && isAvailable && canAfford && 'Click to unlock'}
+              {!isUnlocked && isAvailable && canAfford && (touchActive ? 'Tap again to unlock' : 'Click to unlock')}
               {!isUnlocked && isAvailable && !canAfford && 'No skill points'}
               {!isUnlocked && !isAvailable && 'Locked - unlock prerequisites'}
             </div>

@@ -9,13 +9,13 @@ const NavButton = ({ id, Icon, label, badge, isActive, isLocked, unlockAt, onCli
     <button
       onClick={() => !isLocked && onClick(id)}
       disabled={isLocked}
-      className={`pixel-btn relative flex items-center gap-1.5 px-3 py-1.5 ${
+      className={`pixel-btn relative flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 ${
         isActive ? 'pixel-btn-primary' : ''
       } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
       title={isLocked ? `Unlocks at Dungeon ${unlockAt}` : undefined}
     >
       <Icon size={16} />
-      <span className="text-sm">{label}</span>
+      <span className="text-xs sm:text-sm">{label}</span>
       {badge && (
         <span className={`pixel-badge absolute -top-1.5 -right-1.5 text-[10px] ${
           badge === 'NEW' ? 'animate-pixel-blink' : ''

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
 import NavBar from './NavBar';
-import { GoldIcon, TrophyIcon, SkullIcon, BagIcon } from './icons/ui';
+import { GoldIcon, TrophyIcon, SkullIcon, BagIcon, MenuIcon } from './icons/ui';
 
 // Throttled header stats hook - updates every 500ms
 function useThrottledHeaderStats() {
@@ -58,30 +58,40 @@ const GameHUD = ({
   featureUnlocks,
   markFeatureSeen,
   onReset,
+  onToggleSidebar,
 }) => {
   const headerStats = useThrottledHeaderStats();
 
   return (
     <header className="pixel-panel-dark" style={{ borderRadius: 0, boxShadow: '0 4px 0 rgba(0,0,0,0.5)' }}>
       {/* Top row: Title, Resources */}
-      <div className="px-4 py-2 flex items-center justify-between border-b border-gray-700/50">
-        {/* Left: Title */}
-        <div>
-          <h1 className="pixel-title text-lg">
-            Castles & Clickers
-          </h1>
-          <span className="text-xs text-gray-500">v0.1.13</span>
+      <div className="px-2 sm:px-4 py-2 flex items-center justify-between border-b border-gray-700/50">
+        {/* Left: Hamburger (mobile) + Title */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onToggleSidebar}
+            className="md:hidden pixel-btn p-1.5 flex items-center justify-center"
+            title="Toggle Sidebar"
+          >
+            <MenuIcon size={20} />
+          </button>
+          <div>
+            <h1 className="pixel-title text-base sm:text-lg">
+              Castles & Clickers
+            </h1>
+            <span className="text-xs text-gray-500">v0.2.0</span>
+          </div>
         </div>
 
         {/* Right: Resources and Stats */}
-        <div className="flex items-center gap-3 text-sm">
+        <div className="flex items-center flex-wrap gap-1 sm:gap-3 text-xs sm:text-sm">
           <span className="pixel-stat pixel-stat-gold">
             <GoldIcon size={16} /> {Math.floor(headerStats.gold).toLocaleString()}
           </span>
-          <span className="pixel-stat pixel-stat-green">
+          <span className="pixel-stat pixel-stat-green hidden sm:inline-flex">
             <TrophyIcon size={16} /> {headerStats.totalDungeonsCleared}
           </span>
-          <span className="pixel-stat pixel-stat-red">
+          <span className="pixel-stat pixel-stat-red hidden sm:inline-flex">
             <SkullIcon size={16} /> {headerStats.totalMonstersKilled}
           </span>
           <span className={`pixel-stat ${headerStats.inventoryCount >= headerStats.maxInventory ? 'pixel-stat-red' : 'pixel-stat-blue'}`}>
@@ -91,7 +101,7 @@ const GameHUD = ({
       </div>
 
       {/* Bottom row: Navigation and Controls */}
-      <div className="px-4 py-2 flex items-center justify-between">
+      <div className="px-2 sm:px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
         {/* Navigation */}
         <NavBar activeModal={activeModal} onOpenModal={onOpenModal} />
 

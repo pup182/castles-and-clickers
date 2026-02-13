@@ -15,11 +15,11 @@ const ModalOverlay = ({ isOpen, onClose, title, children, size = 'md' }) => {
   if (!isOpen) return null;
 
   const sizeClasses = {
-    sm: 'max-w-md',
-    md: 'max-w-2xl',
-    lg: 'max-w-4xl',
-    xl: 'max-w-6xl',
-    full: 'max-w-[90vw]',
+    sm: 'max-w-[95vw] sm:max-w-md',
+    md: 'max-w-[95vw] sm:max-w-2xl',
+    lg: 'max-w-[95vw] sm:max-w-4xl',
+    xl: 'max-w-[95vw] sm:max-w-6xl',
+    full: 'max-w-[95vw]',
   };
 
   return (

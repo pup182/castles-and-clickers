@@ -1223,6 +1223,32 @@ export const ResetIcon = ({ size }) => (
   </IconWrapper>
 );
 
+// === MOBILE UI ===
+
+export const MenuIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* Hamburger menu - 3 horizontal bars */}
+    <P x={2} y={3} w={12} h={2} c="#e5e7eb" />
+    <P x={2} y={7} w={12} h={2} c="#e5e7eb" />
+    <P x={2} y={11} w={12} h={2} c="#e5e7eb" />
+  </IconWrapper>
+);
+
+export const CloseIcon = ({ size }) => (
+  <IconWrapper size={size}>
+    {/* X close button */}
+    <P x={2} y={2} w={2} h={2} c="#e5e7eb" />
+    <P x={4} y={4} w={2} h={2} c="#e5e7eb" />
+    <P x={6} y={6} w={4} h={4} c="#e5e7eb" />
+    <P x={10} y={10} w={2} h={2} c="#e5e7eb" />
+    <P x={12} y={12} w={2} h={2} c="#e5e7eb" />
+    <P x={12} y={2} w={2} h={2} c="#e5e7eb" />
+    <P x={10} y={4} w={2} h={2} c="#e5e7eb" />
+    <P x={2} y={12} w={2} h={2} c="#e5e7eb" />
+    <P x={4} y={10} w={2} h={2} c="#e5e7eb" />
+  </IconWrapper>
+);
+
 // Helper component to render UI icon by ID
 export const UIIcon = ({ iconId, size = 32, className = '' }) => {
   const IconComponent = UI_ICONS[iconId];
