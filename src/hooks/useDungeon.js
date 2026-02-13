@@ -195,6 +195,7 @@ export const useDungeon = ({ addEffect }) => {
       // Cloak of Nothing - start combat invisible
       if (combatStartResult.invisibleTurns > 0) {
         addCombatLog({ type: 'system', message: `Cloak of Nothing! ${hero.name} vanishes into the shadows!` });
+        addEffect({ type: 'buffAura', position: hero.position, color: '#6b7280' });
       }
     }
 

@@ -486,10 +486,10 @@ export const SKILL_TREES = {
         id: 'knight_stand_firm',
         name: 'Stand Firm',
         emoji: '🦶',
-        description: 'Immune to knockback and displacement.',
+        description: 'Cannot be slowed. +10% damage reduction while above 75% HP.',
         type: SKILL_TYPE.PASSIVE,
         tier: 1,
-        passive: { type: 'displacement_immunity' },
+        passive: { type: 'stand_firm', slowImmunity: true, threshold: 0.75, damageReduction: 10 },
       },
 
       // Tier 2
@@ -1546,7 +1546,7 @@ export const SKILL_TREES = {
         description: '+15% crit chance, +15% damage to full HP targets.',
         type: SKILL_TYPE.PASSIVE,
         tier: 0,
-        passive: { type: 'crit_bonus', percent: 15, openerDamageBonus: 15 },
+        passive: { type: 'crit_bonus', percent: 15 },
       },
 
       // Tier 1

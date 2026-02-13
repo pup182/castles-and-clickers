@@ -29,6 +29,9 @@ import {
   getLivingSeedInfo,
   getDotLifestealPercent,
   hasArmorVsDot,
+  checkReactiveHeal,
+  getHotBonuses,
+  hasCCImmunity,
 } from '../game/skillEngine';
 import { generateEquipment, generateConsumableDrop, RARITY } from '../data/equipment';
 import { createUniqueItemInstance, getUniqueItem } from '../data/uniqueItems';
@@ -70,6 +73,8 @@ import {
   getHeroHealingReduction,
   isHeroImmuneToStatus,
   getUniqueStateSnapshot,
+  getUniqueState,
+  processOnPartyDamageUniques,
 } from '../game/uniqueEngine';
 import {
   PHASES,
@@ -334,6 +339,7 @@ export const useCombat = ({ addEffect }) => {
     const newTurnOrder = [...roomCombat.turnOrder];
     const newCombatMonsters = [...combatMonsterIds];
     const newUsedPhoenixRevives = { ...(roomCombat.usedPhoenixRevives || {}) };
+    const newReactiveHealUsed = { ...(roomCombat.reactiveHealUsed || {}) };
     let lastSummonRoomIndex = roomCombat.lastSummonRoomIndex ?? -1;
 
     // Find current room index based on party position
@@ -710,6 +716,30 @@ export const useCombat = ({ addEffect }) => {
         { value: 'weakness', duration: 'weaknessDuration', name: 'weakness' },
       ];
 
+      // Apply HOT buff healing tick before decrementing duration
+      if (actor.isHero && actorBuffs.hot && actorBuffs.hotDuration > 0) {
+        const heroIdx = findHeroIndex(actor.id);
+        if (heroIdx !== -1 && newHeroes[heroIdx].stats.hp > 0) {
+          let hotHealAmount = Math.floor(newHeroes[heroIdx].stats.maxHp * actorBuffs.hot);
+          // Check for hot_bloom (Druid Lifebloom - final tick bonus)
+          if (actorBuffs.hotDuration === 1) {
+            const hotBonuses = getHotBonuses(actor);
+            hotHealAmount = Math.floor(hotHealAmount * hotBonuses.hotMultiplier);
+          }
+          const hotHeroData = heroes.find(h => h.id === actor.id);
+          if (hotHeroData) {
+            const hotHealReduction = getHeroHealingReduction(hotHeroData);
+            if (hotHealReduction > 0) hotHealAmount = Math.floor(hotHealAmount * (1 - hotHealReduction));
+          }
+          const actualHeal = Math.min(hotHealAmount, newHeroes[heroIdx].stats.maxHp - newHeroes[heroIdx].stats.hp);
+          if (actualHeal > 0) {
+            newHeroes[heroIdx].stats.hp += actualHeal;
+            addEffect({ type: 'damage', position: actor.position, damage: actualHeal, isHeal: true });
+            healingReceivedByHero[actor.id] = (healingReceivedByHero[actor.id] || 0) + actualHeal;
+          }
+        }
+      }
+
       for (const buff of durationBuffs) {
         if (actorBuffs[buff.duration] !== undefined && actorBuffs[buff.duration] > 0) {
           actorBuffs[buff.duration]--;
@@ -1014,6 +1044,13 @@ export const useCombat = ({ addEffect }) => {
         const skill = chooseBestSkill(actor, activeCombatMonsters, aliveHeroes, heroCooldowns);
 
         if (skill) {
+          // Track first skill use for Arcane Surge (first_skill_bonus)
+          const isFirstSkill = !newBuffs[actor.id]?.usedFirstSkill;
+          if (isFirstSkill) {
+            if (!newBuffs[actor.id]) newBuffs[actor.id] = {};
+            newBuffs[actor.id].usedFirstSkill = true;
+          }
+
           // Execute the skill
           const { results, logs } = executeSkillAbility(
             actor,
@@ -1024,6 +1061,19 @@ export const useCombat = ({ addEffect }) => {
             addEffect,
             newBuffs
           );
+
+          // Apply first skill bonus (Mage Arcane Surge)
+          if (isFirstSkill) {
+            const firstSkillBonuses = applyPassiveEffects(actor, 'on_attack', { isFirstSkillUse: true });
+            if (firstSkillBonuses.damageMultiplier > 1.0) {
+              for (const result of results) {
+                if (result.type === 'damage') {
+                  result.damage = Math.floor(result.damage * firstSkillBonuses.damageMultiplier);
+                }
+              }
+              addCombatLog({ type: 'system', message: `Arcane Surge! ${actor.name}'s first skill deals bonus damage!` });
+            }
+          }
 
           // Log skill use
           for (const log of logs) {
@@ -1132,7 +1182,10 @@ export const useCombat = ({ addEffect }) => {
 
                   // Handle unique drops from world bosses
                   if (m.isWorldBoss && m.uniqueDrop) {
-                    handleUniqueDrop(m.uniqueDrop, m.position);
+                    const ownedUniques = useGameStore.getState().ownedUniques || [];
+                    if (!ownedUniques.includes(m.uniqueDrop)) {
+                      handleUniqueDrop(m.uniqueDrop, m.position);
+                    }
                   }
 
                   // Handle raid boss drops
@@ -1385,7 +1438,14 @@ export const useCombat = ({ addEffect }) => {
                 newBuffs[result.targetId].blockNextHit = buff.blockNextHit || false;
               }
               if (buff.type === 'hot') {
-                newBuffs[result.targetId].hot = buff.percentage;
+                // Check for hot_stacking (Druid Overgrowth - HoTs can stack)
+                const hotBonuses = getHotBonuses(actor);
+                const existingHot = newBuffs[result.targetId].hot || 0;
+                if (hotBonuses.maxStacks > 1 && existingHot > 0) {
+                  newBuffs[result.targetId].hot = Math.min(existingHot + buff.percentage, buff.percentage * hotBonuses.maxStacks);
+                } else {
+                  newBuffs[result.targetId].hot = buff.percentage;
+                }
                 newBuffs[result.targetId].hotDuration = buff.duration || 1;
               }
             }
@@ -1520,7 +1580,13 @@ export const useCombat = ({ addEffect }) => {
                     if (actionResult.isHero) {
                       const immuneHeroData = heroes.find(h => h.id === actionResult.targetId);
                       if (immuneHeroData && isHeroImmuneToStatus(immuneHeroData, actionResult.status.id)) {
-                        addCombatLog({ type: 'system', message: `Dragonscale Mantle! ${statusTarget.name} is immune to ${actionResult.status.id}!` });
+                        addCombatLog({ type: 'system', message: `${statusTarget.name} is immune! (Dragon's Resilience)` });
+                        addEffect({ type: 'status', position: statusTarget.position || target.position, status: 'buff' });
+                        break;
+                      }
+                      // Check for CC immunity (Warrior Unstoppable, Knight Stand Firm)
+                      if (hasCCImmunity(statusTarget, actionResult.status.id)) {
+                        addCombatLog({ type: 'system', message: `${statusTarget.name} is immune to ${actionResult.status.id}!` });
                         break;
                       }
                     }
@@ -1918,6 +1984,8 @@ export const useCombat = ({ addEffect }) => {
                 // Add unique reflect damage (Thunder Guard)
                 if (uniqueOnDamageTakenResult.reflectDamage > 0) {
                   reflectDamage += uniqueOnDamageTakenResult.reflectDamage;
+                  addEffect({ type: 'beam', from: target.position, to: actor.position, attackerClass: 'knight' });
+                  addEffect({ type: 'damage', position: actor.position, damage: Math.floor(uniqueOnDamageTakenResult.reflectDamage) });
                 }
 
                 // Block damage from unique effects
@@ -2094,21 +2162,50 @@ export const useCombat = ({ addEffect }) => {
                   delete newBuffs[target.id].livingSeedCaster;
                 }
 
+                // Check reactive heals after hero takes damage (Warrior Second Wind, Cleric Guardian Angel)
+                if (targetHeroIdx !== -1 && newHeroes[targetHeroIdx].stats.hp > 0) {
+                  for (const healer of aliveHeroes) {
+                    if (healer.stats.hp <= 0) continue;
+                    const healerHeroIdx = findHeroIndex(healer.id);
+                    if (healerHeroIdx === -1) continue;
+                    const reactiveResult = checkReactiveHeal(newHeroes[healerHeroIdx], newHeroes[targetHeroIdx]);
+                    if (reactiveResult.triggered) {
+                      if (reactiveResult.selfOnly && healer.id !== target.id) continue;
+                      if (reactiveResult.preventDeath) continue; // save_ally handled in death check
+                      const healAmount = Math.floor(newHeroes[targetHeroIdx].stats.maxHp * reactiveResult.healPercent);
+                      const actualHeal = Math.min(healAmount, newHeroes[targetHeroIdx].stats.maxHp - newHeroes[targetHeroIdx].stats.hp);
+                      if (actualHeal > 0) {
+                        newHeroes[targetHeroIdx].stats.hp += actualHeal;
+                        addCombatLog({ type: 'system', message: `${reactiveResult.skillName}! ${newHeroes[targetHeroIdx].name} heals ${actualHeal} HP` });
+                        addEffect({ type: 'damage', position: target.position, damage: actualHeal, isHeal: true });
+                        healingDoneByHero[healer.id] = (healingDoneByHero[healer.id] || 0) + actualHeal;
+                        healingReceivedByHero[target.id] = (healingReceivedByHero[target.id] || 0) + actualHeal;
+                      }
+                      break; // Only one reactive heal per damage instance
+                    }
+                  }
+                }
+
                 // Apply onHitStatus from monster (Venomous, Burning, Chilling, Cursing affixes)
                 if (!actor.isHero && actor.onHitStatus) {
                   const statusToApply = actor.onHitStatus;
-                  if (!newStatusEffects[target.id]) newStatusEffects[target.id] = [];
-                  const existingStatus = newStatusEffects[target.id].find(s => s.id === statusToApply.id);
-                  if (existingStatus) {
-                    existingStatus.duration = Math.max(existingStatus.duration, statusToApply.duration);
+                  // Check for CC immunity (Warrior Unstoppable, Knight Stand Firm)
+                  if (hasCCImmunity(target, statusToApply.id)) {
+                    addCombatLog({ type: 'system', message: `${target.name} is immune to ${statusToApply.id}!` });
                   } else {
-                    newStatusEffects[target.id].push({
-                      ...statusToApply,
-                      appliedBy: actor.id,
-                    });
+                    if (!newStatusEffects[target.id]) newStatusEffects[target.id] = [];
+                    const existingStatus = newStatusEffects[target.id].find(s => s.id === statusToApply.id);
+                    if (existingStatus) {
+                      existingStatus.duration = Math.max(existingStatus.duration, statusToApply.duration);
+                    } else {
+                      newStatusEffects[target.id].push({
+                        ...statusToApply,
+                        appliedBy: actor.id,
+                      });
+                    }
+                    addCombatLog({ type: 'system', message: `${target.name} is afflicted with ${statusToApply.id}!` });
+                    addEffect({ type: 'status', position: target.position, statusId: statusToApply.id });
                   }
-                  addCombatLog({ type: 'system', message: `${target.name} is afflicted with ${statusToApply.id}!` });
-                  addEffect({ type: 'status', position: target.position, statusId: statusToApply.id });
                 }
               }
 
@@ -2137,6 +2234,26 @@ export const useCombat = ({ addEffect }) => {
               // Check for death or phoenix revive (use local HP, not store)
               const targetNewHp = targetHeroIdx !== -1 ? newHeroes[targetHeroIdx].stats.hp : 0;
               if (targetNewHp <= 0) {
+                // Check for save_ally (Paladin Divine Intervention) before other death saves
+                let savedByAlly = false;
+                for (const healer of aliveHeroes) {
+                  if (healer.stats.hp <= 0 || healer.id === target.id) continue;
+                  const saveResult = checkReactiveHeal(healer, newHeroes[targetHeroIdx]);
+                  if (saveResult.triggered && saveResult.preventDeath && !newReactiveHealUsed[healer.id]) {
+                    newReactiveHealUsed[healer.id] = true;
+                    const healAmount = Math.floor(target.stats.maxHp * saveResult.healPercent);
+                    if (targetHeroIdx !== -1) {
+                      newHeroes[targetHeroIdx].stats.hp = healAmount;
+                    }
+                    addCombatLog({ type: 'system', message: `${saveResult.skillName}! ${healer.name} saves ${target.name} with ${healAmount} HP!` });
+                    addEffect({ type: 'damage', position: target.position, damage: healAmount, isHeal: true });
+                    healingDoneByHero[healer.id] = (healingDoneByHero[healer.id] || 0) + healAmount;
+                    healingReceivedByHero[target.id] = (healingReceivedByHero[target.id] || 0) + healAmount;
+                    savedByAlly = true;
+                    break;
+                  }
+                }
+                if (!savedByAlly) {
                 // Check for resurrection scroll first
                 const resScroll = hasResurrectionScroll();
                 if (resScroll) {
@@ -2161,7 +2278,8 @@ export const useCombat = ({ addEffect }) => {
                     addEffect({ type: 'healBurst', position: target.position });
                   } else {
                     // Check for skill-based cheat death
-                    const skillCheatDeath = checkCheatDeath(target, { cheatDeathUsed: new Set(Object.keys(newUsedPhoenixRevives)) });
+                    const preDeathHpRatio = (targetNewHp + reducedDmg) / target.stats.maxHp;
+                    const skillCheatDeath = checkCheatDeath(target, { cheatDeathUsed: new Set(Object.keys(newUsedPhoenixRevives)), preDeathHpRatio });
                     if (skillCheatDeath.triggered) {
                       const reviveHp = skillCheatDeath.healPercent
                         ? Math.floor(target.stats.maxHp * skillCheatDeath.healPercent)
@@ -2220,6 +2338,7 @@ export const useCombat = ({ addEffect }) => {
                     }
                   }
                 }
+                } // end if (!savedByAlly)
               }
             } else {
               // Check for damage amplification debuff (Hunter's Mark)
@@ -2472,6 +2591,26 @@ export const useCombat = ({ addEffect }) => {
                   }
                 }
 
+                // Apply Blood Pendant party lifesteal (heal wielder when any party member deals damage)
+                if (totalDamageDealtThisTurn > 0) {
+                  for (const hero of heroes) {
+                    if (hero.id === actor.id) continue; // Skip attacker - they have their own healing
+                    const partyDmgResult = processOnPartyDamageUniques(hero, totalDamageDealtThisTurn, {});
+                    if (partyDmgResult.healing > 0) {
+                      const heroIdx = findHeroIndex(hero.id);
+                      if (heroIdx !== -1) {
+                        const currentHp = newHeroes[heroIdx].stats.hp;
+                        const maxHp = newHeroes[heroIdx].stats.maxHp;
+                        const healAmount = Math.min(Math.floor(partyDmgResult.healing), maxHp - currentHp);
+                        if (healAmount > 0) {
+                          newHeroes[heroIdx].stats.hp = Math.min(maxHp, currentHp + healAmount);
+                          addEffect({ type: 'damage', position: hero.position || actor.position, damage: healAmount, isHeal: true });
+                        }
+                      }
+                    }
+                  }
+                }
+
                 // Apply unique chain attacks (Stormcaller's Rod)
                 if (uniqueOnHitResult.chainTargets.length > 0 && uniqueOnHitResult.chainDamage > 0) {
                   for (const chainTarget of uniqueOnHitResult.chainTargets) {
@@ -2511,6 +2650,7 @@ export const useCombat = ({ addEffect }) => {
                     newMonsters[targetMonsterIdx].stats.maxHp -= reduction;
                     newMonsters[targetMonsterIdx].stats.hp = Math.min(newMonsters[targetMonsterIdx].stats.hp, newMonsters[targetMonsterIdx].stats.maxHp);
                     addCombatLog({ type: 'system', message: `Entropy reduces ${target.name}'s max HP by ${reduction}!` });
+                    addEffect({ type: 'status', position: target.position, status: 'debuff' });
                   }
                 }
 
@@ -2586,7 +2726,11 @@ export const useCombat = ({ addEffect }) => {
                       if (buff.id === 'invisible') {
                         newBuffs[actor.id].invisible = true;
                         newBuffs[actor.id].invisibleDuration = buff.duration || 1;
+                        const sfState = getUniqueState(actor.id);
+                        sfState.isInvisible = true;
+                        sfState.invisibleTurns = buff.duration || 1;
                         addCombatLog({ type: 'system', message: `${actor.name} vanishes into the shadows!` });
+                        addEffect({ type: 'buffAura', position: actor.position, color: '#374151' });
                       }
                     }
                   }
@@ -2683,6 +2827,17 @@ export const useCombat = ({ addEffect }) => {
                     }
                   }
 
+                  // Process stacking HP (Necromancer Soul Harvest)
+                  if (skillOnKillEffects.stackingHp > 0) {
+                    const actorHeroIdx = findHeroIndex(actor.id);
+                    if (actorHeroIdx !== -1) {
+                      newHeroes[actorHeroIdx].stats.maxHp += skillOnKillEffects.stackingHp;
+                      newHeroes[actorHeroIdx].stats.hp += skillOnKillEffects.stackingHp;
+                      addCombatLog({ type: 'system', message: `Soul Harvest! ${actor.name} gains ${skillOnKillEffects.stackingHp} max HP` });
+                      addEffect({ type: 'damage', position: actor.position, damage: skillOnKillEffects.stackingHp, isHeal: true });
+                    }
+                  }
+
                   // Check if killer has Nullblade (prevents resurrection of killed target)
                   const killerUniques = getHeroUniqueItems(heroData);
                   const hasNullblade = killerUniques.some(item => item.uniquePower?.effect?.preventsResurrection);
@@ -2712,6 +2867,7 @@ export const useCombat = ({ addEffect }) => {
                   // Handle extra turn from unique (Windrunner)
                   if (uniqueOnKillResult.extraTurn) {
                     addCombatLog({ type: 'system', message: `${actor.name}'s Windrunner grants an extra action!` });
+                    addEffect({ type: 'buffAura', position: actor.position, color: '#22c55e' });
                     if (!newBuffs[actor.id]) newBuffs[actor.id] = {};
                     newBuffs[actor.id].extraTurn = true;
                   }
@@ -2719,6 +2875,15 @@ export const useCombat = ({ addEffect }) => {
                   // Handle Soul Harvester stacks gained
                   if (uniqueOnKillResult.stacksGained > 0) {
                     addCombatLog({ type: 'system', message: `Soul Harvester! ${actor.name} gains power from the kill!` });
+                    addEffect({ type: 'status', position: actor.position, status: 'buff' });
+                    // Update hero maxHP to reflect new stacks
+                    const actorIdx = findHeroIndex(actor.id);
+                    if (actorIdx !== -1) {
+                      const soulReapBonus = 1 + uniqueOnKillResult.stacksGained * 0.05;
+                      const oldMaxHp = newHeroes[actorIdx].stats.maxHp;
+                      newHeroes[actorIdx].stats.maxHp = Math.floor(oldMaxHp * soulReapBonus);
+                      newHeroes[actorIdx].stats.hp += Math.floor(oldMaxHp * (soulReapBonus - 1));
+                    }
                   }
 
                   // Handle cooldown reset
@@ -2729,6 +2894,7 @@ export const useCombat = ({ addEffect }) => {
                       newSkillCooldowns[actor.id][skill] = 0;
                     }
                     addCombatLog({ type: 'system', message: `${actor.name}'s cooldowns reset!` });
+                    addEffect({ type: 'buffAura', position: actor.position, color: '#8b5cf6' });
                   }
                 }
 
@@ -3084,6 +3250,7 @@ export const useCombat = ({ addEffect }) => {
           turnOrder: newTurnOrder,
           combatMonsters: newCombatMonsters,
           usedPhoenixRevives: newUsedPhoenixRevives,
+          reactiveHealUsed: newReactiveHealUsed,
           uniqueStates: noGridUniqueSnapshots,
           ...(nextTurn || {}),
         });
@@ -3284,6 +3451,7 @@ export const useCombat = ({ addEffect }) => {
       turnOrder: newTurnOrder,
       combatMonsters: newCombatMonsters,
       usedPhoenixRevives: newUsedPhoenixRevives,
+      reactiveHealUsed: newReactiveHealUsed,
       lastSummonRoomIndex,
       viewport: newViewport,
       uniqueStates: uniqueStateSnapshots,

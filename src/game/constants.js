@@ -1,4 +1,5 @@
 import { getHeroUniqueItems, getUniquePassiveBonuses } from './uniqueEngine';
+import { getFirstTurnSpeedBonus } from './skillEngine';
 
 // Combat phases
 export const PHASES = {
@@ -35,6 +36,13 @@ export const rollInitiative = (unit) => {
     const uniques = getHeroUniqueItems(unit);
     if (uniques.some(item => item.uniquePower?.effect?.alwaysFirst)) {
       return Infinity;
+    }
+  }
+  // Apply first turn speed bonus (Shaman Spirit Walk) - only applies at combat start
+  if (unit.isHero && unit.skills) {
+    const firstTurnBonus = getFirstTurnSpeedBonus(unit);
+    if (firstTurnBonus > 0) {
+      speed = Math.floor(speed * (1 + firstTurnBonus));
     }
   }
   return speed + d20;

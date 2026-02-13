@@ -396,6 +396,21 @@ export const processOnKillUniques = (hero, target, context) => {
   return results;
 };
 
+// Process ON_PARTY_DAMAGE effects (Blood Pendant - heal when any party member deals damage)
+export const processOnPartyDamageUniques = (hero, totalDamage, context) => {
+  const uniques = getHeroUniqueItems(hero);
+  const results = { healing: 0 };
+  for (const item of uniques) {
+    const power = item.uniquePower;
+    if (power.trigger !== UNIQUE_TRIGGER.ON_PARTY_DAMAGE) continue;
+    const effect = power.effect;
+    if (effect.partyLifesteal) {
+      results.healing += totalDamage * effect.partyLifesteal;
+    }
+  }
+  return results;
+};
+
 // Process ON_DAMAGE_TAKEN effects
 export const processOnDamageTakenUniques = (hero, attacker, damage, context) => {
   const uniques = getHeroUniqueItems(hero);
@@ -418,13 +433,6 @@ export const processOnDamageTakenUniques = (hero, attacker, damage, context) => 
         results.phased = true;
         results.damageBlocked = damage;
         state.hasPhaseBonus = true;
-      }
-    }
-
-    // Shadow Cloak - dodge
-    if (effect.dodgeChance) {
-      if (Math.random() < effect.dodgeChance) {
-        results.damageBlocked = damage;
       }
     }
 

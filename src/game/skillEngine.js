@@ -1216,6 +1216,12 @@ export const getOnDamageTakenEffects = (hero, damage, _attacker) => {
         }
         break;
 
+      case 'stand_firm':
+        if (hero.stats.hp / hero.stats.maxHp >= passive.threshold) {
+          effects.damageReduction += passive.damageReduction / 100;
+        }
+        break;
+
       default:
         break;
     }
@@ -1322,9 +1328,21 @@ export const checkCheatDeath = (hero, combatState = {}) => {
     const passive = skill.passive;
     if (!passive) continue;
 
-    if (passive.type === 'cheat_death' || passive.type === 'conditional_cheat_death') {
+    if (passive.type === 'cheat_death') {
       // Check if already used this combat
       if (!heroCheatDeathUsed.has(hero.id)) {
+        return {
+          triggered: true,
+          immuneDuration: passive.immuneDuration || passive.duration || 1,
+          skillName: skill.name,
+        };
+      }
+    }
+
+    if (passive.type === 'conditional_cheat_death') {
+      // Only trigger if hero was above HP threshold before the killing blow
+      const preDeathHpRatio = combatState.preDeathHpRatio || 0;
+      if (!heroCheatDeathUsed.has(hero.id) && preDeathHpRatio >= passive.threshold) {
         return {
           triggered: true,
           immuneDuration: passive.immuneDuration || passive.duration || 1,
@@ -1361,6 +1379,10 @@ export const hasCCImmunity = (hero, ccType) => {
     if (passive?.type === 'cc_immunity') {
       if (ccType === 'stun' && passive.stun) return true;
       if (ccType === 'slow' && passive.slow) return true;
+    }
+    // Stand Firm also grants slow immunity
+    if (passive?.type === 'stand_firm' && passive.slowImmunity && ccType === 'slow') {
+      return true;
     }
   }
 
