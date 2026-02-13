@@ -425,19 +425,6 @@ const RaidBossOverview = ({ raidId, defeatedBosses, monsters, combatMonsterIds =
           );
         })}
       </div>
-
-      {/* Progress bar */}
-      <div className="mt-2 pt-2 border-t border-gray-700/50">
-        <div className="pixel-bar h-1.5">
-          <div
-            className="pixel-bar-fill"
-            style={{
-              width: `${(defeatedBosses.length / allBosses.length) * 100}%`,
-              backgroundColor: defeatedBosses.length === allBosses.length ? '#22c55e' : '#a855f7',
-            }}
-          />
-        </div>
-      </div>
     </div>
   );
 };

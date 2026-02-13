@@ -122,7 +122,7 @@ const NavBar = ({ activeModal, onOpenModal }) => {
       id: 'raids',
       Icon: CrownIcon,
       label: 'Raids',
-      badge: hasNewRaidUnlocked || raidInProgress ? 'NEW' : null,
+      badge: hasNewRaidUnlocked ? 'NEW' : null,
       unlockAt: 12,
     },
     {

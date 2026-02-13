@@ -1,7 +1,42 @@
 import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
 import NavBar from './NavBar';
-import { GoldIcon, TrophyIcon, SkullIcon, BagIcon } from './icons/ui';
+import { GoldIcon, TrophyIcon, SkullIcon, BagIcon, LockIcon } from './icons/ui';
+import { PARTY_SLOTS } from '../data/classes';
+import { getAllRaids } from '../data/raids';
+
+// Pre-compute all unlocks (static data)
+const ALL_UNLOCKS = [
+  // Hero slots
+  ...PARTY_SLOTS.slice(1).map((slot, i) => ({
+    type: 'hero',
+    name: `Slot ${i + 2}`,
+    dungeonRequired: slot.dungeonRequired,
+  })),
+  // Features
+  { type: 'feature', name: 'Shop', dungeonRequired: 5 },
+  { type: 'feature', name: 'Auto-Run', dungeonRequired: 5 },
+  // Raids
+  ...getAllRaids().map(raid => ({
+    type: 'raid',
+    name: raid.name,
+    dungeonRequired: raid.requiredLevel,
+  })),
+];
+
+// Calculate next unlock based on highest dungeon cleared
+function getNextUnlock(highest) {
+  const locked = ALL_UNLOCKS.filter(u => highest < u.dungeonRequired);
+  if (locked.length === 0) return null;
+
+  const nextMilestone = Math.min(...locked.map(u => u.dungeonRequired));
+  const unlocksAtMilestone = locked.filter(u => u.dungeonRequired === nextMilestone);
+
+  return {
+    dungeonRequired: nextMilestone,
+    unlocks: unlocksAtMilestone,
+  };
+}
 
 // Throttled header stats hook - updates every 500ms
 function useThrottledHeaderStats() {
@@ -60,6 +95,8 @@ const GameHUD = ({
   onReset,
 }) => {
   const headerStats = useThrottledHeaderStats();
+  const highestDungeonCleared = useGameStore(state => state.highestDungeonCleared) || 0;
+  const nextUnlock = getNextUnlock(highestDungeonCleared);
 
   return (
     <header className="pixel-panel-dark" style={{ borderRadius: 0, boxShadow: '0 4px 0 rgba(0,0,0,0.5)' }}>
@@ -70,7 +107,7 @@ const GameHUD = ({
           <h1 className="pixel-title text-lg">
             Castles & Clickers
           </h1>
-          <span className="text-xs text-gray-500">v0.1.5</span>
+          <span className="text-xs text-gray-500">v0.1.6</span>
         </div>
 
         {/* Right: Resources and Stats */}
@@ -87,6 +124,14 @@ const GameHUD = ({
           <span className={`pixel-stat ${headerStats.inventoryCount >= headerStats.maxInventory ? 'pixel-stat-red' : 'pixel-stat-blue'}`}>
             <BagIcon size={16} /> {headerStats.inventoryCount}/{headerStats.maxInventory}
           </span>
+          {nextUnlock && (
+            <span className="pixel-stat pixel-stat-purple flex items-center gap-1" title={`Unlocks: ${nextUnlock.unlocks.map(u => u.name).join(', ')}`}>
+              <LockIcon size={14} />
+              <span className="text-xs">
+                D{nextUnlock.dungeonRequired}: {nextUnlock.unlocks[0].name}{nextUnlock.unlocks.length > 1 ? ` +${nextUnlock.unlocks.length - 1}` : ''}
+              </span>
+            </span>
+          )}
         </div>
       </div>
 

@@ -571,6 +571,7 @@ export const useGameStore = create(
       ownedUniques: [],  // Array of unique item template IDs (e.g., ['ancient_bark', 'void_heart'])
       unreadUniques: [], // Array of unique item IDs that haven't been viewed yet (for "NEW" badge)
       pendingUniqueCelebration: null, // Item to show in celebration modal
+      combatPauseUntil: 0, // Timestamp when combat should resume (for dramatic phase transitions)
 
       // Combat state (full state machine)
       combat: null,
@@ -610,6 +611,7 @@ export const useGameStore = create(
         // Breakdowns
         monsterKills: {},   // { goblin: { count: 5, isBoss: false } }
         heroStats: {},      // { heroId: { damageDealt, kills, damageTaken, healingDone } }
+        raidRuns: {},       // { raidId: numberOfRuns }
       },
 
       // Equipment settings
@@ -1676,6 +1678,16 @@ export const useGameStore = create(
         set({ pendingUniqueCelebration: null });
       },
 
+      // Pause combat for a duration (for dramatic moments like phase transitions)
+      pauseCombat: (durationMs) => {
+        set({ combatPauseUntil: Date.now() + durationMs });
+      },
+
+      // Check if combat is currently paused
+      isCombatPaused: () => {
+        return Date.now() < get().combatPauseUntil;
+      },
+
       // Check if player owns a specific unique
       ownsUnique: (templateId) => {
         const { ownedUniques } = get();
@@ -2182,6 +2194,13 @@ export const useGameStore = create(
             currentType: 'normal',
             currentRaidId: null,
             completedRaidWings: [...state.dungeonProgress.completedRaidWings, completionKey],
+          },
+          stats: {
+            ...state.stats,
+            raidRuns: {
+              ...state.stats.raidRuns,
+              [raidState.raidId]: (state.stats.raidRuns?.[raidState.raidId] || 0) + 1,
+            },
           },
           dungeon: null,
           roomCombat: null,
@@ -2720,6 +2739,7 @@ export const useGameStore = create(
           ownedUniques: [],
           unreadUniques: [],
           pendingUniqueCelebration: null,
+          combatPauseUntil: 0,
           shop: {
             items: [],
             lastRefresh: 0,

@@ -44,7 +44,6 @@ const BossPreview = ({ boss, isOwned, isFinal = false }) => {
           <span className={`text-sm font-medium ${isFinal ? 'text-red-300' : 'text-gray-200'}`}>
             {boss.name}
           </span>
-          {isFinal && <span className="text-xs text-red-400/70 ml-2">(Final Boss)</span>}
         </div>
       </div>
       {/* Unique drops with icons and descriptions */}
@@ -85,9 +84,6 @@ const BossPreview = ({ boss, isOwned, isFinal = false }) => {
             );
           })}
         </div>
-      )}
-      {uniqueDropIds.length === 0 && !isFinal && (
-        <div className="text-xs text-gray-500 ml-2">No unique drops</div>
       )}
     </div>
   );
@@ -156,7 +152,7 @@ const RAID_COLORS = {
 };
 
 // Raid card component - Multi-boss dungeon system
-const RaidCard = ({ raid, isUnlocked, ownedUniques, onEnterRaid, isExpanded, onToggle }) => {
+const RaidCard = ({ raid, isUnlocked, ownedUniques, runCount, onEnterRaid, isExpanded, onToggle }) => {
   const raidUniqueIds = useMemo(() => getRaidUniqueIds(raid.id), [raid.id]);
   const ownedCount = raidUniqueIds.filter(id => ownedUniques.includes(id)).length;
 
@@ -201,6 +197,11 @@ const RaidCard = ({ raid, isUnlocked, ownedUniques, onEnterRaid, isExpanded, onT
               <div className="text-xs" style={{ color: RARITY_COLORS.legendary }}>
                 {ownedCount}/{raidUniqueIds.length} uniques
               </div>
+              {runCount > 0 && (
+                <div className="text-xs text-gray-500">
+                  {runCount} run{runCount !== 1 ? 's' : ''}
+                </div>
+              )}
             </div>
             {/* Quick Enter Button */}
             {isUnlocked ? (
@@ -241,7 +242,7 @@ const RaidCard = ({ raid, isUnlocked, ownedUniques, onEnterRaid, isExpanded, onT
 
           {/* Final boss */}
           <div>
-            <div className="text-xs text-red-400 mb-2">Final Boss (unlocks after guardians)</div>
+            <div className="text-xs text-red-400 mb-2">Final Boss</div>
             <BossPreview boss={raid.finalBoss} isOwned={isOwned} isFinal />
           </div>
         </div>
@@ -250,14 +251,19 @@ const RaidCard = ({ raid, isUnlocked, ownedUniques, onEnterRaid, isExpanded, onT
   );
 };
 
+// Stable empty objects for selectors
+const EMPTY_OBJECT = {};
+const EMPTY_ARRAY = [];
+
 const RaidSelectorModal = ({ onClose }) => {
   const [expandedRaid, setExpandedRaid] = useState(null);
 
   const highestDungeonCleared = useGameStore(state => state.highestDungeonCleared);
-  const ownedUniques = useGameStore(state => state.ownedUniques || []);
+  const ownedUniques = useGameStore(state => state.ownedUniques) || EMPTY_ARRAY;
   const heroes = useGameStore(state => state.heroes);
   const dungeon = useGameStore(state => state.dungeon);
   const raidState = useGameStore(state => state.raidState);
+  const raidRuns = useGameStore(state => state.stats?.raidRuns) || EMPTY_OBJECT;
   const enterRaid = useGameStore(state => state.enterRaid);
 
   const raids = useMemo(() => getAllRaids(), []);
@@ -349,6 +355,7 @@ const RaidSelectorModal = ({ onClose }) => {
             raid={raid}
             isUnlocked={isRaidUnlocked(raid.id, highestDungeonCleared)}
             ownedUniques={ownedUniques}
+            runCount={raidRuns[raid.id] || 0}
             onEnterRaid={handleEnterRaid}
             isExpanded={expandedRaid === raid.id}
             onToggle={() => toggleRaid(raid.id)}
