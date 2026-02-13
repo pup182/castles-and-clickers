@@ -129,13 +129,21 @@ const SkillNode = ({ skill, tier, isUnlocked, isAvailable, onUnlock, canAfford }
         )}
       </button>
 
-      {/* Tooltip - positioned below to avoid modal header clipping */}
+      {/* Tooltip - bottom tiers open upward to avoid clipping */}
       {showTooltip && (
-        <div className="absolute z-[100] top-full left-1/2 -translate-x-1/2 mt-2 w-56 pointer-events-none">
-          {/* Arrow pointing up */}
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-[-1px]">
-            <div className="border-8 border-transparent border-b-gray-600" />
-          </div>
+        <div className={`absolute z-[100] left-1/2 -translate-x-1/2 w-56 pointer-events-none ${
+          tier >= 2 ? 'bottom-full mb-2' : 'top-full mt-2'
+        }`}>
+          {/* Arrow */}
+          {tier >= 2 ? (
+            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-[-1px]">
+              <div className="border-8 border-transparent border-t-gray-600" />
+            </div>
+          ) : (
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-[-1px]">
+              <div className="border-8 border-transparent border-b-gray-600" />
+            </div>
+          )}
           <div className="pixel-panel-dark p-3 shadow-xl">
             <div className="flex items-center gap-2 mb-1">
               <SkillIcon skillId={skill.id} size={24} />
