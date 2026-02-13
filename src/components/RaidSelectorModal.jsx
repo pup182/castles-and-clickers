@@ -15,6 +15,7 @@ const formatClassRestrictions = (classes) => {
 
 // Rarity colors for display
 const RARITY_COLORS = {
+  unique: '#06b6d4',
   legendary: '#f59e0b',
   epic: '#a855f7',
   rare: '#3b82f6',
@@ -58,23 +59,24 @@ const BossPreview = ({ boss, isOwned, isFinal = false }) => {
                 key={itemId}
                 className={`flex items-start gap-2 p-2 rounded border ${
                   owned
-                    ? 'border-amber-500/50 bg-amber-900/20'
-                    : 'border-gray-700 bg-gray-900/50'
+                    ? 'bg-cyan-900/20'
+                    : 'bg-gray-900/50'
                 }`}
+                style={{ borderColor: owned ? RARITY_COLORS.unique : `${RARITY_COLORS.unique}40` }}
               >
                 <div className="flex-shrink-0">
                   <ItemIcon
-                    item={{ templateId: itemId, slot: item.slot, rarity: 'legendary' }}
+                    item={{ templateId: itemId, slot: item.slot, rarity: 'unique' }}
                     size={28}
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={`text-sm font-medium flex items-center gap-1 ${owned ? 'text-amber-400' : 'text-gray-300'}`}>
+                  <div className="text-sm font-medium flex items-center gap-1" style={{ color: RARITY_COLORS.unique }}>
                     {item.name}
-                    {owned && <CheckIcon size={12} />}
+                    {owned && <CheckIcon size={12} className="text-green-400" />}
                   </div>
                   <div className="text-xs text-gray-400 mt-0.5">
-                    <span className="text-amber-500">{item.uniquePower?.name}:</span> {item.uniquePower?.description}
+                    <span style={{ color: RARITY_COLORS.unique }}>{item.uniquePower?.name}:</span> {item.uniquePower?.description}
                   </div>
                   <div className="text-[10px] text-gray-500 mt-0.5">
                     {formatClassRestrictions(item.classes)}
@@ -194,7 +196,7 @@ const RaidCard = ({ raid, isUnlocked, ownedUniques, runCount, onEnterRaid, isExp
           <div className="flex items-start gap-3">
             {/* Stats */}
             <div className="text-right">
-              <div className="text-xs" style={{ color: RARITY_COLORS.legendary }}>
+              <div className="text-xs" style={{ color: RARITY_COLORS.unique }}>
                 {ownedCount}/{raidUniqueIds.length} uniques
               </div>
               {runCount > 0 && (
@@ -327,7 +329,7 @@ const RaidSelectorModal = ({ onClose }) => {
       <div className="pixel-panel-dark p-3">
         <div className="flex justify-between items-center mb-2">
           <span className="pixel-subtitle">Unique Collection</span>
-          <span style={{ color: RARITY_COLORS.legendary }}>
+          <span style={{ color: RARITY_COLORS.unique }}>
             {collectionStats.owned}/{collectionStats.total}
           </span>
         </div>
@@ -336,7 +338,7 @@ const RaidSelectorModal = ({ onClose }) => {
             className="pixel-bar-fill"
             style={{
               width: `${collectionStats.total > 0 ? (collectionStats.owned / collectionStats.total) * 100 : 0}%`,
-              backgroundColor: RARITY_COLORS.legendary,
+              backgroundColor: RARITY_COLORS.unique,
             }}
           />
         </div>
