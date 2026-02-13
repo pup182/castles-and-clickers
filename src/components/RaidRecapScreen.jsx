@@ -4,30 +4,7 @@ import { useGameStore } from '../store/gameStore';
 import { RAIDS } from '../data/raids';
 import { RaidBossIcon } from './icons/raidBosses';
 import { StarIcon, CheckIcon, CrownIcon } from './icons/ui';
-
-// Map boss IDs to sprite IDs
-const RAID_BOSS_SPRITE_MAP = {
-  corrupted_priest: 'boss_corrupted_priest',
-  naga_queen: 'boss_naga_queen',
-  sea_serpent: 'boss_sea_serpent',
-  phantom_butler: 'boss_phantom_butler',
-  banshee_queen: 'boss_banshee',
-  flesh_golem: 'boss_flesh_golem',
-  vampire_lord: 'boss_vampire_lord',
-  wind_elemental_lord: 'boss_wind_elemental',
-  lightning_golem: 'boss_lightning_golem',
-  storm_hawk: 'boss_storm_hawk',
-  storm_lord: 'boss_storm_lord',
-  shadow_assassin: 'boss_shadow_assassin',
-  abyssal_beast: 'boss_abyssal_beast',
-  mind_flayer: 'boss_mind_flayer',
-  abyss_lord: 'boss_abyss_lord',
-  null_shade_omega: 'boss_null_shade',
-  entropy_avatar: 'boss_entropy_avatar',
-  void_god: 'boss_void_god',
-};
-
-const getRaidBossSpriteId = (bossId) => RAID_BOSS_SPRITE_MAP[bossId] || 'boss_void_god';
+import { getRaidBossSpriteId } from '../data/raidBossSpriteMap';
 
 const RaidRecapScreen = () => {
   const pendingRaidRecap = useGameStore(state => state.pendingRaidRecap);
