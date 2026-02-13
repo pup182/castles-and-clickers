@@ -714,6 +714,8 @@ export const useCombat = ({ addEffect }) => {
         { value: 'aoeAttacks', duration: 'aoeAttacksDuration', name: 'ascendance' },
         { value: 'damageAmp', duration: 'damageAmpDuration', name: 'vulnerability' },
         { value: 'weakness', duration: 'weaknessDuration', name: 'weakness' },
+        { value: 'dotImmune', duration: 'dotImmuneDuration', name: 'DoT immunity' },
+        { value: 'healingReduction', duration: 'healingReductionDuration', name: 'healing reduction' },
       ];
 
       // Apply HOT buff healing tick before decrementing duration
@@ -729,7 +731,9 @@ export const useCombat = ({ addEffect }) => {
           const hotHeroData = heroes.find(h => h.id === actor.id);
           if (hotHeroData) {
             const hotHealReduction = getHeroHealingReduction(hotHeroData);
-            if (hotHealReduction > 0) hotHealAmount = Math.floor(hotHealAmount * (1 - hotHealReduction));
+            const hotBuffReduction = (newBuffs[actor.id] || {}).healingReduction || 0;
+            const hotTotalReduction = Math.min(1, hotHealReduction + hotBuffReduction);
+            if (hotTotalReduction > 0) hotHealAmount = Math.floor(hotHealAmount * (1 - hotTotalReduction));
           }
           const actualHeal = Math.min(hotHealAmount, newHeroes[heroIdx].stats.maxHp - newHeroes[heroIdx].stats.hp);
           if (actualHeal > 0) {
@@ -800,6 +804,14 @@ export const useCombat = ({ addEffect }) => {
       if (statusResult.damage > 0) {
         let dotDamage = statusResult.damage;
 
+        // Check for Lich Form dotImmune buff
+        const actorBuffs = newBuffs[actor.id] || {};
+        if (actorBuffs.dotImmune) {
+          addCombatLog({ type: 'system', message: `${actor.name} is immune to DoT damage (Lich Form)!` });
+          dotDamage = 0;
+        }
+
+        if (dotDamage > 0) {
         if (actor.isHero) {
           // Check for armor vs DoT (Knight Armor Master)
           if (hasArmorVsDot(actor)) {
@@ -959,6 +971,7 @@ export const useCombat = ({ addEffect }) => {
             addEffect({ type: 'damage', position: actor.position, damage: log.damage });
           }
         }
+        }
       }
 
       // Apply HOT healing
@@ -971,7 +984,9 @@ export const useCombat = ({ addEffect }) => {
           const hotHeroData = heroes.find(h => h.id === actor.id);
           if (hotHeroData) {
             const hotHealReduction = getHeroHealingReduction(hotHeroData);
-            if (hotHealReduction > 0) hotHealAmount = Math.floor(hotHealAmount * (1 - hotHealReduction));
+            const hotBuffReduction = (newBuffs[actor.id] || {}).healingReduction || 0;
+            const hotTotalReduction = Math.min(1, hotHealReduction + hotBuffReduction);
+            if (hotTotalReduction > 0) hotHealAmount = Math.floor(hotHealAmount * (1 - hotTotalReduction));
           }
           const actualHeal = Math.min(hotHealAmount, newHeroes[heroIdx].stats.maxHp - newHeroes[heroIdx].stats.hp);
           newHeroes[heroIdx].stats.hp = Math.min(newHeroes[heroIdx].stats.maxHp, newHeroes[heroIdx].stats.hp + hotHealAmount);
@@ -1336,11 +1351,17 @@ export const useCombat = ({ addEffect }) => {
                 const h = newHeroes[heroIdx];
                 // Vampire's Embrace: reduce non-lifesteal healing
                 const targetHealReduction = getHeroHealingReduction(heroes.find(hr => hr.id === result.targetId) || {});
-                const reducedHealAmount = targetHealReduction > 0 ? Math.floor(result.amount * (1 - targetHealReduction)) : result.amount;
+                // Lich Form: additional healing reduction from skill buffs
+                const buffHealReduction = (newBuffs[result.targetId] || {}).healingReduction || 0;
+                const totalHealReduction = Math.min(1, targetHealReduction + buffHealReduction);
+                const reducedHealAmount = totalHealReduction > 0 ? Math.floor(result.amount * (1 - totalHealReduction)) : result.amount;
                 const actualHealAmount = Math.min(reducedHealAmount, h.stats.maxHp - h.stats.hp);
                 h.stats.hp = Math.min(h.stats.maxHp, h.stats.hp + reducedHealAmount);
                 if (targetHealReduction > 0) {
                   addCombatLog({ type: 'system', message: `Vampire's Embrace reduces ${h.name}'s healing by ${Math.round(targetHealReduction * 100)}%` });
+                }
+                if (buffHealReduction > 0) {
+                  addCombatLog({ type: 'system', message: `Lich Form reduces ${h.name}'s healing by ${Math.round(buffHealReduction * 100)}%` });
                 }
                 // HP synced at end of tick via syncHeroHp
                 if (actualHealAmount > 0) {
@@ -1432,6 +1453,14 @@ export const useCombat = ({ addEffect }) => {
                 newBuffs[result.targetId].aoeAttacksDuration = buff.duration || 1;
                 newBuffs[result.targetId].damageBonus = (newBuffs[result.targetId].damageBonus || 0) + (buff.damageBonus || 0);
                 addCombatLog({ type: 'system', message: `${actor.name} ascends! Attacks now hit all enemies!` });
+              }
+              if (buff.dotImmune) {
+                newBuffs[result.targetId].dotImmune = true;
+                newBuffs[result.targetId].dotImmuneDuration = buff.duration || 1;
+              }
+              if (buff.healingReduction) {
+                newBuffs[result.targetId].healingReduction = buff.healingReduction;
+                newBuffs[result.targetId].healingReductionDuration = buff.duration || 1;
               }
               if (buff.type === 'shield') {
                 newBuffs[result.targetId].shield = buff.amount || 0;

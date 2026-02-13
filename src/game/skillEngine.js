@@ -478,6 +478,36 @@ export const executeSkillAbility = (actor, skill, enemies, allies, heroHp, addEf
           }
         }
       }
+
+      // Handle Spirit Link's attack buff for allies
+      if (effect.attackBuff) {
+        for (const target of targets) {
+          if (!target) continue;
+          results.push({
+            type: 'buff',
+            targetId: target.id,
+            buff: {
+              attackBonus: effect.attackBuff,
+              duration: effect.duration || 2,
+            },
+          });
+
+          if (addEffect) {
+            addEffect({
+              type: 'buffAura',
+              position: target.position,
+              color: '#ef4444',
+            });
+          }
+        }
+
+        logs.push({
+          type: 'buff',
+          actor: { name: actor.name, emoji: actor.emoji },
+          skill: { name: skill.name, emoji: skill.emoji },
+          buffType: 'attackBuff',
+        });
+      }
       break;
     }
 
@@ -695,6 +725,8 @@ export const executeSkillAbility = (actor, skill, enemies, allies, heroHp, addEf
             attackBonus: effect.attackBonus,
             healingBonus: effect.healingBonus,
             taunt: effect.taunt,
+            dotImmune: effect.dotImmune,
+            healingReduction: effect.healingReduction,
             duration: effect.duration || 1,
           },
         });
@@ -1041,6 +1073,9 @@ export const applyPassiveEffects = (hero, trigger, context = {}) => {
 
       case 'crit_bonus':
         bonuses.critChance += passive.percent / 100;
+        if (passive.openerDamageBonus && context.target && context.target.stats.hp >= context.target.stats.maxHp) {
+          bonuses.damageMultiplier += passive.openerDamageBonus / 100;
+        }
         break;
 
       case 'crit_damage_bonus':

@@ -5,6 +5,7 @@ import { StarIcon } from './icons/ui';
 
 const SkillNode = ({ skill, isUnlocked, isAvailable, onUnlock, canAfford }) => {
   const [showTooltip, setShowTooltip] = useState(false);
+  const [justUnlocked, setJustUnlocked] = useState(false);
 
   const isActive = skill.type === SKILL_TYPE.ACTIVE;
   const isStarter = skill.starterSkill;
@@ -36,6 +37,8 @@ const SkillNode = ({ skill, isUnlocked, isAvailable, onUnlock, canAfford }) => {
   const handleClick = () => {
     if (isAvailable && !isUnlocked && canAfford) {
       onUnlock(skill.id);
+      setJustUnlocked(true);
+      setTimeout(() => setJustUnlocked(false), 300);
     }
   };
 
@@ -66,6 +69,7 @@ const SkillNode = ({ skill, isUnlocked, isAvailable, onUnlock, canAfford }) => {
           ${isAvailable && !isUnlocked && canAfford ? 'hover:scale-110 hover:ring-2 cursor-pointer' : ''}
           ${ringColor}
           ${isUnlocked ? 'ring-2' : ''}
+          ${justUnlocked ? 'animate-skill-activation' : ''}
         `}
       >
         <SkillIcon skillId={skill.id} size={32} />

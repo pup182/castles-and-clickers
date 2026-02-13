@@ -1546,7 +1546,7 @@ export const SKILL_TREES = {
         description: '+15% crit chance, +15% damage to full HP targets.',
         type: SKILL_TYPE.PASSIVE,
         tier: 0,
-        passive: { type: 'crit_bonus', percent: 15 },
+        passive: { type: 'crit_bonus', percent: 15, openerDamageBonus: 15 },
       },
 
       // Tier 1
