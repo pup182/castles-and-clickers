@@ -403,7 +403,7 @@ const GameLayout = () => {
                               {raidData.name}
                             </div>
                             <div className="pixel-label">
-                              Raid - Level {dungeon.level}
+                              Raid
                             </div>
                           </div>
                         </div>
@@ -444,8 +444,8 @@ const GameLayout = () => {
                         </div>
                       )}
 
-                      {/* Next unlock indicator */}
-                      {upcomingUnlocks && (() => {
+                      {/* Next unlock indicator (hidden in raids) */}
+                      {!isRaidDungeon && upcomingUnlocks && (() => {
                         const isCurrentLevel = dungeon.level === upcomingUnlocks.dungeonRequired;
                         return (
                           <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${

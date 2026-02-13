@@ -4,17 +4,20 @@ import ItemIcon from './icons/ItemIcon';
 import { BagIcon } from './icons/ui';
 
 const ItemCard = ({ item, onEquip, onSell, showActions = true }) => {
+  const isUnique = item?.isUnique;
   return (
     <div
-      className="bg-gray-900 rounded-lg p-3 border-2 transition-all hover:border-gray-600"
+      className={`bg-gray-900 rounded-lg p-3 border-2 transition-all hover:border-gray-600 ${isUnique ? 'unique-shimmer-subtle' : ''}`}
       style={{ borderColor: item.rarityColor }}
     >
       <div className="flex items-center gap-2 mb-2">
-        <ItemIcon item={item} size={28} />
+        <div className={isUnique ? 'unique-sparkle' : ''}>
+          <ItemIcon item={item} size={28} />
+        </div>
         <div className="flex-1 min-w-0">
           <h4
-            className="font-medium text-sm truncate"
-            style={{ color: item.rarityColor }}
+            className={`font-medium text-sm truncate ${isUnique ? 'unique-text-shimmer' : ''}`}
+            style={isUnique ? {} : { color: item.rarityColor }}
           >
             {item.name}
           </h4>

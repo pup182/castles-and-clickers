@@ -96,7 +96,7 @@ const UniqueDropCelebration = () => {
 
       {/* Main celebration card */}
       <div
-        className={`relative pixel-panel p-8 max-w-md mx-4 text-center transform transition-transform duration-300 ${
+        className={`relative pixel-panel p-8 max-w-md mx-4 text-center transform transition-transform duration-300 unique-showcase ${
           isClosing ? 'scale-90 opacity-0' : 'scale-100'
         }`}
         style={{
@@ -113,7 +113,7 @@ const UniqueDropCelebration = () => {
         </div>
 
         {/* Header */}
-        <h2 className="pixel-title text-2xl text-cyan-400 mb-6 uppercase tracking-wider">
+        <h2 className="pixel-title text-2xl mb-6 uppercase tracking-wider unique-text-shimmer">
           Unique Item!
         </h2>
 
@@ -129,17 +129,19 @@ const UniqueDropCelebration = () => {
           />
 
           {/* Item icon */}
-          <div className="relative mx-auto w-24 h-24 flex items-center justify-center rounded-lg bg-cyan-900/50 border-2 border-cyan-500"
+          <div className="relative mx-auto w-24 h-24 flex items-center justify-center rounded-lg bg-cyan-900/50 unique-shimmer"
             style={{
               boxShadow: '0 0 20px rgba(6, 182, 212, 0.5)',
             }}
           >
-            <ItemIcon item={item} size={64} />
+            <div className="unique-sparkle">
+              <ItemIcon item={item} size={64} />
+            </div>
           </div>
         </div>
 
         {/* Item name */}
-        <h3 className="pixel-title text-xl text-cyan-300 mb-1">
+        <h3 className="pixel-title text-xl mb-1 unique-text-shimmer">
           {itemData.name}
         </h3>
         <div className="text-cyan-500/70 text-sm capitalize mb-4">
@@ -167,13 +169,13 @@ const UniqueDropCelebration = () => {
 
         {/* Unique power */}
         {itemData.uniquePower && (
-          <div className="bg-cyan-900/30 border border-cyan-600/50 rounded px-3 py-2 mb-4">
+          <div className="bg-cyan-900/30 rounded px-3 py-2 mb-4 unique-shimmer-subtle">
             <div className="flex items-center justify-center gap-2 mb-1">
-              <div className="w-2 h-2 bg-cyan-500 transform rotate-45" />
-              <span className="text-cyan-400 font-bold uppercase text-sm">
+              <div className="w-2 h-2 bg-cyan-500 transform rotate-45 unique-sparkle" />
+              <span className="font-bold uppercase text-sm unique-text-shimmer">
                 {itemData.uniquePower.name}
               </span>
-              <div className="w-2 h-2 bg-cyan-500 transform rotate-45" />
+              <div className="w-2 h-2 bg-cyan-500 transform rotate-45 unique-sparkle" />
             </div>
             <div className="text-cyan-300/80 text-xs">
               {itemData.uniquePower.description}

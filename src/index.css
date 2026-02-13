@@ -572,3 +572,201 @@ svg {
   animation: death-fade 0.9s ease-out forwards;
   will-change: transform, opacity, filter;
 }
+
+/* ========================================
+   UNIQUE ITEM SHIMMER EFFECTS
+   ======================================== */
+
+/* Unique color definition */
+:root {
+  --color-unique: #06b6d4;
+  --color-unique-light: #22d3ee;
+  --color-unique-dark: #0891b2;
+  --color-unique-glow: rgba(6, 182, 212, 0.6);
+}
+
+/* Shimmer animation - traveling light across element */
+@keyframes unique-shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* Glow pulse animation - smooth and subtle */
+@keyframes unique-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px var(--color-unique-glow);
+  }
+  50% {
+    box-shadow: 0 0 16px var(--color-unique-glow), 0 0 24px rgba(6, 182, 212, 0.25);
+  }
+}
+
+/* Text shimmer animation */
+@keyframes unique-text-shimmer {
+  0% {
+    background-position: -100% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* Border traveling light */
+@keyframes unique-border-travel {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Sparkle animation for icons */
+@keyframes unique-sparkle {
+  0%, 100% {
+    filter: brightness(1) drop-shadow(0 0 2px var(--color-unique));
+  }
+  25% {
+    filter: brightness(1.3) drop-shadow(0 0 4px var(--color-unique-light));
+  }
+  50% {
+    filter: brightness(1.1) drop-shadow(0 0 6px var(--color-unique));
+  }
+  75% {
+    filter: brightness(1.4) drop-shadow(0 0 3px var(--color-unique-light));
+  }
+}
+
+/* === UNIQUE SHIMMER CLASSES === */
+
+/* Shimmer border effect - apply to containers */
+.unique-shimmer {
+  position: relative;
+  border-color: var(--color-unique) !important;
+  animation: unique-glow-pulse 2s ease-in-out infinite;
+}
+
+.unique-shimmer::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 35%,
+    rgba(34, 211, 238, 0.4) 45%,
+    rgba(255, 255, 255, 0.6) 50%,
+    rgba(34, 211, 238, 0.4) 55%,
+    transparent 65%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: unique-shimmer 2.5s linear infinite;
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* Shimmer text effect */
+.unique-text-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-unique) 0%,
+    var(--color-unique) 40%,
+    var(--color-unique-light) 45%,
+    #ffffff 50%,
+    var(--color-unique-light) 55%,
+    var(--color-unique) 60%,
+    var(--color-unique) 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: unique-text-shimmer 3s linear infinite;
+}
+
+/* Glow effect without shimmer overlay */
+.unique-glow {
+  border-color: var(--color-unique) !important;
+  animation: unique-glow-pulse 2.5s ease-in-out infinite;
+}
+
+/* Icon sparkle effect */
+.unique-sparkle {
+  animation: unique-sparkle 2s ease-in-out infinite;
+}
+
+/* Subtle shimmer for smaller elements */
+.unique-shimmer-subtle {
+  position: relative;
+  overflow: hidden;
+}
+
+.unique-shimmer-subtle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(34, 211, 238, 0.2) 50%,
+    transparent 100%
+  );
+  animation: unique-shimmer 2s linear infinite;
+  pointer-events: none;
+}
+
+/* Border with traveling gradient */
+.unique-border-animated {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--color-bg-dark), var(--color-bg-dark)) padding-box,
+    linear-gradient(
+      90deg,
+      var(--color-unique-dark) 0%,
+      var(--color-unique) 25%,
+      var(--color-unique-light) 50%,
+      var(--color-unique) 75%,
+      var(--color-unique-dark) 100%
+    ) border-box;
+  background-size: 100% 100%, 300% 100%;
+  animation: unique-border-travel 3s linear infinite;
+}
+
+/* Combined effect for important unique displays */
+.unique-showcase {
+  position: relative;
+  border: 2px solid var(--color-unique);
+  animation: unique-glow-pulse 2s ease-in-out infinite;
+  overflow: hidden;
+}
+
+.unique-showcase::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(34, 211, 238, 0.15) 45%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(34, 211, 238, 0.15) 55%,
+    transparent 60%,
+    transparent 100%
+  );
+  background-size: 250% 100%;
+  animation: unique-shimmer 3s linear infinite;
+  pointer-events: none;
+}

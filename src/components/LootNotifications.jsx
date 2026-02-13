@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useGameStore } from '../store/gameStore';
 import ItemIcon from './icons/ItemIcon';
-import { CheckIcon, WarningIcon } from './icons/ui';
+import { CheckIcon, WarningIcon, StarIcon, TrophyIcon } from './icons/ui';
 
 const LootNotifications = () => {
   // OPTIMIZATION: Use individual selectors to avoid re-renders on unrelated state changes
@@ -146,10 +146,12 @@ const Notification = ({ notification, onDismiss }) => {
         return (
           <>
             <div className="flex items-center gap-2">
-              <ItemIcon item={item} size={20} />
-              <span className="font-medium text-amber-400">{item.name}</span>
+              <div className="unique-sparkle">
+                <ItemIcon item={item} size={20} />
+              </div>
+              <span className="font-medium unique-text-shimmer">{item.name}</span>
             </div>
-            <div className="text-xs text-amber-300 mt-1">
+            <div className="text-xs text-cyan-300 mt-1">
               New unique added to collection!
             </div>
           </>
@@ -159,14 +161,34 @@ const Notification = ({ notification, onDismiss }) => {
         return (
           <>
             <div className="flex items-center gap-2">
-              <ItemIcon item={item} size={20} />
-              <span className="font-medium text-amber-400">{item.name}</span>
+              <div className="unique-sparkle">
+                <ItemIcon item={item} size={20} />
+              </div>
+              <span className="font-medium unique-text-shimmer">{item.name}</span>
             </div>
             <div className="text-xs text-yellow-400 mt-1">
               Duplicate unique - converted to {notification.gold}g
             </div>
           </>
         );
+
+      case 'collection-milestone': {
+        const { collectionName, owned, total, isComplete } = notification;
+        if (isComplete) {
+          return (
+            <div className="flex items-center gap-2">
+              <TrophyIcon size={18} className="unique-sparkle" />
+              <span className="font-bold unique-text-shimmer">{collectionName.toUpperCase()} COMPLETE!</span>
+            </div>
+          );
+        }
+        return (
+          <div className="flex items-center gap-2">
+            <StarIcon size={16} className="unique-sparkle" />
+            <span className="unique-text-shimmer">{owned}/{total} {collectionName} uniques</span>
+          </div>
+        );
+      }
 
       default:
         return null;
@@ -180,8 +202,9 @@ const Notification = ({ notification, onDismiss }) => {
       case 'looted': return notification.upgradeFor ? '#22c55e' : item.rarityColor;
       case 'inventory-full': return '#ef4444';
       case 'auto-equipped': return '#22c55e';
-      case 'unique-drop': return '#f59e0b'; // amber
-      case 'unique-duplicate': return '#f59e0b'; // amber
+      case 'unique-drop': return '#06b6d4'; // unique cyan
+      case 'unique-duplicate': return '#06b6d4'; // unique cyan
+      case 'collection-milestone': return notification.isComplete ? '#eab308' : '#06b6d4';
       default: return '#6b7280';
     }
   };

@@ -81,22 +81,22 @@ const EquippedSlot = ({ label, slot, item, onClick, isSelected, highestPartyLeve
         {item ? <ItemIcon item={item} size={20} /> : <SlotIcon size={20} />}
         {isUnique && (
           <div className="absolute -top-1 -right-1">
-            <StarIcon size={10} className="text-cyan-400" />
+            <StarIcon size={10} className="text-cyan-400 unique-sparkle" />
           </div>
         )}
       </div>
       <div className="flex-1 min-w-0">
         {item ? (
           <>
-            <div className="text-xs font-medium truncate flex items-center gap-1" style={{ color: item.rarityColor }}>
+            <div className={`text-xs font-medium truncate flex items-center gap-1 ${isUnique ? 'unique-text-shimmer' : ''}`} style={isUnique ? {} : { color: item.rarityColor }}>
               {item.name}
-              {isUnique && <StarIcon size={10} className="text-cyan-400 flex-shrink-0" />}
+              {isUnique && <StarIcon size={10} className="text-cyan-400 flex-shrink-0 unique-sparkle" />}
             </div>
             <div className="text-[10px] text-gray-500">
               {Object.entries(displayStats).map(([s, v]) => `+${v} ${s.replace('maxHp', 'HP')}`).join(' ')}
             </div>
             {isUnique && item.uniquePower ? (
-              <div className="text-[9px] text-cyan-400 truncate">
+              <div className="text-[9px] truncate unique-text-shimmer">
                 {item.uniquePower.name}
               </div>
             ) : affixes.length > 0 && (
@@ -133,15 +133,15 @@ const InventoryRow = ({ item, canEquip, onEquip, onSell, comparison, highestPart
         <ItemIcon item={item} size={18} />
         {isUnique && (
           <div className="absolute -top-1 -right-1">
-            <StarIcon size={8} className="text-cyan-400" />
+            <StarIcon size={8} className="text-cyan-400 unique-sparkle" />
           </div>
         )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1">
-          <span className="text-xs font-medium truncate" style={{ color: item.rarityColor }}>{item.name}</span>
+          <span className={`text-xs font-medium truncate ${isUnique ? 'unique-text-shimmer' : ''}`} style={isUnique ? {} : { color: item.rarityColor }}>{item.name}</span>
           {comparison?.isBetter && <span className="text-green-400 text-[10px] font-bold">▲</span>}
-          {isUnique && <StarIcon size={10} className="text-cyan-400 flex-shrink-0" />}
+          {isUnique && <StarIcon size={10} className="text-cyan-400 flex-shrink-0 unique-sparkle" />}
           {!isUnique && affixes.length > 0 && <span className="text-purple-400 text-[10px]">✦</span>}
         </div>
         <div className="text-[10px] text-gray-500">
@@ -149,8 +149,8 @@ const InventoryRow = ({ item, canEquip, onEquip, onSell, comparison, highestPart
         </div>
         {isUnique && item.uniquePower ? (
           <>
-            <div className="text-xs text-cyan-400 mt-1">
-              <span className="font-medium">{item.uniquePower.name}:</span> {item.uniquePower.description}
+            <div className="text-xs mt-1">
+              <span className="font-medium unique-text-shimmer">{item.uniquePower.name}:</span> <span className="text-cyan-300">{item.uniquePower.description}</span>
             </div>
             <div className="text-[9px] text-gray-500">
               {formatClassRestrictions(item)}

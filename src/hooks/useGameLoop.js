@@ -48,7 +48,7 @@ export const useGameLoop = ({
 
     if (!roomCombat || !dungeon) return;
 
-    const { phase, monsters, tick, dungeon: mazeDungeon } = roomCombat;
+    const { phase, monsters, heroes: combatHeroes, tick, dungeon: mazeDungeon } = roomCombat;
 
     // Phase: SETUP - initialize maze dungeon
     if (phase === PHASES.SETUP) {
@@ -77,6 +77,14 @@ export const useGameLoop = ({
     if (phase === PHASES.CLEARING) {
       if (tick >= 2) {
         const aliveMonsters = monsters.filter(m => m.stats.hp > 0);
+        const aliveHeroes = (combatHeroes || []).filter(h => h.stats.hp > 0);
+
+        // Check if party wiped during clearing (e.g., from DOT)
+        if (aliveHeroes.length === 0) {
+          updateRoomCombat({ phase: PHASES.DEFEAT, tick: 0 });
+          addCombatLog({ type: 'system', message: 'Party Defeated!' });
+          return;
+        }
 
         if (aliveMonsters.length === 0) {
           // OPTIMIZATION: Single batched update

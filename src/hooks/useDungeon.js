@@ -65,9 +65,9 @@ export const useDungeon = ({ addEffect }) => {
       mazeDungeon = generateMazeDungeon(dungeon.level);
     }
 
-    // Raid multiplier for raid dungeons
+    // Raid multiplier for raid dungeons (15% bonus over normal scaling)
     const dungeonType = dungeonProgress?.currentType || 'normal';
-    const raidMultiplier = dungeonType === 'raid' ? 1.5 : 1.0;
+    const raidMultiplier = dungeonType === 'raid' ? 1.15 : 1.0;
 
     // Place monsters (base scaling is 1.12^(level-1) in placeMonsters)
     const allMonsters = placeMonsters(mazeDungeon, dungeon.level, {

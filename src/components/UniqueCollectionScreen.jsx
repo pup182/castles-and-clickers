@@ -72,9 +72,9 @@ const UniqueItemCard = ({ itemId, isOwned, isSelected, onSelect }) => {
       className={`
         relative p-2 rounded border-2 transition-all
         ${isSelected
-          ? 'border-cyan-400 bg-cyan-900/30'
+          ? 'border-cyan-400 bg-cyan-900/30 unique-glow'
           : isOwned
-            ? 'border-cyan-500/50 bg-gray-800/50 hover:border-cyan-400'
+            ? 'border-cyan-500/50 bg-gray-800/50 hover:border-cyan-400 unique-shimmer-subtle'
             : 'border-gray-700 bg-gray-900/50 hover:border-gray-500'
         }
       `}
@@ -92,7 +92,7 @@ const UniqueItemCard = ({ itemId, isOwned, isSelected, onSelect }) => {
         )}
       </div>
       {/* Item name */}
-      <div className={`text-xs mt-1 truncate max-w-[64px] ${isOwned ? 'text-cyan-400' : 'text-gray-500'}`}>
+      <div className={`text-xs mt-1 truncate max-w-[64px] ${isOwned ? 'unique-text-shimmer' : 'text-gray-500'}`}>
         {isOwned ? item.name : '???'}
       </div>
     </button>
@@ -113,7 +113,7 @@ const UniqueDetailPanel = ({ itemId, isOwned, highestPartyLevel }) => {
   const scaledStats = scaleUniqueStats(item.baseStats, highestPartyLevel);
 
   return (
-    <div className="pixel-panel p-4 border-cyan-500/50">
+    <div className={`pixel-panel p-4 ${isOwned ? 'unique-glow' : 'border-cyan-500/50'}`}>
       {/* Header */}
       <div className="flex items-start gap-3 mb-4">
         <div className={`${!isOwned ? 'opacity-40 grayscale' : ''}`}>
@@ -123,7 +123,7 @@ const UniqueDetailPanel = ({ itemId, isOwned, highestPartyLevel }) => {
           />
         </div>
         <div className="flex-1">
-          <h3 className="text-lg font-bold text-cyan-400">
+          <h3 className={`text-lg font-bold ${isOwned ? 'unique-text-shimmer' : 'text-cyan-400'}`}>
             {isOwned ? item.name : '???'}
           </h3>
           <div className="text-sm text-gray-400">
@@ -161,8 +161,8 @@ const UniqueDetailPanel = ({ itemId, isOwned, highestPartyLevel }) => {
           {/* Unique Power */}
           <div className="pixel-panel-dark p-3 mb-3">
             <div className="flex items-center gap-2 mb-2">
-              <StarIcon size={14} className="text-cyan-400" />
-              <span className="text-cyan-400 font-bold">{item.uniquePower.name}</span>
+              <StarIcon size={14} className="text-cyan-400 unique-sparkle" />
+              <span className="font-bold unique-text-shimmer">{item.uniquePower.name}</span>
             </div>
             <p className="text-sm text-gray-300">{item.uniquePower.description}</p>
           </div>
@@ -273,10 +273,10 @@ const UniqueCollectionScreen = () => {
       <div className="pixel-panel-dark p-4 mb-4">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <StarIcon size={20} className="text-cyan-400" />
-            <span className="pixel-title text-cyan-400">Unique Collection</span>
+            <StarIcon size={20} className="text-cyan-400 unique-sparkle" />
+            <span className="pixel-title unique-text-shimmer">Unique Collection</span>
           </div>
-          <span className="text-lg font-bold text-cyan-400">
+          <span className="text-lg font-bold unique-text-shimmer">
             {stats.owned}/{stats.total} ({stats.percent}%)
           </span>
         </div>

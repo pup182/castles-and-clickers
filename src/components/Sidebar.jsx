@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useMemo, useState } from 'react';
-import { useGameStore, xpForLevel } from '../store/gameStore';
+import { useGameStore, xpForLevel, calculateHeroStats } from '../store/gameStore';
 import { getSkillById, SKILL_TYPE } from '../data/skillTrees';
 import { STATUS_EFFECTS, STATUS_TYPE } from '../data/statusEffects';
 import { CLASSES, ROLE_INFO } from '../data/classes';
@@ -15,8 +15,21 @@ const EMPTY_ARRAY = [];
 
 // Memoized Hero Card - only re-renders when this hero's data changes
 const HeroCard = memo(({ hero, combatHero, cooldowns, effects, buffs, usedPhoenix, inDungeon }) => {
-  const currentHp = combatHero?.stats?.hp ?? hero.stats?.hp ?? 100;
-  const maxHp = combatHero?.stats?.maxHp ?? hero.stats?.maxHp ?? 100;
+  // Get stored HP for when not in dungeon
+  const heroHp = useGameStore(state => state.heroHp);
+  const allHeroes = useGameStore(state => state.heroes);
+
+  // Calculate HP - use combat stats if in dungeon, otherwise use stored heroHp
+  const { currentHp, maxHp } = useMemo(() => {
+    if (combatHero?.stats) {
+      return { currentHp: combatHero.stats.hp, maxHp: combatHero.stats.maxHp };
+    }
+    // Not in dungeon - calculate stats and use stored HP
+    const stats = calculateHeroStats(hero, allHeroes);
+    const max = stats.maxHp || 100;
+    const current = heroHp[hero.id] ?? max;
+    return { currentHp: current, maxHp: max };
+  }, [combatHero, hero, heroHp, allHeroes]);
   const hpPercent = Math.max(0, Math.min(100, (currentHp / maxHp) * 100));
   const isDead = currentHp <= 0 || buffs.ghost;
 

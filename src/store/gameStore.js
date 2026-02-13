@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { CLASSES, PARTY_SLOTS, getClassesByRole } from '../data/classes';
 import { getPassiveAffixBonuses } from '../game/affixEngine';
-import { RAIDS, isRaidUnlocked } from '../data/raids';
+import { RAIDS, isRaidUnlocked, getRaidUniqueIds } from '../data/raids';
 import { scaleUniqueStats } from '../data/uniqueItems';
 
 // State validation middleware - catches bugs early by checking state integrity
@@ -526,6 +526,29 @@ const createHero = (classId, name, startingLevel = 1) => {
   };
 };
 
+// Helper to map unique templateId to its collection group
+const WORLD_BOSS_UNIQUES = ['ancient_bark', 'crown_of_the_fallen', 'magma_core', 'void_heart'];
+const RAID_COLLECTIONS = [
+  { id: 'sunken_temple', name: 'Sunken Temple' },
+  { id: 'cursed_manor', name: 'Cursed Manor' },
+  { id: 'sky_fortress', name: 'Sky Fortress' },
+  { id: 'the_abyss', name: 'The Abyss' },
+  { id: 'void_throne', name: 'Void Throne' },
+];
+
+const getCollectionForUnique = (templateId) => {
+  if (WORLD_BOSS_UNIQUES.includes(templateId)) {
+    return { id: 'world_bosses', name: 'World Bosses', uniques: WORLD_BOSS_UNIQUES };
+  }
+  for (const raid of RAID_COLLECTIONS) {
+    const raidUniques = getRaidUniqueIds(raid.id);
+    if (raidUniques.includes(templateId)) {
+      return { id: raid.id, name: raid.name, uniques: raidUniques };
+    }
+  }
+  return null;
+};
+
 export const useGameStore = create(
   validationMiddleware(
     persist(
@@ -571,6 +594,7 @@ export const useGameStore = create(
       ownedUniques: [],  // Array of unique item template IDs (e.g., ['ancient_bark', 'void_heart'])
       unreadUniques: [], // Array of unique item IDs that haven't been viewed yet (for "NEW" badge)
       pendingUniqueCelebration: null, // Item to show in celebration modal
+      pendingCollectionMilestone: null, // Milestone notification to show after modals clear
       combatPauseUntil: 0, // Timestamp when combat should resume (for dramatic phase transitions)
 
       // Combat state (full state machine)
@@ -1630,6 +1654,7 @@ export const useGameStore = create(
 
           // Trigger celebration modal for new unique
           get().triggerUniqueCelebration(uniqueItem);
+          get().checkCollectionMilestone(templateId);
 
           return { action: 'unique-looted', item: uniqueItem };
         } else {
@@ -1651,6 +1676,7 @@ export const useGameStore = create(
 
           // Trigger celebration modal for new unique
           get().triggerUniqueCelebration(uniqueItem);
+          get().checkCollectionMilestone(templateId);
 
           return { action: 'unique-looted', item: uniqueItem };
         }
@@ -1675,7 +1701,43 @@ export const useGameStore = create(
 
       // Clear the celebration modal
       clearUniqueCelebration: () => {
+        const { pendingRaidRecap } = get();
         set({ pendingUniqueCelebration: null });
+        // Show milestone if no raid recap waiting
+        if (!pendingRaidRecap) {
+          get().showPendingMilestone();
+        }
+      },
+
+      // Check and store collection milestone (shown after modals clear)
+      checkCollectionMilestone: (templateId) => {
+        const { ownedUniques } = get();
+        const collection = getCollectionForUnique(templateId);
+        if (!collection) return;
+
+        const ownedCount = collection.uniques.filter(id => ownedUniques.includes(id)).length;
+        const isComplete = ownedCount === collection.uniques.length;
+
+        set({
+          pendingCollectionMilestone: {
+            collectionName: collection.name,
+            owned: ownedCount,
+            total: collection.uniques.length,
+            isComplete,
+          },
+        });
+      },
+
+      // Show pending collection milestone notification
+      showPendingMilestone: () => {
+        const { pendingCollectionMilestone } = get();
+        if (!pendingCollectionMilestone) return;
+
+        get().addLootNotification({
+          type: 'collection-milestone',
+          ...pendingCollectionMilestone,
+        });
+        set({ pendingCollectionMilestone: null });
       },
 
       // Pause combat for a duration (for dramatic moments like phase transitions)
@@ -2209,7 +2271,10 @@ export const useGameStore = create(
       },
 
       // Clear raid recap (user dismissed the screen)
-      clearRaidRecap: () => set({ pendingRaidRecap: null }),
+      clearRaidRecap: () => {
+        set({ pendingRaidRecap: null });
+        get().showPendingMilestone();
+      },
 
       // Abandon raid (leave without completing)
       abandonRaid: () => {
@@ -2354,9 +2419,16 @@ export const useGameStore = create(
 
       // OPTIMIZATION: Batch sync all hero HPs at once (for end of combat tick)
       syncHeroHp: (heroHpMap) => {
-        set(state => ({
-          heroHp: { ...state.heroHp, ...heroHpMap },
-        }));
+        set(state => {
+          // Clean existing heroHp of any summon IDs that leaked in
+          const cleanedHeroHp = {};
+          for (const id in state.heroHp) {
+            if (!id.startsWith('pet_') && !id.startsWith('clone_') && !id.startsWith('undead_')) {
+              cleanedHeroHp[id] = state.heroHp[id];
+            }
+          }
+          return { heroHp: { ...cleanedHeroHp, ...heroHpMap } };
+        });
       },
 
       // Heal a hero
@@ -2739,6 +2811,7 @@ export const useGameStore = create(
           ownedUniques: [],
           unreadUniques: [],
           pendingUniqueCelebration: null,
+          pendingCollectionMilestone: null,
           combatPauseUntil: 0,
           shop: {
             items: [],

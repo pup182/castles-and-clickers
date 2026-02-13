@@ -2,15 +2,8 @@ import { useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useGameStore } from '../store/gameStore';
 import { RAIDS } from '../data/raids';
-import { UNIQUE_ITEMS } from '../data/uniqueItems';
 import { RaidBossIcon } from './icons/raidBosses';
-import { StarIcon, CheckIcon, CrownIcon, ChestIcon } from './icons/ui';
-import ItemIcon from './icons/ItemIcon';
-
-// Helper to find unique item by name
-const findUniqueByName = (name) => {
-  return Object.values(UNIQUE_ITEMS).find(item => item.name === name);
-};
+import { StarIcon, CheckIcon, CrownIcon } from './icons/ui';
 
 // Map boss IDs to sprite IDs
 const RAID_BOSS_SPRITE_MAP = {
@@ -38,30 +31,20 @@ const getRaidBossSpriteId = (bossId) => RAID_BOSS_SPRITE_MAP[bossId] || 'boss_vo
 
 const RaidRecapScreen = () => {
   const pendingRaidRecap = useGameStore(state => state.pendingRaidRecap);
+  const pendingUniqueCelebration = useGameStore(state => state.pendingUniqueCelebration);
   const clearRaidRecap = useGameStore(state => state.clearRaidRecap);
 
   const handleClose = useCallback(() => {
     clearRaidRecap();
   }, [clearRaidRecap]);
 
-  if (!pendingRaidRecap) return null;
+  // Wait for unique celebration to be dismissed first
+  if (!pendingRaidRecap || pendingUniqueCelebration) return null;
 
   const raid = RAIDS[pendingRaidRecap.raidId];
   if (!raid) return null;
 
   const allBosses = [...raid.wingBosses, { ...raid.finalBoss, isFinalBoss: true }];
-
-  // Extract unique drops from loot messages and look up full item data
-  const uniqueDrops = pendingRaidRecap.lootDrops
-    .filter(msg => msg.includes('UNIQUE DROP'))
-    .map(msg => {
-      const match = msg.match(/UNIQUE DROP: ([^!(]+)/);
-      if (!match) return null;
-      const name = match[1].trim();
-      const item = findUniqueByName(name);
-      return item ? { ...item, isDuplicate: msg.includes('duplicate') } : { name, isDuplicate: msg.includes('duplicate') };
-    })
-    .filter(Boolean);
 
   return createPortal(
     <div
@@ -132,66 +115,6 @@ const RaidRecapScreen = () => {
                 </div>
               );
             })}
-          </div>
-        </div>
-
-        {/* Unique drops */}
-        {uniqueDrops.length > 0 && (
-          <div className="mb-6">
-            <div className="text-sm text-gray-400 mb-3 uppercase tracking-wider flex items-center justify-center gap-2">
-              <ChestIcon size={16} className="text-amber-400" />
-              Unique Loot
-            </div>
-            <div className="space-y-3">
-              {uniqueDrops.map((item, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-3 bg-amber-900/20 border border-amber-500/30 rounded px-3 py-2"
-                >
-                  {item.slot && (
-                    <div className="flex-shrink-0">
-                      <ItemIcon
-                        item={{ templateId: item.id, slot: item.slot, rarity: 'legendary' }}
-                        size={40}
-                      />
-                    </div>
-                  )}
-                  <div className="flex-1 text-left">
-                    <div className="text-amber-400 font-bold">
-                      {item.name}
-                      {item.isDuplicate && (
-                        <span className="text-amber-600 text-xs ml-2">(duplicate)</span>
-                      )}
-                    </div>
-                    {item.uniquePower && (
-                      <div className="flex items-center gap-1 text-xs text-amber-300/70">
-                        <StarIcon size={10} className="text-amber-500" />
-                        {item.uniquePower.name}
-                      </div>
-                    )}
-                    {item.slot && (
-                      <div className="text-xs text-gray-500 capitalize">{item.slot}</div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Stats summary */}
-        <div className="flex justify-center gap-8 mb-6 text-sm">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-400">
-              {pendingRaidRecap.defeatedBosses.length}
-            </div>
-            <div className="text-gray-500">Bosses</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-amber-400">
-              {uniqueDrops.length}
-            </div>
-            <div className="text-gray-500">Uniques</div>
           </div>
         </div>
 

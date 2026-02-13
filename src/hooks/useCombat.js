@@ -258,12 +258,17 @@ export const useCombat = ({ addEffect }) => {
     const newHeroes = new Array(heroCount);
     const newMonsters = new Array(monsterCount);
 
+    // Get current heroHp from store (handles resurrection scroll, etc. that may have synced HP)
+    const storedHeroHp = useGameStore.getState().heroHp;
+
     for (let i = 0; i < heroCount; i++) {
       const h = combatHeroes[i];
       // Sync skills from store heroes (in case skills were unlocked mid-dungeon)
       const storeHero = heroes.find(sh => sh.id === h.id);
       const syncedSkills = storeHero?.skills || h.skills || [];
-      newHeroes[i] = { ...h, stats: { ...h.stats }, skills: syncedSkills };
+      // Use stored HP if available (handles resurrection scroll syncing HP before roomCombat update)
+      const currentHp = storedHeroHp[h.id] !== undefined ? storedHeroHp[h.id] : h.stats.hp;
+      newHeroes[i] = { ...h, stats: { ...h.stats, hp: currentHp }, skills: syncedSkills };
     }
     for (let i = 0; i < monsterCount; i++) {
       const m = monsters[i];
@@ -414,8 +419,13 @@ export const useCombat = ({ addEffect }) => {
     // Helper to handle unit death - clears buffs/debuffs and adds ghost status
     // Also handles death explosion affix for monsters
     const handleUnitDeath = (unitId, monster = null) => {
-      // Clear all buffs and status effects, replace with ghost debuff
-      newBuffs[unitId] = { ghost: true };
+      // Check if this is an undead summon - they don't leave ghosts, just disappear
+      const hero = newHeroes.find(h => h.id === unitId);
+      const isUndeadSummon = hero?.isUndead;
+
+      // Clear all buffs and status effects
+      // Only add ghost debuff for real heroes and pets, not undead summons
+      newBuffs[unitId] = isUndeadSummon ? {} : { ghost: true };
       newStatusEffects[unitId] = [];
 
       // Handle death explosion affix (Explosive dungeon affix or elite affix)
@@ -2913,6 +2923,16 @@ export const useCombat = ({ addEffect }) => {
       }
     }
 
+    // Remove dead undead summons - they "crumble to dust" and shouldn't persist/render
+    for (let i = newHeroes.length - 1; i >= 0; i--) {
+      if (newHeroes[i].isUndead && newHeroes[i].stats.hp <= 0) {
+        const undeadId = newHeroes[i].id;
+        newHeroes.splice(i, 1);
+        const turnIdx = newTurnOrder.indexOf(undeadId);
+        if (turnIdx !== -1) newTurnOrder.splice(turnIdx, 1);
+      }
+    }
+
     // OPTIMIZATION: Get next turn state to include in batch
     const nextTurnState = getNextTurnState(roomCombat, newHeroes, newMonsters);
 
@@ -2937,8 +2957,10 @@ export const useCombat = ({ addEffect }) => {
     });
 
     // OPTIMIZATION: Batch sync all hero HPs to store in one call
+    // Skip summons (pets, clones, undead) - they don't persist between dungeons
     const heroHpSync = {};
     for (const hero of newHeroes) {
+      if (hero.isPet || hero.isClone || hero.isUndead) continue;
       heroHpSync[hero.id] = hero.stats.hp;
     }
     syncHeroHp(heroHpSync);
