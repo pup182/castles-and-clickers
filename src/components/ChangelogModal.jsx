@@ -9,9 +9,9 @@ const TYPE_BADGES = {
 };
 
 const ChangelogModal = ({ isOpen, onClose, lastSeenVersion }) => {
-  if (!isOpen) return null;
-
   const [showAll, setShowAll] = useState(false);
+
+  if (!isOpen) return null;
 
   // Show new entries if any, otherwise show the latest entries (manual open via version click)
   const newEntries = getChangesSince(lastSeenVersion);

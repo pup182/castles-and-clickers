@@ -141,13 +141,20 @@ export const createEconomySlice = (set, get) => ({
       let shopItem = item;
       if (RARITY_ORDER.indexOf(item.rarity) > maxRarityIndex) {
         const allowedRarities = RARITY_ORDER.slice(0, maxRarityIndex + 1);
-        const cappedRarity = allowedRarities[Math.floor(Math.random() * allowedRarities.length)];
-        shopItem = generateEquipment(highestDungeonCleared, {
-          guaranteedRarity: cappedRarity,
-        });
-        // guaranteedRarity is a floor, not a cap — force rarity down if still too high
+        // Retry up to 5 times to get a correctly-rated item (guaranteedRarity is a floor)
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const cappedRarity = allowedRarities[Math.floor(Math.random() * allowedRarities.length)];
+          shopItem = generateEquipment(highestDungeonCleared, {
+            guaranteedRarity: cappedRarity,
+          });
+          if (RARITY_ORDER.indexOf(shopItem.rarity) <= maxRarityIndex) break;
+        }
+        // Final safety net — fully regenerate at the max allowed rarity
         if (RARITY_ORDER.indexOf(shopItem.rarity) > maxRarityIndex) {
-          shopItem.rarity = cappedRarity;
+          shopItem = generateEquipment(highestDungeonCleared, {
+            guaranteedRarity: RARITY_ORDER[maxRarityIndex],
+          });
+          shopItem.rarity = RARITY_ORDER[maxRarityIndex];
         }
       }
 

@@ -403,10 +403,13 @@ export const createDungeonSlice = (set, get) => ({
   },
 
   startAscensionDungeon: (level) => {
-    const { ascension, heroes, initializeHeroHp } = get();
+    const { ascension, heroes, initializeHeroHp, pendingDungeonBuffs } = get();
     if (!ascension.unlocked || heroes.length === 0) return false;
 
     initializeHeroHp();
+
+    // Consume pending dungeon buffs into active buffs
+    const activeBuffs = pendingDungeonBuffs.length > 0 ? [...pendingDungeonBuffs] : [];
 
     set({
       dungeon: {
@@ -416,7 +419,9 @@ export const createDungeonSlice = (set, get) => ({
         completed: false,
         type: 'ascension',
         ascensionLevel: ascension.level,
+        activeBuffs,
       },
+      pendingDungeonBuffs: [],
       dungeonProgress: {
         currentType: 'ascension',
         activeAffixes: [],
