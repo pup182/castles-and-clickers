@@ -314,7 +314,7 @@ All tanks deal low damage by design, but the game's idle nature means combat res
 | File | Lines | Responsibility | Status |
 |------|-------|----------------|--------|
 | ~~`src/hooks/useCombat.js`~~ | ~~3,508~~ → 560 | ~~Combat tick, damage calc, loot, status effects, death handling, XP/gold, viewport — all in one function~~ | **FIXED in v0.1.18** — Split into 6 files (orchestrator + 5 game modules) |
-| `src/store/gameStore.js` | 2,929 | 46+ action methods, state init, validation, helpers, persistence — single Zustand store | Open |
+| ~~`src/store/gameStore.js`~~ | ~~2,929~~ → 218 | ~~46+ action methods, state init, validation, helpers, persistence — single Zustand store~~ | **FIXED in v0.1.19** — Split into 5 slices + 5 helpers |
 | `src/components/icons/skills.jsx` | 2,697 | 143 SVG icon component exports |
 | `src/game/skillEngine.js` | 2,067 | Skill execution, passive effects (185-line switch), AI selection, effect handlers |
 | `src/data/skillTrees.js` | 1,930 | Skill tree definitions (data file — acceptable) |
@@ -336,12 +336,20 @@ The top 3 files (`useCombat.js`, `gameStore.js`, `skillEngine.js`) each contain 
 
 All functions share a mutable `ctx` object passed from the orchestrator. Game files never import `useGameStore` directly — store actions are wrapped as callbacks on `ctx`.
 
-**gameStore.js** could use Zustand slices:
-- `heroSlice.js` — 14 hero management actions
-- `inventorySlice.js` — 6 inventory actions
-- `combatSlice.js` — 8 combat state actions
-- `dungeonSlice.js` — 8 dungeon progression actions
-- `uniqueSlice.js` — 3 unique item actions
+**gameStore.js** — **COMPLETED (v0.1.19)**. Split into:
+- `src/store/gameStore.js` — Slim composition file, persist config, resetGame (~218 lines)
+- `src/store/slices/heroSlice.js` — Hero CRUD, bench, tavern, XP, skills (~480 lines)
+- `src/store/slices/inventorySlice.js` — Inventory, equipment, consumables, uniques, loot (~530 lines)
+- `src/store/slices/combatSlice.js` — Combat state, heroHp, combatLog (~170 lines)
+- `src/store/slices/dungeonSlice.js` — Dungeon lifecycle, raids, ascension (~330 lines)
+- `src/store/slices/economySlice.js` — Gold, homestead, shop, stats, game speed (~310 lines)
+- `src/store/helpers/throttledStorage.js` — Throttled localStorage IIFE (~60 lines)
+- `src/store/helpers/statCalculator.js` — calculateHeroStats, caches, xpForLevel (~210 lines)
+- `src/store/helpers/itemScoring.js` — STAT_PRIORITIES, calculateItemScore, calculateSellValue (~40 lines)
+- `src/store/helpers/heroGenerator.js` — Name lists, generateTavernHero, createHero (~170 lines)
+- `src/store/helpers/validation.js` — validateState, validationMiddleware (~85 lines)
+
+All imports remain through `gameStore.js` — zero consumer changes required.
 
 **skillEngine.js** could split:
 - `skillExecution.js` — executeSkillAbility refactored
@@ -568,7 +576,7 @@ For context, these systems are solid and should be preserved:
 | 7 | Speed stat dominance | Major | Class balance | Medium |
 | 8 | No onboarding | Medium | New player confusion | High |
 | 9 | Accessibility (ARIA, keyboard) | Medium–Critical | Excludes disabled players | High |
-| 10 | ~~File splitting (useCombat)~~ **DONE** / gameStore still open | Major | Maintainability | ~~High~~ Medium (remaining) |
+| 10 | ~~File splitting (useCombat + gameStore)~~ **DONE** | ~~Major~~ | ~~Maintainability~~ | **DONE (v0.1.18 + v0.1.19)** |
 | 11 | Magic numbers | Medium | Balance tuning difficulty | Medium |
 | 12 | Unicode → SVG icons | Low | Art consistency | Low |
 | 13 | Zero test coverage | Major | Regression risk | Very High |

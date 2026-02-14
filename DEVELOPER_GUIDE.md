@@ -94,7 +94,19 @@ src/
 │   └── useThrottledDisplay.js # Render throttling
 │
 ├── store/
-│   └── gameStore.js         # Zustand state (1355 lines)
+│   ├── gameStore.js         # Zustand composition + persistence (~218 lines)
+│   ├── slices/
+│   │   ├── heroSlice.js     # Hero CRUD, bench, tavern, XP, skills
+│   │   ├── inventorySlice.js # Inventory, equipment, consumables, uniques
+│   │   ├── combatSlice.js   # Combat state, heroHp, combatLog
+│   │   ├── dungeonSlice.js  # Dungeon lifecycle, raids, ascension
+│   │   └── economySlice.js  # Gold, homestead, shop, stats
+│   └── helpers/
+│       ├── throttledStorage.js # Throttled localStorage
+│       ├── statCalculator.js   # calculateHeroStats, caches
+│       ├── itemScoring.js      # Item scoring, sell values
+│       ├── heroGenerator.js    # Name gen, createHero, tavern heroes
+│       └── validation.js       # State validation middleware
 │
 └── main.jsx / App.jsx       # Entry points
 ```
@@ -103,7 +115,7 @@ src/
 
 ## State Management
 
-Single Zustand store (`gameStore.js`) with localStorage persistence.
+Zustand store split into 5 focused slices in `src/store/slices/`, composed in `gameStore.js` with localStorage persistence. All imports go through `gameStore.js`.
 
 ### Core State Structure
 
@@ -791,7 +803,9 @@ handleCombatTick():                          # useCombat.js (orchestrator)
 
 | File | Size | Purpose |
 |------|------|---------|
-| `store/gameStore.js` | 1355 lines | All state and actions |
+| `store/gameStore.js` | ~218 lines | Store composition, persistence, resetGame |
+| `store/slices/*.js` | 5 files | heroSlice, inventorySlice, combatSlice, dungeonSlice, economySlice |
+| `store/helpers/*.js` | 5 files | throttledStorage, statCalculator, itemScoring, heroGenerator, validation |
 | `hooks/useCombat.js` | ~560 lines | Combat orchestrator (dispatches to combat modules) |
 | `game/combatDamageResolution.js` | ~1100 lines | Basic attack damage, on-hit/kill/crit effects |
 | `game/combatSkillExecution.js` | ~530 lines | Hero skill and monster ability execution |

@@ -29,7 +29,7 @@ npm run preview   # Preview production build
 ## Architecture
 
 ### State Management
-Single Zustand store in `src/store/gameStore.js` manages all game state with localStorage persistence for offline progress. Use individual selectors to prevent unnecessary re-renders:
+Zustand store split into focused slices in `src/store/slices/` with helpers in `src/store/helpers/`, composed in `src/store/gameStore.js`. All imports go through `gameStore.js`. Use individual selectors to prevent unnecessary re-renders:
 ```js
 const heroes = useGameStore(state => state.heroes);  // Good
 const { heroes, gold } = useGameStore();              // Avoid - re-renders on any change
@@ -50,7 +50,7 @@ Combat uses initiative-based turn order with A* pathfinding for movement. Speed 
 
 ## Key Directories
 
-- `src/store/` - Zustand store (gameStore.js is 1355 lines, the central state authority)
+- `src/store/` - Zustand store: `gameStore.js` composes slices from `slices/` with helpers from `helpers/`
 - `src/game/` - Core mechanics: combat engine, monster AI, skill system, maze generation
 - `src/data/` - Game definitions: classes, equipment, monsters, skill trees, raids, affixes
 - `src/hooks/` - Custom hooks for game loop, combat, dungeon, effects
@@ -59,7 +59,7 @@ Combat uses initiative-based turn order with A* pathfinding for movement. Speed 
 
 ## Critical Files
 
-- `src/store/gameStore.js` - All state and actions (largest logic file)
+- `src/store/gameStore.js` - Store composition, persistence config, resetGame (~220 lines)
 - `src/game/mazeGenerator.js` - Room-based dungeon generation with A* pathfinding (29KB)
 - `src/hooks/useCombat.js` - Combat orchestrator (~560 lines, dispatches to combat modules)
 - `src/game/combatHelpers.js` - Combat utilities: targeting, death handling, viewport
@@ -150,7 +150,7 @@ Use pixel-styled CSS classes for UI elements:
 
 See `WEAK_POINTS.md` for detailed analysis. Key issues:
 - ~~useCombat.js needs splitting~~ (DONE - split into 6 files in v0.1.18)
-- gameStore.js still needs splitting into Zustand slices
+- ~~gameStore.js still needs splitting into Zustand slices~~ (DONE - split into 5 slices + 5 helpers in v0.1.19)
 - Magic numbers for game balance scattered in code
 - No TypeScript despite @types packages installed
 - No test coverage
