@@ -135,10 +135,6 @@ export const useGameStore = create(
               defeatedWingBosses: [],
               heroHpSnapshot: {},
             },
-            ascension: {
-              unlocked: false,
-              level: 0,
-            },
           });
         },
       }),

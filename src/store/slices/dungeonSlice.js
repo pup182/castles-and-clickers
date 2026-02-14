@@ -28,11 +28,6 @@ export const createDungeonSlice = (set, get) => ({
     lastSeenRaidsAt: 0,
     lastSeenVersion: null,
   },
-  ascension: {
-    level: 0,
-    unlocked: false,
-    highestLevel: 0,
-  },
   maxDungeonLevel: 30,
   raidState: {
     active: false,
@@ -131,13 +126,6 @@ export const createDungeonSlice = (set, get) => ({
           totalDungeonsCleared: state.stats.totalDungeonsCleared + 1,
         };
 
-        // Check for ascension unlock at level 30
-        if (clearedLevel >= maxDungeonLevel && !state.ascension.unlocked) {
-          updates.ascension = {
-            ...state.ascension,
-            unlocked: true,
-          };
-        }
       }
 
       return updates;
@@ -400,39 +388,6 @@ export const createDungeonSlice = (set, get) => ({
         lastWeeklyReset: Date.now(),
       },
     }));
-  },
-
-  startAscensionDungeon: (level) => {
-    const { ascension, heroes, initializeHeroHp, pendingDungeonBuffs } = get();
-    if (!ascension.unlocked || heroes.length === 0) return false;
-
-    initializeHeroHp();
-
-    // Consume pending dungeon buffs into active buffs
-    const activeBuffs = pendingDungeonBuffs.length > 0 ? [...pendingDungeonBuffs] : [];
-
-    set({
-      dungeon: {
-        level,
-        currentRoom: 0,
-        totalRooms: 5 + Math.floor(level / 2),
-        completed: false,
-        type: 'ascension',
-        ascensionLevel: ascension.level,
-        activeBuffs,
-      },
-      pendingDungeonBuffs: [],
-      dungeonProgress: {
-        currentType: 'ascension',
-        activeAffixes: [],
-      },
-      combat: null,
-      roomCombat: null,
-      combatLog: [],
-      isRunning: true,
-    });
-
-    return true;
   },
 
   advanceRoom: () => {
