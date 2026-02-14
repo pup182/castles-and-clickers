@@ -101,6 +101,14 @@ export const createDungeonSlice = (set, get) => ({
         },
       };
 
+      // On failure, refund dungeon buffs so the player doesn't lose paid consumables
+      if (!success && state.dungeon?.activeBuffs?.length > 0) {
+        updates.pendingDungeonBuffs = [
+          ...(state.pendingDungeonBuffs || []),
+          ...state.dungeon.activeBuffs,
+        ];
+      }
+
       if (success && state.dungeon) {
         const clearedLevel = state.dungeon.level;
 
@@ -162,19 +170,31 @@ export const createDungeonSlice = (set, get) => ({
       },
     } : {};
 
-    set(state => ({
-      dungeon: null,
-      combat: null,
-      roomCombat: null,
-      isRunning: false,
-      dungeonProgress: {
-        ...state.dungeonProgress,
-        currentType: 'normal',
-        currentRaidId: null,
-        activeAffixes: [],
-      },
-      ...raidCleanup,
-    }));
+    set(state => {
+      const updates = {
+        dungeon: null,
+        combat: null,
+        roomCombat: null,
+        isRunning: false,
+        dungeonProgress: {
+          ...state.dungeonProgress,
+          currentType: 'normal',
+          currentRaidId: null,
+          activeAffixes: [],
+        },
+        ...raidCleanup,
+      };
+
+      // Refund dungeon buffs so the player doesn't lose paid consumables on abandon
+      if (state.dungeon?.activeBuffs?.length > 0) {
+        updates.pendingDungeonBuffs = [
+          ...(state.pendingDungeonBuffs || []),
+          ...state.dungeon.activeBuffs,
+        ];
+      }
+
+      return updates;
+    });
 
     // Still process pending recruits and party changes even on abandon
     processPendingRecruits();
@@ -233,7 +253,7 @@ export const createDungeonSlice = (set, get) => ({
   // ========================================
 
   enterRaid: (raidId) => {
-    const { heroes, highestDungeonCleared, heroHp, initializeHeroHp } = get();
+    const { heroes, highestDungeonCleared, heroHp, initializeHeroHp, pendingDungeonBuffs } = get();
     if (heroes.filter(Boolean).length === 0) return false;
 
     const raid = RAIDS[raidId];
@@ -265,9 +285,12 @@ export const createDungeonSlice = (set, get) => ({
       },
       dungeon: {
         level: raid.requiredLevel,
+        type: 'raid',
         isRaid: true,
         raidId,
+        activeBuffs: pendingDungeonBuffs.length > 0 ? [...pendingDungeonBuffs] : [],
       },
+      pendingDungeonBuffs: [],
       roomCombat: null,
       combatLog: [],
       isRunning: true,
@@ -363,22 +386,9 @@ export const createDungeonSlice = (set, get) => ({
   },
 
   abandonRaid: () => {
-    set(state => ({
-      raidState: {
-        active: false,
-        raidId: null,
-        defeatedWingBosses: [],
-        heroHpSnapshot: {},
-      },
-      dungeonProgress: {
-        ...state.dungeonProgress,
-        currentType: 'normal',
-        currentRaidId: null,
-      },
-      dungeon: null,
-      roomCombat: null,
-      isRunning: false,
-    }));
+    // Delegate to abandonDungeon which already handles raid cleanup,
+    // buff refunds, pending recruits, and HP reset
+    get().abandonDungeon();
   },
 
   resetWeeklyLockouts: () => {

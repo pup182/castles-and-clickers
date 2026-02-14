@@ -1,6 +1,6 @@
 import { BUILDINGS, getUpgradeCost, calculateHomesteadBonuses } from '../../data/homestead';
 import { generateEquipment } from '../../data/equipment';
-import { getMaxShopRarity } from '../../data/milestones';
+import { getMaxShopRarity, getMaxPartySize } from '../../data/milestones';
 import { SHOP_CONSUMABLES, getConsumableCost } from '../../data/consumables';
 import { calculateSellValue } from '../helpers/itemScoring';
 import { clearStatCache } from '../helpers/statCalculator';
@@ -137,24 +137,25 @@ export const createEconomySlice = (set, get) => ({
         guaranteedRarity: null,
       });
 
-      // Cap rarity to milestone-allowed maximum
-      const itemRarityIndex = RARITY_ORDER.indexOf(item.rarity);
-      if (itemRarityIndex > maxRarityIndex) {
-        // Reroll to a random allowed rarity
+      // If rarity exceeds milestone cap, regenerate with a valid rarity
+      let shopItem = item;
+      if (RARITY_ORDER.indexOf(item.rarity) > maxRarityIndex) {
         const allowedRarities = RARITY_ORDER.slice(0, maxRarityIndex + 1);
-        item.rarity = allowedRarities[Math.floor(Math.random() * allowedRarities.length)];
-        // Regenerate with correct rarity (affixes stay from generateEquipment)
-        const newItem = generateEquipment(highestDungeonCleared, {
-          guaranteedRarity: item.rarity,
+        const cappedRarity = allowedRarities[Math.floor(Math.random() * allowedRarities.length)];
+        shopItem = generateEquipment(highestDungeonCleared, {
+          guaranteedRarity: cappedRarity,
         });
-        Object.assign(item, newItem);
+        // guaranteedRarity is a floor, not a cap — force rarity down if still too high
+        if (RARITY_ORDER.indexOf(shopItem.rarity) > maxRarityIndex) {
+          shopItem.rarity = cappedRarity;
+        }
       }
 
       // Calculate shop price (1.75x sell value)
-      const sellValue = calculateSellValue(item);
-      item.shopPrice = Math.floor(sellValue * 1.75);
+      const sellValue = calculateSellValue(shopItem);
+      shopItem.shopPrice = Math.floor(sellValue * 1.75);
 
-      shopItems.push(item);
+      shopItems.push(shopItem);
     }
 
     set(state => ({
@@ -390,11 +391,15 @@ export const createEconomySlice = (set, get) => ({
 
     const newHighestCleared = startingHighest + levelsProgressed;
 
+    // Expand party size if offline progress crossed a milestone
+    const newMaxPartySize = getMaxPartySize(newHighestCleared);
+
     // Apply state updates including dungeon progression
     set(state => ({
       gold: state.gold + totalGold,
       lastSaveTime: now,
       highestDungeonCleared: Math.max(state.highestDungeonCleared, newHighestCleared),
+      maxPartySize: Math.max(state.maxPartySize || 4, newMaxPartySize),
       dungeonUnlocked: Math.min(
         Math.max(state.dungeonUnlocked, newHighestCleared + 1),
         maxDungeonLevel
@@ -405,6 +410,9 @@ export const createEconomySlice = (set, get) => ({
         totalDungeonsCleared: state.stats.totalDungeonsCleared + runsCompleted,
       },
     }));
+
+    // Unlock auto-advance if offline progress crossed D5
+    get().checkAutoAdvanceUnlock();
 
     // Distribute XP among heroes
     const xpPerHero = Math.floor(totalXp / Math.max(1, activeHeroes.length));

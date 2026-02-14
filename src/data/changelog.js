@@ -1,9 +1,21 @@
 // Single source of truth for the app version
-export const CURRENT_VERSION = '0.1.22';
+export const CURRENT_VERSION = '0.1.23';
 
 // Changelog entries, newest first
 // always write for player, not developer
 export const CHANGELOG = [
+  {
+    version: '0.1.23',
+    title: 'Buff Refunds & Raid Polish',
+    date: '2026-02-14',
+    changes: [
+      { type: 'feature', text: 'Consumable buffs (elixirs, XP scrolls) now apply to raids too' },
+      { type: 'feature', text: 'Dungeon buffs are refunded if you fail or abandon a dungeon — no more wasted gold' },
+      { type: 'fix', text: 'Offline progress now correctly unlocks auto-advance at D5' },
+      { type: 'fix', text: 'Fixed shop items sometimes having mismatched stats after rarity capping' },
+      { type: 'fix', text: 'Fixed healing potion "Use" button breaking when owning multiple potions' },
+    ],
+  },
   {
     version: '0.1.22',
     title: 'Shop Rework & Consumables',

@@ -23,7 +23,7 @@ const RARITY_LABEL = {
 
 const ShopScreen = () => {
   const [tab, setTab] = useState('equipment');
-  const [heroPickFor, setHeroPickFor] = useState(null); // consumableId being targeted
+  const [heroPickFor, setHeroPickFor] = useState(null); // templateId being targeted
 
   const gold = useGameStore(state => state.gold);
   const shop = useGameStore(state => state.shop);
@@ -380,7 +380,7 @@ const ShopScreen = () => {
                           <div>
                             {isHealing ? (
                               // Healing potions: show hero picker
-                              heroPickFor === items[0].id ? (
+                              heroPickFor === templateId ? (
                                 <div className="flex items-center gap-1">
                                   {heroes.filter(Boolean).map(hero => {
                                     const stats = calculateHeroStats(hero, heroes, getHomesteadBonuses());
@@ -411,7 +411,7 @@ const ShopScreen = () => {
                                 </div>
                               ) : (
                                 <button
-                                  onClick={() => setHeroPickFor(items[0].id)}
+                                  onClick={() => setHeroPickFor(templateId)}
                                   className="pixel-btn text-xs pixel-btn-success"
                                 >
                                   Use

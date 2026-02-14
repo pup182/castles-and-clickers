@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import ModalOverlay from './ModalOverlay';
 import { CURRENT_VERSION, getChangesSince, CHANGELOG } from '../data/changelog';
 
@@ -10,9 +11,13 @@ const TYPE_BADGES = {
 const ChangelogModal = ({ isOpen, onClose, lastSeenVersion }) => {
   if (!isOpen) return null;
 
+  const [showAll, setShowAll] = useState(false);
+
   // Show new entries if any, otherwise show the latest entries (manual open via version click)
   const newEntries = getChangesSince(lastSeenVersion);
-  const entries = newEntries.length > 0 ? newEntries : CHANGELOG.slice(0, 5);
+  const baseEntries = newEntries.length > 0 ? newEntries : CHANGELOG.slice(0, 5);
+  const entries = showAll ? CHANGELOG : baseEntries;
+  const hasMore = CHANGELOG.length > baseEntries.length;
 
   if (entries.length === 0) return null;
 
@@ -57,7 +62,15 @@ const ChangelogModal = ({ isOpen, onClose, lastSeenVersion }) => {
       </div>
 
       {/* Footer */}
-      <div className="mt-4 flex justify-center">
+      <div className="mt-4 flex flex-col items-center gap-2">
+        {hasMore && (
+          <button
+            onClick={() => setShowAll(prev => !prev)}
+            className="pixel-btn text-xs"
+          >
+            {showAll ? 'See Less' : `See More (${CHANGELOG.length - baseEntries.length} older)`}
+          </button>
+        )}
         <button onClick={onClose} className="pixel-btn pixel-btn-success px-6 py-2">
           Got it!
         </button>
