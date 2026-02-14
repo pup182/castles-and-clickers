@@ -123,17 +123,17 @@ Update all references across `constants.js`, `skillEngine.js`, `useCombat.js`.
 
 ## Phase 3: Progression & Shop Rework
 
-### 3A. Early Game Pacing Fixes
+### 3A. Early Game Pacing Fixes — DONE (v0.1.20)
 
-- **Free skill point at level 1:** Modify `calculateSkillPoints` in `gameStore.js` (or the new heroSlice)
-- **Party size milestone at D15:** Add 6th hero unlock at dungeon 15 (currently: 5th at D8, 7th at D25). Modify `src/data/milestones.js`
-- **Smooth elite introduction:** Start with 1 elite per dungeon at D8, ramp to current rate by D12. Modify `src/game/mazeGenerator.js` elite spawn logic
+- ~~Free skill point at level 1~~ → **Skill point at level 2, no auto-starter skill** — heroes choose their first skill from the tree
+- **Party size wired up:** `getMaxPartySize()` now connected to `endDungeon` and merge (D10→5, D20→6)
+- **Elites at D8:** `ELITE_CONFIG.minLevel` changed from 10 to 8
 
-### 3B. Flat Respec Cost
+### 3B. Flat Respec Cost — DONE (v0.1.20)
 
-Change formula in `src/data/skillTrees.js:1927-1930`:
+Changed formula in `src/data/skillTrees.js`:
 - **From:** `50 * Math.pow(2, usedSkillPoints - 1)` (exponential, punishing)
-- **To:** `500 * usedSkillPoints` (flat per-point — exact coefficient TBD during implementation, tune so it's meaningful but not punishing)
+- **To:** `250 * usedSkillPoints` (linear — meaningful early, 2,500g at 10 points instead of 25,600g)
 
 ### 3C. Full Shop Rework
 
@@ -161,7 +161,7 @@ Change formula in `src/data/skillTrees.js:1927-1930`:
 
 1. `npm run build` — no build errors
 2. `npm run lint` — no new lint warnings
-3. Manual test: shop at D1, D10, D20; respec cost at various skill point counts; verify free skill point at level 1
+3. Manual test: shop at D1, D10, D20; respec cost at various skill point counts; verify skill point at level 2, no auto-starter skill
 
 ---
 

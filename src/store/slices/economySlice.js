@@ -1,8 +1,16 @@
 import { BUILDINGS, getUpgradeCost, calculateHomesteadBonuses } from '../../data/homestead';
-import { generateEquipment, getEquipmentByTier } from '../../data/equipment';
+import { generateEquipment } from '../../data/equipment';
+import { getMaxShopRarity } from '../../data/milestones';
+import { SHOP_CONSUMABLES, getConsumableCost } from '../../data/consumables';
 import { calculateSellValue } from '../helpers/itemScoring';
 import { clearStatCache } from '../helpers/statCalculator';
 import throttledStorage from '../helpers/throttledStorage';
+
+const RARITY_ORDER = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+
+/** Dynamic refresh cost scales with dungeon progress */
+const getRefreshCost = (highestDungeonCleared) =>
+  Math.min(200, 50 + Math.floor(highestDungeonCleared / 5) * 10);
 
 export const createEconomySlice = (set, get) => ({
   // State
@@ -20,7 +28,6 @@ export const createEconomySlice = (set, get) => ({
   shop: {
     items: [],
     lastRefresh: 0,
-    refreshCost: 50,
   },
   stats: {
     totalGoldEarned: 0,
@@ -109,33 +116,38 @@ export const createEconomySlice = (set, get) => ({
 
   // Item Shop actions
   refreshShop: (manual = false) => {
-    const { gold, highestDungeonCleared, shop } = get();
+    const { gold, highestDungeonCleared } = get();
 
     // Shop unlocks at D5
     if (highestDungeonCleared < 5) return false;
 
-    // Check if manual refresh is affordable
-    if (manual && gold < shop.refreshCost) return false;
+    const refreshCost = getRefreshCost(highestDungeonCleared);
 
-    // Generate 4 shop items (common/uncommon only)
+    // Check if manual refresh is affordable
+    if (manual && gold < refreshCost) return false;
+
+    // Determine max allowed rarity from milestones
+    const maxRarity = getMaxShopRarity(highestDungeonCleared);
+    const maxRarityIndex = RARITY_ORDER.indexOf(maxRarity);
+
+    // Generate 4 shop items with milestone-based rarity cap
     const shopItems = [];
     for (let i = 0; i < 4; i++) {
-      // Generate item at player's dungeon level but cap rarity
       const item = generateEquipment(highestDungeonCleared, {
         guaranteedRarity: null,
       });
 
-      // Force common or uncommon only
-      if (['rare', 'epic', 'legendary'].includes(item.rarity)) {
-        item.rarity = Math.random() < 0.6 ? 'common' : 'uncommon';
-        // Recalculate stats for lower rarity
-        const rarityMult = item.rarity === 'common' ? 1.0 : 1.3;
-        const template = getEquipmentByTier(99).find(e => e.id === item.templateId);
-        if (template) {
-          for (const [stat, val] of Object.entries(template.baseStats)) {
-            item.stats[stat] = Math.round(val * rarityMult * (1 + highestDungeonCleared * 0.1));
-          }
-        }
+      // Cap rarity to milestone-allowed maximum
+      const itemRarityIndex = RARITY_ORDER.indexOf(item.rarity);
+      if (itemRarityIndex > maxRarityIndex) {
+        // Reroll to a random allowed rarity
+        const allowedRarities = RARITY_ORDER.slice(0, maxRarityIndex + 1);
+        item.rarity = allowedRarities[Math.floor(Math.random() * allowedRarities.length)];
+        // Regenerate with correct rarity (affixes stay from generateEquipment)
+        const newItem = generateEquipment(highestDungeonCleared, {
+          guaranteedRarity: item.rarity,
+        });
+        Object.assign(item, newItem);
       }
 
       // Calculate shop price (1.75x sell value)
@@ -146,9 +158,8 @@ export const createEconomySlice = (set, get) => ({
     }
 
     set(state => ({
-      gold: manual ? state.gold - shop.refreshCost : state.gold,
+      gold: manual ? state.gold - refreshCost : state.gold,
       shop: {
-        ...state.shop,
         items: shopItems,
         lastRefresh: Date.now(),
       },
@@ -163,9 +174,9 @@ export const createEconomySlice = (set, get) => ({
     // Shop unlocks at D5
     if (highestDungeonCleared < 5) return;
 
-    // Refresh every 4 hours
-    const fourHours = 4 * 60 * 60 * 1000;
-    if (Date.now() - shop.lastRefresh >= fourHours || shop.items.length === 0) {
+    // Refresh every 2 hours
+    const twoHours = 2 * 60 * 60 * 1000;
+    if (Date.now() - shop.lastRefresh >= twoHours || shop.items.length === 0) {
       refreshShop(false);
     }
   },
@@ -193,6 +204,52 @@ export const createEconomySlice = (set, get) => ({
     }));
 
     return true;
+  },
+
+  getShopRefreshCost: () => {
+    const { highestDungeonCleared } = get();
+    return getRefreshCost(highestDungeonCleared);
+  },
+
+  buyConsumable: (templateId, quantity = 1) => {
+    const { gold, highestDungeonCleared, shopConsumables } = get();
+    const template = SHOP_CONSUMABLES[templateId];
+    if (!template) return false;
+
+    // Check unlock
+    if (highestDungeonCleared < template.unlockDungeon) return false;
+
+    // Check stack limit
+    const owned = shopConsumables.filter(c => c.templateId === templateId).length;
+    const canBuy = Math.min(quantity, template.maxStack - owned);
+    if (canBuy <= 0) return false;
+
+    // Check gold
+    const unitCost = getConsumableCost(templateId, highestDungeonCleared);
+    const totalCost = unitCost * canBuy;
+    if (gold < totalCost) return false;
+
+    // Create consumable instances
+    const newItems = [];
+    for (let i = 0; i < canBuy; i++) {
+      newItems.push({
+        id: `sc_${Date.now()}_${i}_${Math.random().toString(36).substring(2, 7)}`,
+        templateId,
+        name: template.name,
+        purchasedAt: Date.now(),
+      });
+    }
+
+    set(state => ({
+      gold: state.gold - totalCost,
+      shopConsumables: [...state.shopConsumables, ...newItems],
+      stats: {
+        ...state.stats,
+        totalGoldSpent: (state.stats.totalGoldSpent || 0) + totalCost,
+      },
+    }));
+
+    return canBuy;
   },
 
   incrementStat: (stat, amount = 1, options = {}) => {

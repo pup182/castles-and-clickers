@@ -203,14 +203,15 @@ The 1.25× multiplier creates a steep wall after level 20. Getting from level 20
 
 ### 4.2 Skill Points Come Slowly
 
-Formula: `calculateSkillPoints(level) = floor(level / 3)`
+~~Formula: `calculateSkillPoints(level) = floor(level / 3)`~~ **Fixed in v0.1.20.**
 
-- First skill point at level 3 (requires 300 cumulative XP)
-- 5 points at level 15
-- 10 points at level 30 (max meaningful count)
-- **17 skills available per class**, but only 10 can be unlocked at level 30
+Formula: `level < 2 → 0; level < 3 → 1; else 1 + floor(level / 3)`
 
-New players have **zero skill tree engagement** for their first ~20 minutes of play. This is a critical early retention gap — skill trees are one of the game's best features, and players don't see them working until well after the initial play session.
+- First skill point at level 2, second at level 3
+- Heroes no longer auto-unlock a starter skill — players choose their first skill
+- 5 points at level 12
+- 11 points at level 30 (max meaningful count)
+- **17 skills available per class**, but only 11 can be unlocked at level 30
 
 ### 4.3 Party Size Milestones Are Sparse
 
@@ -224,7 +225,7 @@ Only 2 party expansion moments across 30 dungeon levels. Between dungeon 10 and 
 
 ### 4.4 Elite Mob Difficulty Spike
 
-Elite mobs begin spawning at dungeon level 10 with:
+~~Elite mobs begin spawning at dungeon level 10~~ **Changed to D8 in v0.1.20.** Elite mobs begin spawning at dungeon level 8 with:
 - 1.5× HP, Attack, Defense over normal monsters
 - 2× XP and Gold rewards
 - Special affixes (+25–50% damage, lifesteal, reflect damage)
@@ -245,15 +246,17 @@ Raids are evenly spaced but each 6-level gap represents significant grind time a
 
 ### 4.6 Respec Costs Lock In Builds
 
-| Skill Points Used | Respec Cost |
-|-------------------|-------------|
-| 1 | 50 gold |
-| 3 | 200 gold |
-| 5 | 800 gold |
-| 7 | 3,200 gold |
-| 10 | 25,600 gold |
+~~Exponential formula `50 × 2^(n-1)`.~~ **Fixed in v0.1.20 — now linear: `250 × usedSkillPoints`.**
 
-At 10 skill points (level 30), respeccing costs 25,600 gold — over half a dungeon clear. This effectively locks builds in place and discourages experimentation, which conflicts with having 17 skills per class to explore.
+| Skill Points Used | Old Cost | New Cost (v0.1.20) |
+|-------------------|----------|---------------------|
+| 1 | 50 gold | 250 gold |
+| 3 | 200 gold | 750 gold |
+| 5 | 800 gold | 1,250 gold |
+| 7 | 3,200 gold | 1,750 gold |
+| 10 | 25,600 gold | 2,500 gold |
+
+Linear scaling encourages build experimentation while still being meaningful early on.
 
 ---
 

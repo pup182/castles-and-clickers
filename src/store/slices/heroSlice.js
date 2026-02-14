@@ -1,5 +1,5 @@
 import { CLASSES, PARTY_SLOTS } from '../../data/classes';
-import { getSkillById, getStarterSkill, arePrerequisitesMet, calculateRespecCost } from '../../data/skillTrees';
+import { getSkillById, arePrerequisitesMet, calculateRespecCost } from '../../data/skillTrees';
 import { createHero, generateTavernHero } from '../helpers/heroGenerator';
 import { calculateHeroStats, invalidateStatCache, clearStatCache, calculateSkillPoints, calculateUsedSkillPoints } from '../helpers/statCalculator';
 import throttledStorage from '../helpers/throttledStorage';
@@ -647,14 +647,12 @@ export const createHeroSlice = (set, get) => ({
     // OPTIMIZATION: Clear entire cache on respec (may affect party bonuses)
     clearStatCache();
 
-    // Reset skills to just starter skill
-    const starterSkill = getStarterSkill(hero.classId);
-
+    // Reset all skills
     set(state => ({
       gold: state.gold - cost,
       heroes: state.heroes.map(h =>
         h.id === heroId
-          ? { ...h, skills: starterSkill ? [starterSkill.id] : [] }
+          ? { ...h, skills: [] }
           : h
       ),
     }));

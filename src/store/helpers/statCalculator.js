@@ -1,7 +1,7 @@
 import { CLASSES } from '../../data/classes';
 import { getPassiveAffixBonuses } from '../../game/affixEngine';
 import { scaleUniqueStats } from '../../data/uniqueItems';
-import { getSkillById, getStarterSkill, SKILL_TYPE } from '../../data/skillTrees';
+import { getSkillById, SKILL_TYPE } from '../../data/skillTrees';
 
 // Helper to calculate XP needed for next level
 export const xpForLevel = (level) => Math.floor(100 * Math.pow(1.25, level - 1));
@@ -213,12 +213,15 @@ export const clearStatCache = () => {
   partySkillBonusCacheVersion++; // Invalidate cache keys
 };
 
-// Calculate skill points earned from level (1 point per 3 levels)
-export const calculateSkillPoints = (level) => Math.floor(level / 3);
+// Calculate skill points earned from level
+// L1=0, L2=1, L3=2, then +1 every 3 levels (L6=3, L9=4, etc.)
+export const calculateSkillPoints = (level) => {
+  if (level < 2) return 0;
+  if (level < 3) return 1;
+  return 1 + Math.floor(level / 3);
+};
 
-// Calculate used skill points (excluding starter skill)
+// Calculate used skill points (all learned skills cost a point)
 export const calculateUsedSkillPoints = (hero) => {
-  const skills = hero.skills || [];
-  const starterSkill = getStarterSkill(hero.classId);
-  return skills.filter(s => s !== starterSkill?.id).length;
+  return (hero.skills || []).length;
 };

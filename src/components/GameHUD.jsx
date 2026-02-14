@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
 import NavBar from './NavBar';
 import { GoldIcon, TrophyIcon, SkullIcon, BagIcon, MenuIcon } from './icons/ui';
+import { CURRENT_VERSION } from '../data/changelog';
 
 // Throttled header stats hook - updates every 500ms
 function useThrottledHeaderStats() {
@@ -59,6 +60,7 @@ const GameHUD = ({
   markFeatureSeen,
   onReset,
   onToggleSidebar,
+  onOpenChangelog,
 }) => {
   const headerStats = useThrottledHeaderStats();
 
@@ -79,7 +81,13 @@ const GameHUD = ({
             <h1 className="pixel-title text-base sm:text-lg">
               Castles & Clickers
             </h1>
-            <span className="text-xs text-gray-500">v0.1.19</span>
+            <span
+              className="text-xs text-gray-500 hover:text-[var(--color-gold)] cursor-pointer transition-colors"
+              onClick={onOpenChangelog}
+              title="View changelog"
+            >
+              v{CURRENT_VERSION}
+            </span>
           </div>
         </div>
 

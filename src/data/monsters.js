@@ -12,12 +12,12 @@ const AI = {
 
 // =====================================================
 // ELITE MOB CONFIGURATION
-// Elite mobs spawn at dungeon level 10+ with enhanced stats and abilities
+// Elite mobs spawn at dungeon level 8+ with enhanced stats and abilities
 // =====================================================
 
 export const ELITE_CONFIG = {
   // Minimum dungeon level for elites to spawn
-  minLevel: 10,
+  minLevel: 8,
 
   // Elite spawn count per tier (dungeon level ranges)
   spawnRates: {

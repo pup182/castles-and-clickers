@@ -56,6 +56,8 @@ import StatsScreen from './StatsScreen';
 import BestiaryScreen from './BestiaryScreen';
 import RaidSelectorModal from './RaidSelectorModal';
 import UniqueCollectionScreen from './UniqueCollectionScreen';
+import ChangelogModal from './ChangelogModal';
+import { CURRENT_VERSION } from '../data/changelog';
 
 // OPTIMIZATION: Stable default values to prevent re-renders
 const EMPTY_OBJECT = {};
@@ -108,6 +110,7 @@ const GameLayout = () => {
   const lastDungeonSuccess = useGameStore(state => state.lastDungeonSuccess);
   const unreadUniques = useGameStore(state => state.unreadUniques || []);
   const raidState = useGameStore(state => state.raidState);
+  const setLastSeenVersion = useGameStore(state => state.setLastSeenVersion);
 
   // OPTIMIZATION: Throttled display state - renders at ~15 FPS instead of every tick
   const displayRoomCombat = useThrottledDisplay();
@@ -120,6 +123,7 @@ const GameLayout = () => {
   const [offlineProgress, setOfflineProgress] = useState(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [dungeonTransition, setDungeonTransition] = useState(null); // { level, type, isRetry }
+  const [showChangelog, setShowChangelog] = useState(false);
   const prevDungeonRef = useRef(dungeon); // Initialize with current dungeon to avoid transition on mount
   const lastDungeonLevelRef = useRef(dungeon?.level); // Track last level for retry detection
   const isInitialMountRef = useRef(true);
@@ -146,6 +150,15 @@ const GameLayout = () => {
   useEffect(() => {
     const progress = calculateOfflineProgress();
     if (progress) setOfflineProgress(progress);
+  }, []);
+
+  // Auto-show changelog for returning players after an update
+  useEffect(() => {
+    const hasHeroes = heroes && heroes.some(Boolean);
+    if (!hasHeroes) return; // Brand new save — skip changelog
+    if (featureUnlocks?.lastSeenVersion !== CURRENT_VERSION) {
+      setShowChangelog(true);
+    }
   }, []);
 
   // Show transition screen when dungeon changes (but not on initial mount)
@@ -313,6 +326,7 @@ const GameLayout = () => {
         markFeatureSeen={markFeatureSeen}
         onReset={() => setShowResetConfirm(true)}
         onToggleSidebar={() => setSidebarOpen(prev => !prev)}
+        onOpenChangelog={() => setShowChangelog(true)}
       />
 
       {/* Main content */}
@@ -793,6 +807,14 @@ const GameLayout = () => {
       <LootNotifications />
       <UniqueDropCelebration />
       <RaidRecapScreen />
+      <ChangelogModal
+        isOpen={showChangelog}
+        onClose={() => {
+          setShowChangelog(false);
+          setLastSeenVersion(CURRENT_VERSION);
+        }}
+        lastSeenVersion={featureUnlocks?.lastSeenVersion}
+      />
 
       {/* Reset Confirmation */}
       {showResetConfirm && (

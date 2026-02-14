@@ -157,9 +157,16 @@ export const useCombat = ({ addEffect }) => {
       }
     }
 
-    // Derived constants
+    // Derived constants — incorporate dungeon active buffs (XP scrolls only here;
+    // attack/defense/speed elixirs are baked into hero stats in useDungeon.js)
+    const activeBuffs = dungeon?.activeBuffs || [];
+    let xpBuffBonus = 0;
+    for (const buff of activeBuffs) {
+      if (buff.effect?.type === 'xpBuff') xpBuffBonus += buff.effect.multiplier;
+    }
+
     const goldMultiplier = 1 + (homesteadBonuses.goldFind || 0);
-    const xpMultiplier = 1 + (homesteadBonuses.xpGain || 0);
+    const xpMultiplier = 1 + (homesteadBonuses.xpGain || 0) + xpBuffBonus;
     const damageBonus = 1;
     const defenseBonus = 1;
     const critBonus = 0;

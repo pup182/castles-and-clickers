@@ -1,4 +1,5 @@
 import { RAIDS, isRaidUnlocked } from '../../data/raids';
+import { getMaxPartySize } from '../../data/milestones';
 import throttledStorage from '../helpers/throttledStorage';
 
 export const createDungeonSlice = (set, get) => ({
@@ -25,6 +26,7 @@ export const createDungeonSlice = (set, get) => ({
     autoAdvance: false,
     homesteadSeen: false,
     lastSeenRaidsAt: 0,
+    lastSeenVersion: null,
   },
   ascension: {
     level: 0,
@@ -42,7 +44,7 @@ export const createDungeonSlice = (set, get) => ({
 
   // Actions
   startDungeon: (level, options = {}) => {
-    const { heroes, dungeonUnlocked, maxDungeonLevel, initializeHeroHp, dungeonProgress } = get();
+    const { heroes, dungeonUnlocked, maxDungeonLevel, initializeHeroHp, dungeonProgress, pendingDungeonBuffs } = get();
     if (heroes.length === 0 || level > dungeonUnlocked) return false;
 
     // Cap at max dungeon level (30)
@@ -55,6 +57,9 @@ export const createDungeonSlice = (set, get) => ({
     const dungeonType = options.type || 'normal';
     const affixes = options.affixes || [];
 
+    // Consume pending dungeon buffs into active buffs
+    const activeBuffs = pendingDungeonBuffs.length > 0 ? [...pendingDungeonBuffs] : [];
+
     set({
       dungeon: {
         level: cappedLevel,
@@ -62,7 +67,9 @@ export const createDungeonSlice = (set, get) => ({
         totalRooms: 5 + Math.floor(cappedLevel / 2),
         completed: false,
         type: dungeonType,
+        activeBuffs,
       },
+      pendingDungeonBuffs: [],
       dungeonProgress: {
         ...dungeonProgress,
         currentType: dungeonType,
@@ -97,10 +104,15 @@ export const createDungeonSlice = (set, get) => ({
       if (success && state.dungeon) {
         const clearedLevel = state.dungeon.level;
 
-        updates.highestDungeonCleared = Math.max(
-          state.highestDungeonCleared,
-          clearedLevel
-        );
+        const newHighest = Math.max(state.highestDungeonCleared, clearedLevel);
+        updates.highestDungeonCleared = newHighest;
+
+        // Expand party size based on dungeon progress
+        const newMaxPartySize = getMaxPartySize(newHighest);
+        if (newMaxPartySize > (state.maxPartySize || 4)) {
+          updates.maxPartySize = newMaxPartySize;
+        }
+
         // Cap dungeonUnlocked at maxDungeonLevel
         updates.dungeonUnlocked = Math.min(
           Math.max(state.dungeonUnlocked, clearedLevel + 1),
@@ -190,6 +202,16 @@ export const createDungeonSlice = (set, get) => ({
         [feature]: feature === 'lastSeenRaidsAt' ? highestDungeonCleared : true,
       },
     }));
+  },
+
+  setLastSeenVersion: (version) => {
+    set(state => ({
+      featureUnlocks: {
+        ...state.featureUnlocks,
+        lastSeenVersion: version,
+      },
+    }));
+    throttledStorage.flush();
   },
 
   checkAutoAdvanceUnlock: () => {

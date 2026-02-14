@@ -6,6 +6,7 @@ import { validationMiddleware } from './helpers/validation';
 import throttledStorage from './helpers/throttledStorage';
 import { DEFAULT_CLASS_PRIORITY } from './helpers/itemScoring';
 import { clearStatCache } from './helpers/statCalculator';
+import { getMaxPartySize } from '../data/milestones';
 import { resetCombatLogState } from './slices/combatSlice';
 
 // Slices
@@ -100,10 +101,11 @@ export const useGameStore = create(
             pendingUniqueCelebration: null,
             pendingCollectionMilestone: null,
             combatPauseUntil: 0,
+            shopConsumables: [],
+            pendingDungeonBuffs: [],
             shop: {
               items: [],
               lastRefresh: 0,
-              refreshCost: 50,
             },
             heroHp: {},
             roomCombat: null,
@@ -116,6 +118,7 @@ export const useGameStore = create(
               autoAdvance: false,
               homesteadSeen: false,
               lastSeenRaidsAt: 0,
+              lastSeenVersion: null,
             },
             dungeonProgress: {
               currentType: 'normal',
@@ -159,8 +162,10 @@ export const useGameStore = create(
         }),
         // Ensure stats has all new fields even if old save doesn't
         merge: (persistedState, currentState) => {
+          // Derive maxPartySize from progress so existing saves get correct value
+          const derivedMaxPartySize = getMaxPartySize(persistedState?.highestDungeonCleared || 0);
           // Sanitize heroes array - ensure it doesn't exceed maxPartySize
-          const maxPartySize = persistedState?.maxPartySize || currentState.maxPartySize || 4;
+          const maxPartySize = Math.max(derivedMaxPartySize, persistedState?.maxPartySize || currentState.maxPartySize || 4);
           let heroes = persistedState?.heroes || [];
 
           // If heroes array is too long, truncate it
@@ -187,6 +192,9 @@ export const useGameStore = create(
             ...currentState,
             ...persistedState,
             heroes, // Use sanitized heroes
+            maxPartySize, // Use derived value from dungeon progress
+            shopConsumables: persistedState?.shopConsumables || [],
+            pendingDungeonBuffs: persistedState?.pendingDungeonBuffs || [],
             stats: {
               totalGoldEarned: 0,
               totalGoldSpent: 0,

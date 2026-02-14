@@ -33,3 +33,11 @@ export const getMaxPartySize = (highestDungeonCleared = 0) => {
   if (highestDungeonCleared >= 20) size = 6;
   return size;
 };
+
+// Get max shop rarity based on dungeon progress
+export const getMaxShopRarity = (highestDungeonCleared = 0) => {
+  if (highestDungeonCleared >= 25) return 'legendary';
+  if (highestDungeonCleared >= 20) return 'epic';
+  if (highestDungeonCleared >= 10) return 'rare';
+  return 'uncommon';
+};

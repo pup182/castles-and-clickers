@@ -1,6 +1,5 @@
 import { CLASSES, getClassesByRole } from '../../data/classes';
 import { generateEquipment, getEquipmentForClass } from '../../data/equipment';
-import { getStarterSkill } from '../../data/skillTrees';
 import { getRaidUniqueIds } from '../../data/raids';
 
 // Random name generators for tavern heroes
@@ -36,9 +35,6 @@ export const generateTavernHero = (role, dungeonLevel = 1) => {
   const baseLevel = Math.max(1, Math.floor(dungeonLevel / 2));
   const variance = Math.floor(Math.random() * 3) - 1; // -1, 0, or +1
   const level = Math.max(1, baseLevel + variance);
-
-  // Get starter skill
-  const starterSkill = getStarterSkill(classData.id);
 
   // Generate equipment (chance based on dungeon progress)
   const equipment = { weapon: null, armor: null, accessory: null };
@@ -103,7 +99,7 @@ export const generateTavernHero = (role, dungeonLevel = 1) => {
     level: finalLevel,
     xp: 0,
     equipment,
-    skills: starterSkill ? [starterSkill.id] : [],
+    skills: [],
     trait: trait.id !== 'none' ? trait : null,
     recruitCost: Math.floor(baseCost),
     role,
@@ -113,7 +109,6 @@ export const generateTavernHero = (role, dungeonLevel = 1) => {
 // Create a new hero
 export const createHero = (classId, name, startingLevel = 1) => {
   const classData = CLASSES[classId];
-  const starterSkill = getStarterSkill(classId);
 
   return {
     id: `hero_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -126,7 +121,7 @@ export const createHero = (classId, name, startingLevel = 1) => {
       armor: null,
       accessory: null,
     },
-    skills: starterSkill ? [starterSkill.id] : [], // Start with class starter skill
+    skills: [],
   };
 };
 

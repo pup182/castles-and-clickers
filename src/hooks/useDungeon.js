@@ -86,9 +86,26 @@ export const useDungeon = ({ addEffect }) => {
     // Get hero positions near entrance (on walkable tiles)
     const heroPositions = getHeroStartPositions(mazeDungeon.entrance, sortedHeroes.length, mazeDungeon.grid);
 
+    // Compute elixir buff multipliers from active dungeon buffs
+    const elixirBuffs = { attack: 0, defense: 0, speed: 0 };
+    const activeBuffs = useGameStore.getState().dungeon?.activeBuffs || [];
+    for (const buff of activeBuffs) {
+      if (buff.effect?.type === 'statBuff') {
+        elixirBuffs[buff.effect.stat] = (elixirBuffs[buff.effect.stat] || 0) + buff.effect.multiplier;
+      }
+    }
+
     const combatHeroes = sortedHeroes.map((hero, i) => {
       const classData = CLASSES[hero.classId];
       const stats = calculateHeroStats(hero, heroes, homesteadBonuses);
+
+      // Apply elixir stat buffs
+      if (elixirBuffs.attack > 0) stats.attack = Math.floor(stats.attack * (1 + elixirBuffs.attack));
+      if (elixirBuffs.defense > 0) {
+        stats.defense = Math.floor(stats.defense * (1 + elixirBuffs.defense));
+        stats.maxHp = Math.floor(stats.maxHp * (1 + elixirBuffs.defense));
+      }
+      if (elixirBuffs.speed > 0) stats.speed = Math.floor(stats.speed * (1 + elixirBuffs.speed));
 
       // Apply unique item maxHpMultiplier (Leviathan's Heart - 2x HP)
       const uniqueBonuses = getUniquePassiveBonuses({ ...hero, stats });

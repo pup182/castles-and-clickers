@@ -1926,5 +1926,5 @@ export const arePrerequisitesMet = (skill, unlockedSkillIds, classId) => {
 // Calculate respec cost based on used skill points
 export const calculateRespecCost = (usedSkillPoints) => {
   if (usedSkillPoints <= 0) return 0;
-  return 50 * Math.pow(2, usedSkillPoints - 1);
+  return 250 * usedSkillPoints;
 };

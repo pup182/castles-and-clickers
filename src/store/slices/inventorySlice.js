@@ -1,7 +1,8 @@
 import { canClassUseEquipment } from '../../data/equipment';
 import { calculateItemScore, calculateSellValue } from '../helpers/itemScoring';
-import { invalidateStatCache } from '../helpers/statCalculator';
+import { invalidateStatCache, calculateHeroStats } from '../helpers/statCalculator';
 import { getCollectionForUnique } from '../helpers/heroGenerator';
+import { SHOP_CONSUMABLES } from '../../data/consumables';
 import throttledStorage from '../helpers/throttledStorage';
 
 export const createInventorySlice = (set, get) => ({
@@ -9,6 +10,8 @@ export const createInventorySlice = (set, get) => ({
   inventory: [],
   maxInventory: 50,
   consumables: [],
+  shopConsumables: [],
+  pendingDungeonBuffs: [],
   equipmentSettings: {
     autoSellJunk: true,
     autoEquipUpgrades: true,
@@ -210,6 +213,54 @@ export const createInventorySlice = (set, get) => ({
 
   clearConsumables: () => {
     set({ consumables: [] });
+  },
+
+  // Shop consumable actions
+  useShopConsumable: (consumableId, targetHeroId) => {
+    const { shopConsumables, heroes, heroHp, getHomesteadBonuses } = get();
+    const consumable = shopConsumables.find(c => c.id === consumableId);
+    if (!consumable) return false;
+
+    const template = SHOP_CONSUMABLES[consumable.templateId];
+    if (!template) return false;
+
+    if (template.effect.type === 'heal') {
+      // Healing potions apply immediately to a hero
+      const hero = heroes.find(h => h.id === targetHeroId);
+      if (!hero) return false;
+
+      const homesteadBonuses = getHomesteadBonuses();
+      const stats = calculateHeroStats(hero, heroes, homesteadBonuses);
+      const maxHp = stats.maxHp;
+      const currentHp = heroHp[targetHeroId] ?? maxHp;
+      if (currentHp >= maxHp) return false; // Already full HP
+
+      const healAmount = Math.floor(maxHp * template.effect.percent);
+      const newHp = Math.min(maxHp, currentHp + healAmount);
+
+      set(state => ({
+        shopConsumables: state.shopConsumables.filter(c => c.id !== consumableId),
+        heroHp: { ...state.heroHp, [targetHeroId]: newHp },
+      }));
+      return true;
+    }
+
+    // XP scrolls and elixirs → move to pendingDungeonBuffs
+    set(state => ({
+      shopConsumables: state.shopConsumables.filter(c => c.id !== consumableId),
+      pendingDungeonBuffs: [...state.pendingDungeonBuffs, {
+        id: consumable.id,
+        templateId: consumable.templateId,
+        effect: template.effect,
+        name: template.name,
+      }],
+    }));
+    return true;
+  },
+
+  getShopConsumableCount: (templateId) => {
+    const { shopConsumables } = get();
+    return shopConsumables.filter(c => c.templateId === templateId).length;
   },
 
   // Update equipment settings

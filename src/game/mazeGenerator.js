@@ -1249,7 +1249,7 @@ export function placeMonsters(dungeon, level, options = {}) {
     }
   }
 
-  // Spawn elite mobs at level 10+ (or in raids regardless of level)
+  // Spawn elite mobs at level 8+ (or in raids regardless of level)
   const isRaidDungeon = options.dungeonType === 'raid' || dungeon.isRaid;
   const shouldSpawnElites = level >= ELITE_CONFIG.minLevel || isRaidDungeon;
 
