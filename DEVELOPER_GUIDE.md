@@ -73,6 +73,11 @@ src/
 │
 ├── game/                     # Core mechanics
 │   ├── combatEngine.js      # Combat initialization
+│   ├── combatHelpers.js     # Combat utilities: targeting, death, viewport
+│   ├── combatDamageResolution.js  # Basic attack damage + on-hit/kill/crit
+│   ├── combatSkillExecution.js    # Hero skill & monster ability execution
+│   ├── combatStatusEffects.js     # DOT/stun/buff per-turn processing
+│   ├── combatMovement.js    # A* pathfinding & directional movement
 │   ├── skillEngine.js       # Skill selection & execution
 │   ├── statusEngine.js      # Status effect processing
 │   ├── affixEngine.js       # Equipment affix triggers
@@ -83,7 +88,7 @@ src/
 │
 ├── hooks/                    # React hooks
 │   ├── useGameLoop.js       # Main tick orchestration
-│   ├── useCombat.js         # Combat execution (53KB)
+│   ├── useCombat.js         # Combat orchestrator (~560 lines, dispatches to game/combat*.js)
 │   ├── useDungeon.js        # Dungeon setup/exploration
 │   ├── useCombatEffects.js  # Effect queue with batching
 │   └── useThrottledDisplay.js # Render throttling
@@ -237,15 +242,26 @@ damage = max(1, floor(baseDamage × multiplier × (0.85 + random(0.3))))
 if (crit) damage *= 1.5
 ```
 
-### Combat Flow (useCombat.js)
+### Combat Flow (useCombat.js → combat modules)
 
-1. `getCurrentActor()` - Get unit from turnOrder[currentTurnIndex]
-2. If hero: `chooseBestSkill()` → `executeSkillAbility()`
-3. If monster: `chooseMonsterAbility()` → `executeMonsterAbility()`
-4. Apply damage, trigger affixes, apply status effects
-5. Check for deaths, update turn order
-6. `advanceTurn()` - Move to next actor
-7. Check victory/defeat conditions
+The combat tick is orchestrated by `useCombat.js` which builds a shared `ctx` object and dispatches to extracted combat modules. All modules mutate `ctx` directly (in-place mutation pattern for GC optimization). Game modules never import `useGameStore` — store actions are wrapped as callbacks on `ctx`.
+
+1. Build `ctx` — clone arrays, build index maps, wrap store actions
+2. Pet/clone spawning (inline in orchestrator)
+3. Check defeat/victory → early return
+4. `getCurrentActor()` from `combatHelpers.js`
+5. `processPartyPerTurnEffects(ctx)` from `combatStatusEffects.js`
+6. `processHeroTurnStartAffixes(ctx, actor)` — affix regen
+7. `processBuffDurations(ctx, actor)` — HOT ticks, buff expiration
+8. `processStatusEffectDamage(ctx, actor)` — DOT/stun, may early return
+9. `findTarget()` from `combatHelpers.js`
+10. If in range:
+    - `executeHeroSkillAction(ctx, actor)` from `combatSkillExecution.js`
+    - `executeMonsterAbilityAction(ctx, actor, target)` from `combatSkillExecution.js`
+    - Basic attack: `calculateBasicAttackDamage()` → `resolveHeroTargetDamage()` or `resolveMonsterTargetDamage()` → `processDoubleAttack()` → `processAscendanceAOE()` from `combatDamageResolution.js`
+11. Else: `resolveMovement(ctx, actor, target, range)` from `combatMovement.js`
+12. End-of-turn cleanup (deferred regen, Blood Pendant, stat tracking)
+13. Batch `updateRoomCombat()` + `syncHeroHp()`
 
 ### Hero Skill Priority (chooseBestSkill)
 
@@ -750,13 +766,23 @@ handleExplorationTick():
 ### Combat Turn
 
 ```
-handleCombatTick():
-  ├─ getCurrentActor()
-  ├─ chooseBestSkill() / chooseMonsterAbility()
-  ├─ executeSkillAbility() → damage, effects
-  ├─ Check deaths, update turnOrder
-  ├─ advanceTurn()
-  └─ Check victory → CLEARING or continue
+handleCombatTick():                          # useCombat.js (orchestrator)
+  ├─ Build ctx object (clone state, wrap store actions)
+  ├─ Pet/clone spawning
+  ├─ Check defeat/victory
+  ├─ getCurrentActor()                       # combatHelpers.js
+  ├─ processStatusEffects(ctx, actor)        # combatStatusEffects.js
+  ├─ findTarget()                            # combatHelpers.js
+  ├─ executeHeroSkillAction(ctx, actor)      # combatSkillExecution.js
+  │   └─ or executeMonsterAbilityAction()
+  │   └─ or basic attack pipeline:           # combatDamageResolution.js
+  │       ├─ calculateBasicAttackDamage()
+  │       ├─ resolveHero/MonsterTargetDamage()
+  │       ├─ processDoubleAttack()
+  │       └─ processAscendanceAOE()
+  ├─ or resolveMovement(ctx, actor, target)  # combatMovement.js
+  ├─ End-of-turn cleanup
+  └─ Batch updateRoomCombat() + syncHeroHp()
 ```
 
 ---
@@ -766,7 +792,12 @@ handleCombatTick():
 | File | Size | Purpose |
 |------|------|---------|
 | `store/gameStore.js` | 1355 lines | All state and actions |
-| `hooks/useCombat.js` | 53KB | Combat tick execution |
+| `hooks/useCombat.js` | ~560 lines | Combat orchestrator (dispatches to combat modules) |
+| `game/combatDamageResolution.js` | ~1100 lines | Basic attack damage, on-hit/kill/crit effects |
+| `game/combatSkillExecution.js` | ~530 lines | Hero skill and monster ability execution |
+| `game/combatStatusEffects.js` | ~310 lines | DOT/stun/buff per-turn processing |
+| `game/combatHelpers.js` | ~210 lines | Targeting, death handling, viewport, utilities |
+| `game/combatMovement.js` | ~140 lines | A* pathfinding and directional movement |
 | `game/mazeGenerator.js` | 29KB | Dungeon generation |
 | `game/combatSimulator.js` | 750+ lines | Headless balance testing |
 | `canvas/CanvasRenderer.js` | 186 lines | Main render loop |

@@ -61,7 +61,12 @@ Combat uses initiative-based turn order with A* pathfinding for movement. Speed 
 
 - `src/store/gameStore.js` - All state and actions (largest logic file)
 - `src/game/mazeGenerator.js` - Room-based dungeon generation with A* pathfinding (29KB)
-- `src/hooks/useCombat.js` - Combat loop and resolution logic (53KB)
+- `src/hooks/useCombat.js` - Combat orchestrator (~560 lines, dispatches to combat modules)
+- `src/game/combatHelpers.js` - Combat utilities: targeting, death handling, viewport
+- `src/game/combatDamageResolution.js` - Basic attack damage, on-hit/kill/crit effects (~1100 lines)
+- `src/game/combatSkillExecution.js` - Hero skill and monster ability execution (~530 lines)
+- `src/game/combatStatusEffects.js` - DOT/stun/buff per-turn processing (~310 lines)
+- `src/game/combatMovement.js` - A* pathfinding and directional movement (~140 lines)
 - `src/game/constants.js` - Game balance values, formulas, and utility functions
 
 ## Performance Patterns
@@ -143,8 +148,9 @@ Use pixel-styled CSS classes for UI elements:
 
 ## Known Technical Debt
 
-See `CODE_REVIEW.md` for detailed analysis. Key issues:
-- Large files need splitting (useCombat.js, gameStore.js)
+See `WEAK_POINTS.md` for detailed analysis. Key issues:
+- ~~useCombat.js needs splitting~~ (DONE - split into 6 files in v0.1.18)
+- gameStore.js still needs splitting into Zustand slices
 - Magic numbers for game balance scattered in code
 - No TypeScript despite @types packages installed
 - No test coverage

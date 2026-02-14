@@ -62,15 +62,18 @@ This plan addresses all verified weaknesses from `WEAK_POINTS.md`, organized int
 
 > Clean up the codebase before adding new features to it.
 
-### 2A. Split `useCombat.js` (3,508 lines → ~5 files)
+### ~~2A. Split `useCombat.js` (3,508 lines → 6 files)~~ DONE (v0.1.18)
 
-| New File | Contents |
-|----------|----------|
-| `src/hooks/useCombat.js` | Core hook, orchestration only |
-| `src/game/combatTurn.js` | Turn advancement, action selection |
-| `src/game/damageResolution.js` | Damage calc, mitigation, reflection |
-| `src/game/lootDrop.js` | Equipment/consumable/unique drop logic |
-| `src/game/combatHelpers.js` | Actor lookup, HP maps, viewport calc |
+| New File | Lines | Contents |
+|----------|-------|----------|
+| `src/hooks/useCombat.js` | ~560 | Thin orchestrator, builds shared `ctx` object |
+| `src/game/combatHelpers.js` | ~210 | Targeting, death handling, viewport, utilities |
+| `src/game/combatDamageResolution.js` | ~1100 | Basic attack damage, on-hit/kill/crit effects |
+| `src/game/combatSkillExecution.js` | ~530 | Hero skill & monster ability execution |
+| `src/game/combatStatusEffects.js` | ~310 | DOT/stun/buff per-turn processing |
+| `src/game/combatMovement.js` | ~140 | A* pathfinding & directional movement |
+
+All modules share a mutable `ctx` object. Game files never import `useGameStore` — store actions are wrapped as callbacks on `ctx`.
 
 ### 2B. Split `gameStore.js` (2,929 lines → slices)
 
@@ -306,6 +309,6 @@ Organized by class:
 
 - **Execute phases in order** — each phase builds on the previous
 - **Each phase can be given to an independent agent** — all necessary context (file paths, line numbers, approach) is included
-- **Bump version after each phase** — version is in `src/components/GameLayout.jsx` header
+- **Bump version after each phase** — version is in `src/components/GameHUD.jsx` header
 - **Line numbers are approximate** — they were accurate at time of audit but may shift after Phase 2 file splits
 - **After Phase 2**, all file path references in later phases should be updated to reflect the new split file structure
