@@ -1636,8 +1636,8 @@ export function runTierBalanceTest(config = {}) {
   return results;
 }
 
-// Expose to window for console access
-if (typeof window !== 'undefined') {
+// Expose to window for console access (dev only)
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
   window.runSimulation = (config) => runClassSimulations(config);
   window.runMonsterSim = (config) => runMonsterSimulations(config);
   window.runMonsterScaling = (levels) => runMonsterScalingAnalysis(levels);

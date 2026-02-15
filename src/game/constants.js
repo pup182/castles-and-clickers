@@ -1,5 +1,10 @@
 import { getHeroUniqueItems, getUniquePassiveBonuses } from './uniqueEngine';
 import { getFirstTurnSpeedBonus } from './skillEngine';
+import {
+  SPEED_THRESHOLD, BASE_DODGE_PER_SPEED, SPEED_BONUS_PER_DIFF, MAX_DODGE_CHANCE,
+  DOUBLE_ATTACK_PER_SPEED, MAX_DOUBLE_ATTACK,
+  MOVE_DISTANCE_PER_SPEED, MAX_MOVE_DISTANCE,
+} from './balanceConstants';
 
 // Combat phases
 export const PHASES = {
@@ -50,34 +55,25 @@ export const rollInitiative = (unit) => {
 
 // Speed mechanics calculations
 export const calculateDodgeChance = (defenderSpeed, attackerSpeed) => {
-  // Speed threshold system - slow tanks don't dodge, faster classes are evasive
-  // Threshold of 4 means tanks don't dodge, but DPS classes can
-  // Base: 6% per point above threshold
-  // Bonus: 5% per point of speed advantage
-  // Cap: 70%
-  const SPEED_THRESHOLD = 4;
-
   // Guard against undefined/NaN values
   const dSpeed = defenderSpeed || 0;
   const aSpeed = attackerSpeed || 0;
 
   if (dSpeed <= SPEED_THRESHOLD) return 0;
 
-  const baseDodge = (dSpeed - SPEED_THRESHOLD) * 0.06;
+  const baseDodge = (dSpeed - SPEED_THRESHOLD) * BASE_DODGE_PER_SPEED;
   const speedDiff = dSpeed - aSpeed;
-  const speedBonus = Math.max(0, speedDiff * 0.05);
-  return Math.min(0.70, baseDodge + speedBonus);
+  const speedBonus = Math.max(0, speedDiff * SPEED_BONUS_PER_DIFF);
+  return Math.min(MAX_DODGE_CHANCE, baseDodge + speedBonus);
 };
 
 export const calculateDoubleAttackChance = (attackerSpeed, defenderSpeed) => {
-  // 3% per speed advantage, max 30%
   const speedDiff = attackerSpeed - defenderSpeed;
-  return Math.min(0.3, Math.max(0, speedDiff * 0.03));
+  return Math.min(MAX_DOUBLE_ATTACK, Math.max(0, speedDiff * DOUBLE_ATTACK_PER_SPEED));
 };
 
 export const calculateMoveDistance = (speed) => {
-  // Base 1 tile, +1 tile per 8 speed, max 3 tiles
-  return Math.min(3, 1 + Math.floor(speed / 8));
+  return Math.min(MAX_MOVE_DISTANCE, 1 + Math.floor(speed / MOVE_DISTANCE_PER_SPEED));
 };
 
 // Create sorted turn order from all units

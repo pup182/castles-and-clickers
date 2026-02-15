@@ -58,9 +58,9 @@ This plan addresses all verified weaknesses from `WEAK_POINTS.md`, organized int
 
 ---
 
-## Phase 2: Technical Debt Cleanup
+## ~~Phase 2: Technical Debt Cleanup~~ DONE (v0.1.25)
 
-> Clean up the codebase before adding new features to it.
+> ~~Clean up the codebase before adding new features to it.~~
 
 ### ~~2A. Split `useCombat.js` (3,508 lines → 6 files)~~ DONE (v0.1.18)
 
@@ -75,49 +75,52 @@ This plan addresses all verified weaknesses from `WEAK_POINTS.md`, organized int
 
 All modules share a mutable `ctx` object. Game files never import `useGameStore` — store actions are wrapped as callbacks on `ctx`.
 
-### 2B. Split `gameStore.js` (2,929 lines → slices)
+### ~~2B. Split `gameStore.js` (2,929 lines → slices)~~ DONE (v0.1.19)
 
 | New File | Contents |
 |----------|----------|
-| `src/store/gameStore.js` | Main store composition + state init |
-| `src/store/slices/heroSlice.js` | 14 hero management actions |
-| `src/store/slices/inventorySlice.js` | 6 inventory actions |
-| `src/store/slices/combatSlice.js` | 8 combat state actions |
-| `src/store/slices/dungeonSlice.js` | 8 dungeon progression actions |
-| `src/store/slices/homesteadSlice.js` | Homestead + shop actions |
-| `src/store/helpers/` | `throttledStorage`, stat calc, name gen |
+| `src/store/gameStore.js` | Main store composition + state init (~220 lines) |
+| `src/store/slices/heroSlice.js` | Hero management actions |
+| `src/store/slices/inventorySlice.js` | Inventory actions |
+| `src/store/slices/combatSlice.js` | Combat state actions |
+| `src/store/slices/dungeonSlice.js` | Dungeon progression actions |
+| `src/store/slices/economySlice.js` | Economy + homestead + shop actions |
+| `src/store/helpers/` | `throttledStorage`, `statCalculator`, `itemScoring`, `heroGenerator`, `validation` |
 
-### 2C. Split `skillEngine.js` (2,067 lines → ~4 files)
+### ~~2C. Split `skillEngine.js` (2,067 lines → 4 files)~~ DONE (v0.1.25)
 
 | New File | Contents |
 |----------|----------|
-| `src/game/skillEngine.js` | Core exports, getAvailableSkills |
-| `src/game/skillExecution.js` | executeSkillAbility refactored |
-| `src/game/passiveEffects.js` | 185-line switch → handler map |
-| `src/game/skillAI.js` | chooseBestSkill, selection logic |
+| `src/game/skillEngine.js` | Core exports, helpers, re-exports (~950 lines) |
+| `src/game/skillExecution.js` | `executeSkillAbility` — active skill execution |
+| `src/game/passiveEffects.js` | `applyPassiveEffects` — refactored switch → handler map |
+| `src/game/skillAI.js` | `chooseBestSkill` — skill selection AI |
 
-### 2D. Centralize Magic Numbers
+Re-exports in `skillEngine.js` preserve existing import paths — no consumer changes needed.
 
-Create `src/game/balanceConstants.js` with named constants for:
-- HP thresholds (0.25, 0.50, 0.75)
-- Damage variance (0.85, 0.30)
-- Crit multiplier (1.5)
+### ~~2D. Centralize Magic Numbers~~ DONE (v0.1.25)
+
+Created `src/game/balanceConstants.js` with 30+ named constants for core combat balance values:
 - Speed/dodge/double-attack coefficients and caps
-- XP curve base and exponent
-- Gold formulas
+- Damage formula (defense reduction, variance, crit multiplier)
+- Crit chances (DPS vs non-DPS base rates)
+- HP thresholds for skill AI (0.25, 0.50, 0.75)
+- Loot drop chances (boss 90%, normal 25%)
+- Chain attack, AoE, counter attack, summon stat multipliers
 
-Update all references across `constants.js`, `skillEngine.js`, `useCombat.js`.
+Updated `constants.js`, `skillEngine.js`, `skillAI.js`, `combatDamageResolution.js`.
 
-### 2E. Console & Package Cleanup
+### ~~2E. Console & Package Cleanup~~ DONE (v0.1.25)
 
-- Wrap `combatSimulator.js` logs in `if (import.meta.env.DEV)` check
-- Remove `@types/react` and `@types/react-dom` from `package.json`
+- `combatSimulator.js` import in `main.jsx` guarded with `if (import.meta.env.DEV)` dynamic import — eliminates 1,657-line file from production builds (~26 KB saved)
+- Added `import.meta.env.DEV` guard on `window` assignments inside `combatSimulator.js` as safety net
+- Removed `@types/react` and `@types/react-dom` from `devDependencies`
 
-### Phase 2 Verification
+### ~~Phase 2 Verification~~ DONE
 
-1. `npm run build` — no build errors
-2. `npm run lint` — no new lint warnings
-3. Manual test: verify all imports resolve, game functions identically after split
+1. ~~`npm run build` — no build errors~~ ✓
+2. ~~`npm run lint` — no new lint warnings~~ ✓
+3. ~~Manual test: verify all imports resolve, game functions identically after split~~
 
 ---
 

@@ -38,6 +38,14 @@ import { ELITE_CONFIG } from '../data/monsters';
 import { generateEquipment, generateConsumableDrop } from '../data/equipment';
 import { rollRaidDrop, getWingBoss } from '../data/raids';
 import { handleUnitDeath, handleMonsterDamageTriggers } from './combatHelpers';
+import {
+  DEFENSE_REDUCTION_MULTIPLIER, DAMAGE_VARIANCE_MIN, DAMAGE_VARIANCE_RANGE,
+  BASE_CRIT_MULTIPLIER, BASE_CRIT_CHANCE_DPS, BASE_CRIT_CHANCE_OTHER, DPS_CLASSES,
+  BOSS_LOOT_DROP_CHANCE, NORMAL_LOOT_DROP_CHANCE,
+  CHAIN_ATTACK_MAX, CHAIN_ATTACK_CONTINUE_CHANCE, CHAIN_ATTACK_DECAY,
+  DOUBLE_ATTACK_DAMAGE, AOE_BUFF_DAMAGE, COUNTER_ATTACK_DAMAGE,
+  SOUL_REAP_BONUS_PER_STACK,
+} from './balanceConstants';
 
 /**
  * Calculate basic attack damage with all multipliers.
@@ -145,7 +153,7 @@ export const calculateBasicAttackDamage = (ctx, actor, target) => {
   const crownAttackBonus = actor.isHero ? crownMultiplier : 1;
   const crownDefenseBonus = target.isHero ? crownMultiplier : 1;
   let baseDmg = Math.max(1, Math.floor(
-    (actor.stats.attack * actorDamageBonus * crownAttackBonus + (passiveBonuses.attackBonus || 0) + (uniqueBonuses.attackBonus || 0) - target.stats.defense * crownDefenseBonus * (1 - (uniqueBonuses.armorPenetration || 0)) * targetDefenseBonus * 0.5) * (0.85 + Math.random() * 0.3)
+    (actor.stats.attack * actorDamageBonus * crownAttackBonus + (passiveBonuses.attackBonus || 0) + (uniqueBonuses.attackBonus || 0) - target.stats.defense * crownDefenseBonus * (1 - (uniqueBonuses.armorPenetration || 0)) * targetDefenseBonus * DEFENSE_REDUCTION_MULTIPLIER) * (DAMAGE_VARIANCE_MIN + Math.random() * DAMAGE_VARIANCE_RANGE)
   ));
 
   // Apply unique damageReduction as self-nerf (Leviathan's Heart)
@@ -154,12 +162,11 @@ export const calculateBasicAttackDamage = (ctx, actor, target) => {
   let isCrit = false;
 
   // Base crit chance
-  const dpsClasses = ['mage', 'ranger', 'rogue', 'necromancer', 'bard'];
-  const baseCritChance = actor.isHero && dpsClasses.includes(actor.classId) ? 0.10 : 0.05;
+  const baseCritChance = actor.isHero && DPS_CLASSES.includes(actor.classId) ? BASE_CRIT_CHANCE_DPS : BASE_CRIT_CHANCE_OTHER;
 
   const totalCritChance = baseCritChance + (passiveBonuses.critChance || 0) + actorCritBonus + affixBonuses.critChanceBonus + (uniqueBonuses.critChance || 0);
   if (Math.random() < totalCritChance) {
-    let critMultiplier = 1.5 + (passiveBonuses.critDamageBonus || 0);
+    let critMultiplier = BASE_CRIT_MULTIPLIER + (passiveBonuses.critDamageBonus || 0);
     if (heroData) {
       const critAffixResult = processOnCritAffixes(heroData, dmg, target);
       critMultiplier *= critAffixResult.bonusDamageMultiplier;
@@ -531,7 +538,7 @@ export const resolveHeroTargetDamage = (ctx, actor, target, attackResult) => {
 
   // Counter-attack from skill passive
   if (shouldCounterAttack && actor.stats.hp > 0) {
-    const counterDmg = Math.max(1, Math.floor(target.stats.attack * 0.5));
+    const counterDmg = Math.max(1, Math.floor(target.stats.attack * COUNTER_ATTACK_DAMAGE));
     const actorMonsterIdx = findMonsterIndex(actor.id);
     if (actorMonsterIdx !== -1) {
       newMonsters[actorMonsterIdx].stats.hp = Math.max(0, newMonsters[actorMonsterIdx].stats.hp - counterDmg);
@@ -972,10 +979,9 @@ export const resolveMonsterTargetDamage = (ctx, actor, target, attackResult) => 
       if (uniqueCritResult.chainAttack && targetMonsterIdx !== -1) {
         let currentChainDmg = Math.floor(uniqueCritResult.chainAttack.damage);
         let chainCount = 0;
-        const maxChains = 10;
         const canChainInfinite = uniqueCritResult.chainAttack.canChain;
 
-        while (currentChainDmg > 0 && newMonsters[targetMonsterIdx].stats.hp > 0 && chainCount < maxChains) {
+        while (currentChainDmg > 0 && newMonsters[targetMonsterIdx].stats.hp > 0 && chainCount < CHAIN_ATTACK_MAX) {
           newMonsters[targetMonsterIdx].stats.hp = Math.max(0, newMonsters[targetMonsterIdx].stats.hp - currentChainDmg);
           ctx.totalDamageDealtThisTurn += currentChainDmg;
           chainCount++;
@@ -983,8 +989,8 @@ export const resolveMonsterTargetDamage = (ctx, actor, target, attackResult) => 
           addEffect({ type: 'beam', from: actor.position, to: target.position, attackerClass: actor.classId });
           addEffect({ type: 'damage', position: target.position, damage: currentChainDmg });
 
-          if (!canChainInfinite || Math.random() >= 0.50) break;
-          currentChainDmg = Math.floor(currentChainDmg * 0.50);
+          if (!canChainInfinite || Math.random() >= CHAIN_ATTACK_CONTINUE_CHANCE) break;
+          currentChainDmg = Math.floor(currentChainDmg * CHAIN_ATTACK_DECAY);
         }
       }
 
@@ -1136,7 +1142,7 @@ export const resolveMonsterTargetDamage = (ctx, actor, target, attackResult) => 
         addEffect({ type: 'status', position: actor.position, status: 'buff' });
         const actorIdx = findHeroIndex(actor.id);
         if (actorIdx !== -1) {
-          const soulReapBonus = 1 + uniqueOnKillResult.stacksGained * 0.05;
+          const soulReapBonus = 1 + uniqueOnKillResult.stacksGained * SOUL_REAP_BONUS_PER_STACK;
           const oldMaxHp = newHeroes[actorIdx].stats.maxHp;
           newHeroes[actorIdx].stats.maxHp = Math.floor(oldMaxHp * soulReapBonus);
           newHeroes[actorIdx].stats.hp += Math.floor(oldMaxHp * (soulReapBonus - 1));
@@ -1225,7 +1231,7 @@ export const resolveMonsterTargetDamage = (ctx, actor, target, attackResult) => 
       } else {
         addCombatLog({ type: 'system', message: `${item.name} (inventory full!)` });
       }
-    } else if (Math.random() < (target.isBoss ? 0.9 : 0.25)) {
+    } else if (Math.random() < (target.isBoss ? BOSS_LOOT_DROP_CHANCE : NORMAL_LOOT_DROP_CHANCE)) {
       const item = generateEquipment(dungeon.level);
       const result = processLootDrop(item);
       addEffect({ type: 'lootDrop', position: target.position, slot: item.slot, rarityColor: item.rarityColor || '#9ca3af' });
@@ -1276,7 +1282,7 @@ export const processDoubleAttack = (ctx, actor, target, attackResult) => {
   const doubleChance = baseDoubleChance + skillDoubleBonus;
   if (Math.random() >= doubleChance) return;
 
-  const bonusDmg = Math.max(1, Math.floor(dmg * 0.6));
+  const bonusDmg = Math.max(1, Math.floor(dmg * DOUBLE_ATTACK_DAMAGE));
   addCombatLog({ type: 'system', message: `\u26A1 ${actor.name} strikes again! -${bonusDmg}` });
 
   const hpBeforeBonus = currentMonsterHp;
@@ -1367,7 +1373,7 @@ export const processAscendanceAOE = (ctx, actor, target, attackResult) => {
 
   const otherEnemies = activeCombatMonsters.filter(m => m.id !== target.id && m.stats.hp > 0);
   for (const otherTarget of otherEnemies) {
-    const aoeDmg = Math.max(1, Math.floor(dmg * 0.8));
+    const aoeDmg = Math.max(1, Math.floor(dmg * AOE_BUFF_DAMAGE));
     const otherIdx = findMonsterIndex(otherTarget.id);
     if (otherIdx !== -1) {
       const oldHp = newMonsters[otherIdx].stats.hp;

@@ -1,9 +1,18 @@
 // Single source of truth for the app version
-export const CURRENT_VERSION = '0.1.23';
+export const CURRENT_VERSION = '0.1.25';
 
 // Changelog entries, newest first
 // always write for player, not developer
 export const CHANGELOG = [
+  {
+    version: '0.1.25',
+    title: 'Under-the-Hood Improvements',
+    date: '2026-02-14',
+    changes: [
+      { type: 'feature', text: 'Smaller download size — combat simulator no longer ships in the production build' },
+      { type: 'feature', text: 'Internal code reorganization for faster future updates' },
+    ],
+  },
   {
     version: '0.1.23',
     title: 'Buff Refunds & Raid Polish',

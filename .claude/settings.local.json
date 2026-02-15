@@ -30,7 +30,9 @@
       "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd contextual retry/continue messaging after dungeon runs\n\n- After loss: \"Your heroes need to regroup...\" + \"Retry Level X\"\n- After win: \"Victory! Ready for the next challenge?\" + \"Continue to Level X\"\n- Helps players understand their progress state\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git checkout:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nFix first dungeon screen showing retry before any run\n\n- Use == null to handle both null and undefined \\(old persisted state\\)\n- Add lastDungeonSuccess to resetGame function\n- \"Start Your First Adventure\" only shows before any dungeon run\n- \"Retry Level X\" only shows after actually failing\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git log:*)",
+      "Bash(npm install:*)"
     ]
   }
 }
